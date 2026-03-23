@@ -1,9 +1,10 @@
 import { cn } from "@/lib/utils";
 import {
   BarChart3, Package, ShoppingCart, MessageSquare,
-  Zap, Clock, Settings, Bot, Brain, ChevronLeft, ChevronRight
+  Zap, Clock, Settings, Bot, Brain, ChevronLeft, ChevronRight, LogOut
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useAuth } from "@/contexts/AuthContext";
 
 type NavItem = {
   id: string;
@@ -30,6 +31,8 @@ interface DashboardSidebarProps {
 }
 
 const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange }: DashboardSidebarProps) => {
+  const { signOut, user } = useAuth();
+
   return (
     <aside
       className={cn(
@@ -95,8 +98,23 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
         })}
       </nav>
 
-      {/* Collapse toggle */}
-      <div className="border-t border-sidebar-border p-2 shrink-0">
+      {/* Bottom actions */}
+      <div className="border-t border-sidebar-border p-2 shrink-0 space-y-0.5">
+        {!collapsed && user && (
+          <div className="px-3 py-2 text-[11px] text-sidebar-foreground/50 truncate">
+            {user.email}
+          </div>
+        )}
+        <button
+          onClick={signOut}
+          className={cn(
+            "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-sidebar-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-colors",
+            collapsed && "justify-center px-0"
+          )}
+        >
+          <LogOut className="h-4 w-4" />
+          {!collapsed && <span>Sign Out</span>}
+        </button>
         <button
           onClick={() => onCollapsedChange(!collapsed)}
           className={cn(
