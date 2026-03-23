@@ -470,7 +470,7 @@ async function generateAiReply(
 ): Promise<string> {
   const { data: recentMessages } = await supabase
     .from("messages").select("direction, content, image_url")
-    .eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(10);
+    .eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(20);
 
   let productQuery = supabase
     .from("products").select("name, name_bn, description, description_bn, price, category, keywords, image_url")
