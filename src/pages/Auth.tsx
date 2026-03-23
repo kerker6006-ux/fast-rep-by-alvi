@@ -34,13 +34,13 @@ const Auth = () => {
         password,
         options: {
           data: { display_name: displayName },
-          emailRedirectTo: window.location.origin,
         },
       });
       if (error) {
         toast.error(error.message);
       } else {
-        toast.success("Check your email to verify your account!");
+        toast.success("Account created! Redirecting...");
+        navigate("/");
       }
     }
 
