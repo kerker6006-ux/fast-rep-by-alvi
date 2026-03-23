@@ -627,7 +627,7 @@ IMPORTANT: You are chatting on Facebook Messenger. Keep messages natural and con
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: hasImage ? "google/gemini-2.5-pro" : "google/gemini-2.5-flash",
       messages: [{ role: "system", content: systemPrompt }, ...historyWithoutLast, currentUserMessage],
     }),
   });
