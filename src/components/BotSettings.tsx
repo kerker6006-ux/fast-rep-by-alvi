@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,6 +12,7 @@ import { Save, Globe, MessageCircle, Info } from "lucide-react";
 
 const BotSettings = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [settings, setSettings] = useState<Record<string, string>>({});
 
   const { data: dbSettings, isLoading } = useQuery({
@@ -33,7 +35,7 @@ const BotSettings = () => {
   const saveMutation = useMutation({
     mutationFn: async () => {
       for (const [key, value] of Object.entries(settings)) {
-        const { error } = await supabase.from("bot_settings").upsert({ setting_key: key, setting_value: value }, { onConflict: "setting_key" });
+        const { error } = await supabase.from("bot_settings").upsert({ setting_key: key, setting_value: value, user_id: user?.id } as any, { onConflict: "user_id,setting_key" } as any);
         if (error) throw error;
       }
     },

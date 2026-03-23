@@ -1,15 +1,17 @@
 import { cn } from "@/lib/utils";
 import {
   BarChart3, Package, ShoppingCart, MessageSquare,
-  Zap, Clock, Settings, Bot, Brain, ChevronLeft, ChevronRight, LogOut
+  Zap, Clock, Settings, Bot, Brain, ChevronLeft, ChevronRight, LogOut, Globe, ShieldCheck
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 type NavItem = {
   id: string;
   label: string;
   icon: React.ElementType;
+  adminOnly?: boolean;
 };
 
 const navItems: NavItem[] = [
@@ -20,7 +22,9 @@ const navItems: NavItem[] = [
   { id: "conversations", label: "Chats", icon: MessageSquare },
   { id: "auto-reply", label: "Auto-Reply", icon: Zap },
   { id: "scheduled", label: "Scheduled", icon: Clock },
+  { id: "fb-pages", label: "FB Pages", icon: Globe },
   { id: "settings", label: "Settings", icon: Settings },
+  { id: "admin", label: "Admin", icon: ShieldCheck, adminOnly: true },
 ];
 
 interface DashboardSidebarProps {
@@ -32,6 +36,9 @@ interface DashboardSidebarProps {
 
 const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange }: DashboardSidebarProps) => {
   const { signOut, user } = useAuth();
+  const { isAdmin } = useIsAdmin();
+
+  const visibleItems = navItems.filter(item => !item.adminOnly || isAdmin);
 
   return (
     <aside
@@ -60,7 +67,7 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
 
       {/* Nav */}
       <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
-        {navItems.map((item) => {
+        {visibleItems.map((item) => {
           const isActive = activeTab === item.id;
           const button = (
             <button

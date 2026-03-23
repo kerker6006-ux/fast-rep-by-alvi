@@ -32,13 +32,7 @@ serve(async (req) => {
     const token = url.searchParams.get("hub.verify_token");
     const challenge = url.searchParams.get("hub.challenge");
 
-    let dbToken = VERIFY_TOKEN;
-    try {
-      const { data } = await supabase.from("bot_settings").select("setting_value").eq("setting_key", "verify_token").single();
-      if (data) dbToken = data.setting_value;
-    } catch {}
-
-    if (mode === "subscribe" && (token === VERIFY_TOKEN || token === dbToken)) {
+    if (mode === "subscribe" && token === VERIFY_TOKEN) {
       console.log("Webhook verified!");
       return new Response(challenge, { status: 200, headers: corsHeaders });
     }
@@ -55,21 +49,42 @@ serve(async (req) => {
         return new Response("Not a page event", { status: 200, headers: corsHeaders });
       }
 
-      const PAGE_ACCESS_TOKEN = Deno.env.get("FB_PAGE_ACCESS_TOKEN");
-      if (!PAGE_ACCESS_TOKEN) {
-        console.error("FB_PAGE_ACCESS_TOKEN not set");
-        return new Response("OK", { status: 200, headers: corsHeaders });
-      }
-
       const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
-      // Load settings once per request
-      const settings = await loadSettings(supabase);
-
       for (const entry of body.entry || []) {
+        const pageId = entry.id;
+
+        // Look up which user owns this FB page
+        const { data: fbPage } = await supabase
+          .from("fb_pages")
+          .select("user_id, page_access_token, is_active")
+          .eq("fb_page_id", pageId)
+          .eq("is_active", true)
+          .maybeSingle();
+
+        if (!fbPage) {
+          // Fallback to global token for backward compatibility
+          const fallbackToken = Deno.env.get("FB_PAGE_ACCESS_TOKEN");
+          if (!fallbackToken) {
+            console.error("No fb_page found for page_id:", pageId, "and no fallback token");
+            continue;
+          }
+          // Process with fallback (no user_id)
+          for (const event of entry.messaging || []) {
+            await handleMessagingEvent(supabase, event, pageId, fallbackToken, LOVABLE_API_KEY, {}, null);
+          }
+          continue;
+        }
+
+        const PAGE_ACCESS_TOKEN = fbPage.page_access_token;
+        const userId = fbPage.user_id;
+
+        // Load user-specific settings
+        const settings = await loadSettings(supabase, userId);
+
         // Handle messaging events (DMs)
         for (const event of entry.messaging || []) {
-          await handleMessagingEvent(supabase, event, entry.id, PAGE_ACCESS_TOKEN, LOVABLE_API_KEY, settings);
+          await handleMessagingEvent(supabase, event, pageId, PAGE_ACCESS_TOKEN, LOVABLE_API_KEY, settings, userId);
         }
 
         // Handle feed/comment events
@@ -92,8 +107,12 @@ serve(async (req) => {
 
 // ---- Settings ----
 
-async function loadSettings(supabase: any): Promise<Record<string, string>> {
-  const { data: settingsRows } = await supabase.from("bot_settings").select("setting_key, setting_value");
+async function loadSettings(supabase: any, userId: string | null): Promise<Record<string, string>> {
+  let query = supabase.from("bot_settings").select("setting_key, setting_value");
+  if (userId) {
+    query = query.eq("user_id", userId);
+  }
+  const { data: settingsRows } = await query;
   const settings: Record<string, string> = {};
   settingsRows?.forEach((s: any) => { settings[s.setting_key] = s.setting_value; });
   return settings;
@@ -104,16 +123,12 @@ async function loadSettings(supabase: any): Promise<Record<string, string>> {
 async function handleCommentEvent(
   supabase: any, value: any, pageAccessToken: string, settings: Record<string, string>
 ) {
-  // Skip if comment auto-reply is disabled
   if (settings.comment_auto_reply !== "true") return;
-
-  // Don't reply to own comments
   if (value.from?.id === value.post_id?.split("_")[0]) return;
 
   const commentId = value.comment_id;
   if (!commentId) return;
 
-  // Detect language of the comment
   const commentText = value.message || "";
   const isBangla = /[\u0980-\u09FF]/.test(commentText);
 
@@ -133,8 +148,6 @@ async function handleCommentEvent(
     if (!res.ok) {
       const errText = await res.text();
       console.error("Comment reply error:", res.status, errText);
-    } else {
-      console.log("Comment reply sent to:", commentId);
     }
   } catch (e) {
     console.error("Comment reply failed:", e);
@@ -146,22 +159,19 @@ async function handleCommentEvent(
 async function handleMessagingEvent(
   supabase: any, event: any, pageId: string,
   pageAccessToken: string, lovableApiKey: string | undefined,
-  settings: Record<string, string>
+  settings: Record<string, string>, userId: string | null
 ) {
   const senderId = event.sender?.id;
   if (!senderId) return;
   if (senderId === pageId) return;
-
-  // Skip non-message events
   if (!event.message) return;
-  // Skip echo messages
   if (event.message.is_echo) return;
 
   const messageText = event.message.text;
   const attachments = event.message.attachments;
   const fbMessageId = event.message?.mid || null;
 
-  // Prevent duplicate replies when Facebook retries the same message event
+  // Prevent duplicate replies
   if (fbMessageId) {
     const { data: existingIncoming } = await supabase
       .from("messages")
@@ -175,24 +185,24 @@ async function handleMessagingEvent(
     }
   }
 
-  // Get or create conversation
-  const conversationId = await getOrCreateConversation(supabase, senderId, pageAccessToken);
+  // Get or create conversation (with user_id)
+  const conversationId = await getOrCreateConversation(supabase, senderId, pageAccessToken, userId);
   if (!conversationId) return;
 
-  // Image URL from attachments
   let imageUrl: string | null = null;
   if (attachments) {
     const imageAttachment = attachments.find((a: any) => a.type === "image");
     if (imageAttachment) imageUrl = imageAttachment.payload?.url || null;
   }
 
-  // Save incoming message
+  // Save incoming message (with user_id)
   await supabase.from("messages").insert({
     conversation_id: conversationId,
     fb_message_id: fbMessageId,
     direction: "incoming",
     content: messageText || (imageUrl ? "[Image]" : null),
     image_url: imageUrl,
+    user_id: userId,
   });
 
   await supabase.from("conversations").update({
@@ -200,21 +210,17 @@ async function handleMessagingEvent(
     last_message_at: new Date().toISOString(),
   }).eq("id", conversationId);
 
-  // Check auto-reply rules first
-  const autoReply = await checkAutoReplyRules(supabase, messageText);
+  // Check auto-reply rules (user-specific)
+  const autoReply = await checkAutoReplyRules(supabase, messageText, userId);
   if (autoReply) {
     await sendFbMessage(pageAccessToken, senderId, autoReply);
-    await saveOutgoingMessage(supabase, conversationId, autoReply);
+    await saveOutgoingMessage(supabase, conversationId, autoReply, null, userId);
     return;
   }
 
-  // Handle picture requests with real product image attachments (no placeholder text)
+  // Handle picture requests
   const imageRequestHandled = await handleProductImageRequest(
-    supabase,
-    conversationId,
-    senderId,
-    pageAccessToken,
-    messageText
+    supabase, conversationId, senderId, pageAccessToken, messageText, userId
   );
   if (imageRequestHandled) return;
 
@@ -222,13 +228,12 @@ async function handleMessagingEvent(
   if (lovableApiKey) {
     try {
       const replyText = await generateAiReply(
-        supabase, lovableApiKey, conversationId, messageText, imageUrl, settings
+        supabase, lovableApiKey, conversationId, messageText, imageUrl, settings, userId
       );
       await sendFbMessage(pageAccessToken, senderId, replyText);
-      await saveOutgoingMessage(supabase, conversationId, replyText);
+      await saveOutgoingMessage(supabase, conversationId, replyText, null, userId);
 
-      // Detect order intent
-      await detectAndCreateOrder(supabase, lovableApiKey, conversationId, messageText, replyText);
+      await detectAndCreateOrder(supabase, lovableApiKey, conversationId, messageText, replyText, userId);
     } catch (aiError) {
       console.error("AI processing error:", aiError);
       const fallback = settings.welcome_message || "ধন্যবাদ! আমরা শীঘ্রই আপনার সাথে যোগাযোগ করব।";
@@ -239,9 +244,12 @@ async function handleMessagingEvent(
 
 // ---- Helper Functions ----
 
-async function getOrCreateConversation(supabase: any, senderId: string, pageAccessToken: string): Promise<string | null> {
-  const { data: existingConvo } = await supabase
-    .from("conversations").select("id").eq("fb_sender_id", senderId).single();
+async function getOrCreateConversation(
+  supabase: any, senderId: string, pageAccessToken: string, userId: string | null
+): Promise<string | null> {
+  let query = supabase.from("conversations").select("id").eq("fb_sender_id", senderId);
+  if (userId) query = query.eq("user_id", userId);
+  const { data: existingConvo } = await query.maybeSingle();
 
   if (existingConvo) return existingConvo.id;
 
@@ -254,16 +262,20 @@ async function getOrCreateConversation(supabase: any, senderId: string, pageAcce
     senderName = `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || null;
   } catch {}
 
+  const insertData: any = { fb_sender_id: senderId, sender_name: senderName };
+  if (userId) insertData.user_id = userId;
+
   const { data: newConvo, error } = await supabase
-    .from("conversations").insert({ fb_sender_id: senderId, sender_name: senderName }).select("id").single();
+    .from("conversations").insert(insertData).select("id").single();
   if (error) { console.error("Error creating conversation:", error); return null; }
   return newConvo.id;
 }
 
-async function checkAutoReplyRules(supabase: any, messageText: string | null): Promise<string | null> {
+async function checkAutoReplyRules(supabase: any, messageText: string | null, userId: string | null): Promise<string | null> {
   if (!messageText) return null;
-  const { data: rules } = await supabase
-    .from("auto_reply_rules").select("*").eq("is_active", true).order("priority", { ascending: false });
+  let query = supabase.from("auto_reply_rules").select("*").eq("is_active", true).order("priority", { ascending: false });
+  if (userId) query = query.eq("user_id", userId);
+  const { data: rules } = await query;
 
   if (!rules) return null;
   const lowerMsg = messageText.toLowerCase();
@@ -280,23 +292,20 @@ async function checkAutoReplyRules(supabase: any, messageText: string | null): P
 }
 
 async function handleProductImageRequest(
-  supabase: any,
-  conversationId: string,
-  senderId: string,
-  pageAccessToken: string,
-  messageText: string | null,
+  supabase: any, conversationId: string, senderId: string,
+  pageAccessToken: string, messageText: string | null, userId: string | null
 ): Promise<boolean> {
   if (!messageText || !isImageRequestMessage(messageText)) return false;
 
-  const matchedProduct = await findBestProductForImageRequest(supabase, conversationId, messageText);
+  const matchedProduct = await findBestProductForImageRequest(supabase, conversationId, messageText, userId);
   const isBangla = /[\u0980-\u09FF]/.test(messageText);
 
   if (!matchedProduct?.image_url) {
     const askProductName = isBangla
       ? "যে প্রোডাক্টের ছবি চান, নামটা লিখে দিন — সাথে সাথে ছবি পাঠাচ্ছি।"
-      : "Please tell me the product name, and I’ll send the picture right away.";
+      : "Please tell me the product name, and I'll send the picture right away.";
     await sendFbMessage(pageAccessToken, senderId, askProductName);
-    await saveOutgoingMessage(supabase, conversationId, askProductName);
+    await saveOutgoingMessage(supabase, conversationId, askProductName, null, userId);
     return true;
   }
 
@@ -307,7 +316,7 @@ async function handleProductImageRequest(
 
   await sendFbImage(pageAccessToken, senderId, matchedProduct.image_url);
   await sendFbMessage(pageAccessToken, senderId, caption);
-  await saveOutgoingMessage(supabase, conversationId, caption, matchedProduct.image_url);
+  await saveOutgoingMessage(supabase, conversationId, caption, matchedProduct.image_url, userId);
   return true;
 }
 
@@ -316,12 +325,16 @@ function isImageRequestMessage(messageText: string): boolean {
   return IMAGE_REQUEST_KEYWORDS.some((keyword) => lower.includes(keyword));
 }
 
-async function findBestProductForImageRequest(supabase: any, conversationId: string, messageText: string) {
-  const { data: products } = await supabase
+async function findBestProductForImageRequest(
+  supabase: any, conversationId: string, messageText: string, userId: string | null
+) {
+  let query = supabase
     .from("products")
     .select("name, name_bn, price, image_url, keywords")
     .eq("is_active", true)
     .not("image_url", "is", null);
+  if (userId) query = query.eq("user_id", userId);
+  const { data: products } = await query;
 
   if (!products?.length) return null;
 
@@ -383,10 +396,7 @@ async function sendFbImage(pageAccessToken: string, recipientId: string, imageUr
       message: {
         attachment: {
           type: "image",
-          payload: {
-            url: imageUrl,
-            is_reusable: true,
-          },
+          payload: { url: imageUrl, is_reusable: true },
         },
       },
     }),
@@ -394,17 +404,18 @@ async function sendFbImage(pageAccessToken: string, recipientId: string, imageUr
 }
 
 async function saveOutgoingMessage(
-  supabase: any,
-  conversationId: string,
-  content: string,
-  imageUrl: string | null = null,
+  supabase: any, conversationId: string, content: string,
+  imageUrl: string | null = null, userId: string | null = null
 ) {
-  await supabase.from("messages").insert({
+  const insertData: any = {
     conversation_id: conversationId,
     direction: "outgoing",
     content,
     image_url: imageUrl,
-  });
+  };
+  if (userId) insertData.user_id = userId;
+
+  await supabase.from("messages").insert(insertData);
   await supabase.from("conversations").update({
     last_message: content || (imageUrl ? "[Image]" : null),
     last_message_at: new Date().toISOString(),
@@ -455,15 +466,17 @@ function sanitizeReplyText(reply: string, maxReplyLength?: string): string {
 async function generateAiReply(
   supabase: any, apiKey: string, conversationId: string,
   messageText: string | null, imageUrl: string | null,
-  settings: Record<string, string>
+  settings: Record<string, string>, userId: string | null
 ): Promise<string> {
   const { data: recentMessages } = await supabase
     .from("messages").select("direction, content, image_url")
     .eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(10);
 
-  const { data: products } = await supabase
+  let productQuery = supabase
     .from("products").select("name, name_bn, description, description_bn, price, category, keywords, image_url")
     .eq("is_active", true);
+  if (userId) productQuery = productQuery.eq("user_id", userId);
+  const { data: products } = await productQuery;
 
   const productCatalog = products?.map((p: any) =>
     `- ${p.name}${p.name_bn ? ` (${p.name_bn})` : ""}: ৳${p.price}${p.description ? ` — ${p.description}` : ""}${p.category ? ` [${p.category}]` : ""}${p.keywords?.length ? ` [${p.keywords.join(", ")}]` : ""}`
@@ -480,7 +493,6 @@ async function generateAiReply(
     ? { role: "user", content: [{ type: "text", text: messageText || "Customer sent this image. Identify the product and tell the price." }, { type: "image_url", image_url: { url: imageUrl } }] }
     : { role: "user", content: messageText || "" };
 
-  // Build reply examples section
   let examplesSection = "";
   if (settings.reply_examples) {
     try {
@@ -492,7 +504,6 @@ async function generateAiReply(
     } catch {}
   }
 
-  // Build never-say list
   let neverSaySection = "";
   if (settings.never_say_list) {
     try {
@@ -506,7 +517,6 @@ async function generateAiReply(
     neverSaySection += `\n${settings.ai_never_say}`;
   }
 
-  // Build FAQ section
   let faqSection = "";
   if (settings.faq_list) {
     try {
@@ -533,7 +543,7 @@ PRODUCT CATALOG:
 ${productCatalog}
 
 UNDERSTANDING RULES:
-- Deeply analyze every customer message to understand their actual intent, even if they use slang, shorthand, or informal language.
+- Deeply analyze every customer message to understand their actual intent.
 - "দাম কত", "price", "কত" = asking about pricing
 - "আছে কি", "available" = asking about availability
 - Understand Bangla slang: "bhai", "ভাই", "vai", "apu", "আপু", "bro" etc.
@@ -589,7 +599,7 @@ IMPORTANT: You are chatting on Facebook Messenger. Keep messages short and conve
 
 async function detectAndCreateOrder(
   supabase: any, apiKey: string, conversationId: string,
-  customerMessage: string | null, aiReply: string
+  customerMessage: string | null, aiReply: string, userId: string | null
 ) {
   if (!customerMessage) return;
 
@@ -640,7 +650,7 @@ async function detectAndCreateOrder(
     const orderData = JSON.parse(toolCall.function.arguments);
     if (!orderData.is_order) return;
 
-    await supabase.from("orders").insert({
+    const insertData: any = {
       conversation_id: conversationId,
       customer_name: orderData.customer_name || null,
       customer_phone: orderData.customer_phone || null,
@@ -648,7 +658,10 @@ async function detectAndCreateOrder(
       items: orderData.items || [],
       total: orderData.total || 0,
       status: "pending",
-    });
+    };
+    if (userId) insertData.user_id = userId;
+
+    await supabase.from("orders").insert(insertData);
     console.log("Order created for conversation:", conversationId);
   } catch (e) {
     console.error("Order detection error:", e);

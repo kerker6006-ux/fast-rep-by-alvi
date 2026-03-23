@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,6 +22,7 @@ const statusColors: Record<string, string> = {
 
 const ScheduledMessages = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ conversationId: "", content: "", scheduledAt: "", messageType: "follow_up" });
 
@@ -56,6 +58,7 @@ const ScheduledMessages = () => {
         content: form.content,
         scheduled_at: new Date(form.scheduledAt).toISOString(),
         message_type: form.messageType,
+        user_id: user?.id,
       });
       if (error) throw error;
     },

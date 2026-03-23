@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,7 @@ type Product = {
 
 const ProductsManager = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -69,6 +71,7 @@ const ProductsManager = () => {
         category: form.category || null,
         is_active: form.is_active,
         keywords: form.keywords ? form.keywords.split(",").map(k => k.trim()) : null,
+        user_id: user?.id,
       };
       if (editingProduct) {
         const { error } = await supabase.from("products").update(payload).eq("id", editingProduct.id);

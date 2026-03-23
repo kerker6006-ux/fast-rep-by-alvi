@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +14,7 @@ import { Plus, Trash2, Zap } from "lucide-react";
 
 const AutoReplyRules = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ keywords: "", response: "", responseBn: "", priority: 0 });
 
@@ -37,6 +39,7 @@ const AutoReplyRules = () => {
         response_text: form.response,
         response_text_bn: form.responseBn || null,
         priority: form.priority,
+        user_id: user?.id,
       });
       if (error) throw error;
     },

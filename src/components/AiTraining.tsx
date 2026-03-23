@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +21,7 @@ import {
 
 const AiTraining = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [exampleInput, setExampleInput] = useState("");
   const [exampleOutput, setExampleOutput] = useState("");
@@ -51,7 +53,7 @@ const AiTraining = () => {
       for (const [key, value] of Object.entries(settings)) {
         const { error } = await supabase
           .from("bot_settings")
-          .upsert({ setting_key: key, setting_value: value }, { onConflict: "setting_key" });
+          .upsert({ setting_key: key, setting_value: value, user_id: user?.id } as any, { onConflict: "user_id,setting_key" } as any);
         if (error) throw error;
       }
     },
