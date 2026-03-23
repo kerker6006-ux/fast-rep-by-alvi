@@ -8,6 +8,13 @@ const corsHeaders = {
 
 const VERIFY_TOKEN = "fb_bot_verify_2024";
 
+const IMAGE_REQUEST_KEYWORDS = [
+  "pic", "picture", "photo", "image", "photos", "images",
+  "ছবি", "পিক", "ফটো", "ইমেজ", "দেখাও", "দেখি", "পিক দাও", "ছবি দাও",
+  "send pic", "send picture", "show pic", "show picture", "show image",
+  "dekhi", "dekhao", "chobi", "picture dekhi",
+];
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -152,6 +159,21 @@ async function handleMessagingEvent(
 
   const messageText = event.message.text;
   const attachments = event.message.attachments;
+  const fbMessageId = event.message?.mid || null;
+
+  // Prevent duplicate replies when Facebook retries the same message event
+  if (fbMessageId) {
+    const { data: existingIncoming } = await supabase
+      .from("messages")
+      .select("id")
+      .eq("fb_message_id", fbMessageId)
+      .maybeSingle();
+
+    if (existingIncoming) {
+      console.log("Duplicate incoming message ignored:", fbMessageId);
+      return;
+    }
+  }
 
   // Get or create conversation
   const conversationId = await getOrCreateConversation(supabase, senderId, pageAccessToken);
@@ -167,7 +189,7 @@ async function handleMessagingEvent(
   // Save incoming message
   await supabase.from("messages").insert({
     conversation_id: conversationId,
-    fb_message_id: event.message?.mid,
+    fb_message_id: fbMessageId,
     direction: "incoming",
     content: messageText || (imageUrl ? "[Image]" : null),
     image_url: imageUrl,
@@ -185,6 +207,16 @@ async function handleMessagingEvent(
     await saveOutgoingMessage(supabase, conversationId, autoReply);
     return;
   }
+
+  // Handle picture requests with real product image attachments (no placeholder text)
+  const imageRequestHandled = await handleProductImageRequest(
+    supabase,
+    conversationId,
+    senderId,
+    pageAccessToken,
+    messageText
+  );
+  if (imageRequestHandled) return;
 
   // AI-powered response
   if (lovableApiKey) {
@@ -247,6 +279,93 @@ async function checkAutoReplyRules(supabase: any, messageText: string | null): P
   return null;
 }
 
+async function handleProductImageRequest(
+  supabase: any,
+  conversationId: string,
+  senderId: string,
+  pageAccessToken: string,
+  messageText: string | null,
+): Promise<boolean> {
+  if (!messageText || !isImageRequestMessage(messageText)) return false;
+
+  const matchedProduct = await findBestProductForImageRequest(supabase, conversationId, messageText);
+  const isBangla = /[\u0980-\u09FF]/.test(messageText);
+
+  if (!matchedProduct?.image_url) {
+    const askProductName = isBangla
+      ? "যে প্রোডাক্টের ছবি চান, নামটা লিখে দিন — সাথে সাথে ছবি পাঠাচ্ছি।"
+      : "Please tell me the product name, and I’ll send the picture right away.";
+    await sendFbMessage(pageAccessToken, senderId, askProductName);
+    await saveOutgoingMessage(supabase, conversationId, askProductName);
+    return true;
+  }
+
+  const productName = matchedProduct.name_bn || matchedProduct.name;
+  const caption = isBangla
+    ? `${productName} — ৳${matchedProduct.price}। আর কোন রং দেখবেন?`
+    : `${matchedProduct.name} — ৳${matchedProduct.price}. Want to see another color?`;
+
+  await sendFbImage(pageAccessToken, senderId, matchedProduct.image_url);
+  await sendFbMessage(pageAccessToken, senderId, caption);
+  await saveOutgoingMessage(supabase, conversationId, caption, matchedProduct.image_url);
+  return true;
+}
+
+function isImageRequestMessage(messageText: string): boolean {
+  const lower = messageText.toLowerCase();
+  return IMAGE_REQUEST_KEYWORDS.some((keyword) => lower.includes(keyword));
+}
+
+async function findBestProductForImageRequest(supabase: any, conversationId: string, messageText: string) {
+  const { data: products } = await supabase
+    .from("products")
+    .select("name, name_bn, price, image_url, keywords")
+    .eq("is_active", true)
+    .not("image_url", "is", null);
+
+  if (!products?.length) return null;
+
+  const { data: recentMessages } = await supabase
+    .from("messages")
+    .select("content")
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: false })
+    .limit(12);
+
+  const context = [
+    messageText,
+    ...(recentMessages || []).map((m: any) => m.content || ""),
+  ].join(" ").toLowerCase();
+
+  let best: any = null;
+  let bestScore = 0;
+
+  for (const product of products) {
+    const terms = [
+      product.name,
+      product.name_bn,
+      ...((product.keywords || []) as string[]),
+    ]
+      .filter(Boolean)
+      .map((t: string) => t.toLowerCase().trim())
+      .filter((t: string) => t.length > 1);
+
+    let score = 0;
+    for (const term of terms) {
+      if (context.includes(term)) score += term.length >= 4 ? 2 : 1;
+    }
+
+    if (score > bestScore) {
+      best = product;
+      bestScore = score;
+    }
+  }
+
+  if (best) return best;
+  if (products.length === 1) return products[0];
+  return null;
+}
+
 async function sendFbMessage(pageAccessToken: string, recipientId: string, text: string) {
   await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${pageAccessToken}`, {
     method: "POST",
@@ -255,11 +374,82 @@ async function sendFbMessage(pageAccessToken: string, recipientId: string, text:
   });
 }
 
-async function saveOutgoingMessage(supabase: any, conversationId: string, content: string) {
-  await supabase.from("messages").insert({ conversation_id: conversationId, direction: "outgoing", content });
+async function sendFbImage(pageAccessToken: string, recipientId: string, imageUrl: string) {
+  await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${pageAccessToken}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      recipient: { id: recipientId },
+      message: {
+        attachment: {
+          type: "image",
+          payload: {
+            url: imageUrl,
+            is_reusable: true,
+          },
+        },
+      },
+    }),
+  });
+}
+
+async function saveOutgoingMessage(
+  supabase: any,
+  conversationId: string,
+  content: string,
+  imageUrl: string | null = null,
+) {
+  await supabase.from("messages").insert({
+    conversation_id: conversationId,
+    direction: "outgoing",
+    content,
+    image_url: imageUrl,
+  });
   await supabase.from("conversations").update({
-    last_message: content, last_message_at: new Date().toISOString(),
+    last_message: content || (imageUrl ? "[Image]" : null),
+    last_message_at: new Date().toISOString(),
   }).eq("id", conversationId);
+}
+
+function parseMaxSentences(maxReplyLength?: string): number {
+  if (!maxReplyLength) return 2;
+  const match = maxReplyLength.match(/\d+/);
+  if (!match) return 2;
+  const parsed = Number.parseInt(match[0], 10);
+  if (Number.isNaN(parsed)) return 2;
+  return Math.min(Math.max(parsed, 1), 4);
+}
+
+function sanitizeReplyText(reply: string, maxReplyLength?: string): string {
+  const maxSentences = parseMaxSentences(maxReplyLength);
+
+  const normalized = reply
+    .replace(/\[[^\]]*image[^\]]*\]/gi, "")
+    .replace(/technical problem/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!normalized) return "";
+
+  const segments = normalized
+    .split(/(?<=[.!?।])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const unique: string[] = [];
+  const seen = new Set<string>();
+
+  for (const segment of segments) {
+    const key = segment
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}]/gu, "")
+      .trim();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    unique.push(segment);
+  }
+
+  return unique.slice(0, maxSentences).join(" ").trim();
 }
 
 async function generateAiReply(
@@ -360,8 +550,12 @@ ${settings.payment_methods ? `\nPayment: ${settings.payment_methods}` : ""}
 YOUR JOB:
 - Answer product questions, prices, availability accurately.
 - Always mention the price (৳) when discussing products.
-- Be warm, friendly, helpful like a real shop assistant.
-- Keep responses concise but informative. Use emojis naturally 😊
+- Be warm, friendly, and human like a real shop assistant.
+- Keep replies very short (1-2 sentences unless customer asks for full order summary).
+- Never repeat the same sentence/information.
+- Never write placeholders like [Image of ...] in chat.
+- If customer asks for a picture, respond naturally and briefly (no technical excuses).
+- Use 0-1 emoji maximum.
 - When customer confirms order, summarize: items, total, delivery info.
 ${neverSaySection}
 ${settings.custom_instructions || ""}
@@ -388,7 +582,9 @@ IMPORTANT: You are chatting on Facebook Messenger. Keep messages short and conve
   }
 
   const aiData = await aiResponse.json();
-  return aiData.choices?.[0]?.message?.content || settings.welcome_message || "ধন্যবাদ! আপনার মেসেজ পেয়েছি।";
+  const rawReply = aiData.choices?.[0]?.message?.content || "";
+  const cleanedReply = sanitizeReplyText(rawReply, settings.max_reply_length);
+  return cleanedReply || settings.welcome_message || "ধন্যবাদ! আপনার মেসেজ পেয়েছি।";
 }
 
 async function detectAndCreateOrder(
