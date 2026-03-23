@@ -87,7 +87,7 @@ const FbPageConnection = () => {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Webhook URL</CardTitle>
-          <CardDescription>Use this URL in your Facebook Developer App webhook settings.</CardDescription>
+          <CardDescription>All pages share the same webhook URL. Each page gets its own unique Verify Token shown below.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center gap-2">
@@ -96,7 +96,6 @@ const FbPageConnection = () => {
               {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">Verify Token: <code className="bg-muted px-1 rounded">fb_bot_verify_2024</code></p>
         </CardContent>
       </Card>
 
