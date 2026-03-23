@@ -1,15 +1,15 @@
-Facebook Auto-Reply Bot for business page. Bangla-first, English supported.
+Facebook Auto-Reply Bot SaaS platform. Multi-tenant, Bangla-first, English supported.
 
-- DB tables: products, conversations, messages, bot_settings, orders, auto_reply_rules, scheduled_messages
-- Enums: order_status (pending/confirmed/processing/delivered/cancelled), scheduled_message_status (pending/sent/failed/cancelled)
+- Multi-tenant: user_id on all tables (products, conversations, messages, bot_settings, orders, auto_reply_rules, scheduled_messages)
+- DB tables: + user_roles (app_role enum: admin/user), fb_pages (per-user FB page connection with access token), profiles
+- RLS: All tables isolated by user_id. Admins can read all via has_role() security definer function.
 - Storage bucket: product-images (public)
-- Edge functions: fb-webhook (handles FB webhook + AI replies + auto-reply rules + order detection + comment auto-reply), send-scheduled (cron every minute)
+- Edge function: fb-webhook (looks up fb_pages by page_id to find user_id, uses per-user settings/products/rules)
 - AI model: google/gemini-2.5-flash (main replies), google/gemini-2.5-flash-lite (order extraction)
 - Default language: Bangla (বাংলা), auto-detects English
-- Needs FB_PAGE_ACCESS_TOKEN secret to work
-- Cron job: send-scheduled-messages runs every minute via pg_cron + pg_net
-- Dashboard: Professional sidebar nav with tabs: Analytics, AI Training, Products, Orders, Chats, Auto-Reply, Scheduled, Settings
-- AI Training: personality, tone, reply examples, understanding rules, never-say list, image instructions, comment auto-reply config
-- Comment auto-reply: replies to FB post comments with "inbox us" message
+- Each user connects their own FB page via FB Pages tab (stores page_access_token per user)
+- Fallback: global FB_PAGE_ACCESS_TOKEN secret for backward compat
+- Admin panel: shows all users, their stats (products/orders/chats), connected FB pages
+- bot_settings unique constraint: (user_id, setting_key) — per-user settings
+- Dashboard sidebar: Analytics, AI Training, Products, Orders, Chats, Auto-Reply, Scheduled, FB Pages, Settings, Admin (admin-only)
 - Design: Blue primary (hsl 217 72% 52%), dark sidebar, clean card-based layout
-- FB webhook also handles feed/changes for comment events
