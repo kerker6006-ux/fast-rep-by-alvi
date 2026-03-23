@@ -58,6 +58,7 @@ const ScheduledMessages = () => {
         content: form.content,
         scheduled_at: new Date(form.scheduledAt).toISOString(),
         message_type: form.messageType,
+        user_id: user?.id,
       });
       if (error) throw error;
     },

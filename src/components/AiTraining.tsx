@@ -53,7 +53,7 @@ const AiTraining = () => {
       for (const [key, value] of Object.entries(settings)) {
         const { error } = await supabase
           .from("bot_settings")
-          .upsert({ setting_key: key, setting_value: value }, { onConflict: "setting_key" });
+          .upsert({ setting_key: key, setting_value: value, user_id: user?.id } as any, { onConflict: "user_id,setting_key" } as any);
         if (error) throw error;
       }
     },

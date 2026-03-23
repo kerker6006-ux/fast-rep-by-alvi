@@ -39,6 +39,7 @@ const AutoReplyRules = () => {
         response_text: form.response,
         response_text_bn: form.responseBn || null,
         priority: form.priority,
+        user_id: user?.id,
       });
       if (error) throw error;
     },
