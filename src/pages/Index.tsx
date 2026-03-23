@@ -22,12 +22,21 @@ const tabs: Record<string, React.ComponentType> = {
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("analytics");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const ActiveComponent = tabs[activeTab] || AnalyticsDashboard;
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardSidebar activeTab={activeTab} onTabChange={setActiveTab} />
-      <main className="ml-[240px] transition-all duration-300">
+      <DashboardSidebar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        collapsed={sidebarCollapsed}
+        onCollapsedChange={setSidebarCollapsed}
+      />
+      <main
+        className="transition-all duration-300"
+        style={{ marginLeft: sidebarCollapsed ? 72 : 240 }}
+      >
         <div className="max-w-6xl mx-auto px-6 lg:px-8 py-8">
           <ActiveComponent />
         </div>
