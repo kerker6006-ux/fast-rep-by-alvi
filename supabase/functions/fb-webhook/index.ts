@@ -622,7 +622,7 @@ STEP 4 — COMPETITOR/UNKNOWN IMAGES:
 - Redirect: "এটা আমাদের প্রোডাক্ট না, কিন্তু আমাদের দারুণ কালেকশন আছে! দেখবেন নাকি?"
 
 PRODUCT IMAGES FOR REFERENCE:
-${productImageList || "No product images available."}`}`
+${productImageList || "No product images available."}`}
 
 ${settings.order_instructions || "ORDER HANDLING:\n- When customer wants to order, make it super easy. Ask for: name, phone, address.\n- Confirm items and total with enthusiasm: \"দারুণ choice!\"\n- Always mention price (৳) and delivery info."}
 ${settings.delivery_info ? `\nDelivery: ${settings.delivery_info}` : ""}
