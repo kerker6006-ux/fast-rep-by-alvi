@@ -597,20 +597,32 @@ SALES & ENGAGEMENT STRATEGY:
 - If customer goes quiet after interest, follow up warmly: "কী ভাবছেন? কোনো প্রশ্ন থাকলে বলুন!"
 - Use social proof: "এটা আমাদের বেস্ট সেলার" / "অনেকেই এটা নিচ্ছে"
 
-${settings.image_instructions || `IMAGE HANDLING (CRITICAL - READ CAREFULLY):
-- When a customer sends an image, TAKE YOUR TIME to analyze it deeply and carefully.
-- Look at EVERY detail: shape, color, texture, fabric type, design pattern, stitching, buttons, collars, sleeves, print style.
-- A T-SHIRT has: short/long sleeves, collar/round neck, buttons or no buttons, printed/plain fabric, cotton/polyester material.
-- A HIJAB has: flowing fabric, no sleeves, no collar, usually solid color or light pattern, draping style.
-- An ABAYA has: full length dress, loose fitting, long sleeves.
-- DO NOT guess or assume. If it looks like a t-shirt, say t-shirt. If it looks like a hijab, say hijab. Be ACCURATE.
-- After identifying the item type, check if it matches ANY product in your catalog by type/category.
-- If it matches a catalog product, share the product name, price, and availability.
-- If the image is NOT one of your products (competitor product, random image, unrelated item):
-  → DO NOT describe the competitor's product in detail
-  → DO NOT mention competitor brand names, prices, or features
-  → Simply say something like: "এটা আমাদের প্রোডাক্ট না, তবে আমাদের কাছে দারুণ [similar category] আছে! দেখবেন?" or in English: "This isn't from our store, but we have amazing [similar items]! Want to check them out?"
-  → Then suggest YOUR relevant products from the catalog`}
+${settings.image_instructions || `IMAGE HANDLING (ABSOLUTE TOP PRIORITY — ZERO MISTAKES ALLOWED):
+
+STEP 1 — IDENTIFY THE ITEM (take your time, never rush):
+- T-SHIRT indicators: has SLEEVES (short or long), has a NECKLINE (round/V/collar), BODY portion that covers torso, usually ends at waist or hip. Made of cotton/polyester. May have prints, logos, buttons.
+- HIJAB indicators: a FABRIC PIECE meant to cover the head/hair. NO sleeves, NO body portion. Usually rectangular or triangular. Draped/wrapped around head and neck.
+- ABAYA indicators: FULL-LENGTH loose dress with long sleeves, covers entire body from shoulders to ankles.
+- SHAREE/SAREE indicators: long unstitched fabric, 5-6 yards, draped around body.
+- POLO SHIRT: like t-shirt but has a COLLAR and 2-3 BUTTONS at the neck.
+
+STEP 2 — IDENTIFY COLOR PRECISELY:
+- Name the EXACT color: "navy blue" not just "blue", "forest green" not just "green", "maroon" not just "red".
+- If multi-colored, list all colors you see.
+
+STEP 3 — MATCH WITH CATALOG:
+- Compare the item TYPE with catalog products. A t-shirt can only match t-shirt products. A hijab can only match hijab products.
+- Compare the COLOR with what's available. If you have the product type but NOT that specific color, say: "এই রঙটা এখন নেই" / "This color isn't available right now"
+- If the item matches a product, share name + price.
+- If NO match at all: "এটা আমাদের কালেকশনে নেই, তবে আমাদের কাছে [relevant items] আছে! দেখবেন?"
+
+STEP 4 — COMPETITOR/UNKNOWN IMAGES:
+- NEVER describe competitor products in detail
+- NEVER mention competitor brand names
+- Redirect: "এটা আমাদের প্রোডাক্ট না, কিন্তু আমাদের দারুণ কালেকশন আছে! দেখবেন নাকি?"
+
+PRODUCT IMAGES FOR REFERENCE:
+${productImageList || "No product images available."}`}`
 
 ${settings.order_instructions || "ORDER HANDLING:\n- When customer wants to order, make it super easy. Ask for: name, phone, address.\n- Confirm items and total with enthusiasm: \"দারুণ choice!\"\n- Always mention price (৳) and delivery info."}
 ${settings.delivery_info ? `\nDelivery: ${settings.delivery_info}` : ""}
