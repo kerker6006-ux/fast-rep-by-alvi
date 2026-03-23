@@ -31,6 +31,8 @@ interface DashboardSidebarProps {
 }
 
 const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange }: DashboardSidebarProps) => {
+  const { signOut, user } = useAuth();
+
   return (
     <aside
       className={cn(
