@@ -500,8 +500,9 @@ async function generateAiReply(
       : m.content || "",
   }));
 
+  const hasImage = !!imageUrl;
   const currentUserMessage: any = imageUrl
-    ? { role: "user", content: [{ type: "text", text: messageText || "Customer sent this image. Identify the product and tell the price." }, { type: "image_url", image_url: { url: imageUrl } }] }
+    ? { role: "user", content: [{ type: "text", text: messageText || "Customer sent this image. Look at it VERY carefully. Identify exactly what type of item it is (t-shirt, hijab, abaya, etc.) based on visual details like sleeves, collar, fabric, shape. Then check if it matches any product in the catalog." }, { type: "image_url", image_url: { url: imageUrl } }] }
     : { role: "user", content: messageText || "" };
 
   let examplesSection = "";
