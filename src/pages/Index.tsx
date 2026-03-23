@@ -8,6 +8,8 @@ import AutoReplyRules from "@/components/AutoReplyRules";
 import AnalyticsDashboard from "@/components/AnalyticsDashboard";
 import ScheduledMessages from "@/components/ScheduledMessages";
 import AiTraining from "@/components/AiTraining";
+import AdminPanel from "@/components/AdminPanel";
+import FbPageConnection from "@/components/FbPageConnection";
 
 const tabs: Record<string, React.ComponentType> = {
   analytics: AnalyticsDashboard,
@@ -17,7 +19,9 @@ const tabs: Record<string, React.ComponentType> = {
   conversations: ConversationsView,
   "auto-reply": AutoReplyRules,
   scheduled: ScheduledMessages,
+  "fb-pages": FbPageConnection,
   settings: BotSettings,
+  admin: AdminPanel,
 };
 
 const Index = () => {
