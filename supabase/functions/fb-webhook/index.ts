@@ -651,13 +651,20 @@ IMPORTANT: You are chatting on Facebook Messenger. Keep messages natural and con
 
   const historyWithoutLast = chatHistory.slice(0, -1);
 
+  const requestBody: any = {
+    model: hasImage ? "google/gemini-2.5-pro" : "google/gemini-2.5-flash",
+    messages: [{ role: "system", content: systemPrompt }, ...historyWithoutLast, currentUserMessage],
+  };
+
+  // Enable reasoning for image messages so the AI thinks deeply before responding
+  if (hasImage) {
+    requestBody.reasoning = { effort: "high" };
+  }
+
   const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: hasImage ? "google/gemini-2.5-pro" : "google/gemini-2.5-flash",
-      messages: [{ role: "system", content: systemPrompt }, ...historyWithoutLast, currentUserMessage],
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!aiResponse.ok) {
