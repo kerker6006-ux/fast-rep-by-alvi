@@ -12,6 +12,7 @@ import { Save, Globe, MessageCircle, Info } from "lucide-react";
 
 const BotSettings = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [settings, setSettings] = useState<Record<string, string>>({});
 
   const { data: dbSettings, isLoading } = useQuery({
