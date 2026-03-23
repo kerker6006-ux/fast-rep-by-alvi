@@ -46,7 +46,7 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
         {!collapsed && (
           <div className="animate-fade-in overflow-hidden">
             <p className="font-semibold text-sm text-sidebar-primary-foreground leading-tight truncate">
-              Fast Rep By ALVI
+              Fast Rep
             </p>
             <p className="text-[11px] text-sidebar-foreground/60 leading-tight truncate">
               AI Messenger Bot
