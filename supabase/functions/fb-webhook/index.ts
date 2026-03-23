@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const VERIFY_TOKEN = "fb_bot_verify_2024";
+// Verify token is now per-page, stored in fb_pages table
 
 const IMAGE_REQUEST_KEYWORDS = [
   "pic", "picture", "photo", "image", "photos", "images",
