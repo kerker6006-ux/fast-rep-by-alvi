@@ -423,7 +423,7 @@ async function saveOutgoingMessage(
 }
 
 function parseMaxSentences(maxReplyLength?: string): number {
-  if (!maxReplyLength) return 2;
+  if (!maxReplyLength) return 4;
   const match = maxReplyLength.match(/\d+/);
   if (!match) return 2;
   const parsed = Number.parseInt(match[0], 10);
