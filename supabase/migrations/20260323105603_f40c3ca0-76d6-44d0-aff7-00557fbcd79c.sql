@@ -1,0 +1,1 @@
+ALTER TABLE public.bot_settings DROP CONSTRAINT IF EXISTS bot_settings_setting_key_unique;
