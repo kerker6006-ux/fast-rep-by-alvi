@@ -24,6 +24,7 @@ export type Database = {
           response_text_bn: string | null
           trigger_keywords: string[]
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -34,6 +35,7 @@ export type Database = {
           response_text_bn?: string | null
           trigger_keywords?: string[]
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -44,6 +46,7 @@ export type Database = {
           response_text_bn?: string | null
           trigger_keywords?: string[]
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -54,6 +57,7 @@ export type Database = {
           setting_key: string
           setting_value: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -61,6 +65,7 @@ export type Database = {
           setting_key: string
           setting_value: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -68,6 +73,7 @@ export type Database = {
           setting_key?: string
           setting_value?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -80,6 +86,7 @@ export type Database = {
           last_message_at: string | null
           sender_name: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -89,6 +96,7 @@ export type Database = {
           last_message_at?: string | null
           sender_name?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -98,6 +106,37 @@ export type Database = {
           last_message_at?: string | null
           sender_name?: string | null
           updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      fb_pages: {
+        Row: {
+          created_at: string
+          fb_page_id: string
+          id: string
+          is_active: boolean
+          page_access_token: string
+          page_name: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          fb_page_id: string
+          id?: string
+          is_active?: boolean
+          page_access_token: string
+          page_name?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          fb_page_id?: string
+          id?: string
+          is_active?: boolean
+          page_access_token?: string
+          page_name?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -110,6 +149,7 @@ export type Database = {
           fb_message_id: string | null
           id: string
           image_url: string | null
+          user_id: string | null
         }
         Insert: {
           content?: string | null
@@ -119,6 +159,7 @@ export type Database = {
           fb_message_id?: string | null
           id?: string
           image_url?: string | null
+          user_id?: string | null
         }
         Update: {
           content?: string | null
@@ -128,6 +169,7 @@ export type Database = {
           fb_message_id?: string | null
           id?: string
           image_url?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -152,6 +194,7 @@ export type Database = {
           status: Database["public"]["Enums"]["order_status"]
           total: number
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           conversation_id?: string | null
@@ -165,6 +208,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["order_status"]
           total?: number
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           conversation_id?: string | null
@@ -178,6 +222,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["order_status"]
           total?: number
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -203,6 +248,7 @@ export type Database = {
           name_bn: string | null
           price: number
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           category?: string | null
@@ -217,6 +263,7 @@ export type Database = {
           name_bn?: string | null
           price?: number
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           category?: string | null
@@ -231,6 +278,7 @@ export type Database = {
           name_bn?: string | null
           price?: number
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -268,6 +316,7 @@ export type Database = {
           scheduled_at: string
           sent_at: string | null
           status: Database["public"]["Enums"]["scheduled_message_status"]
+          user_id: string | null
         }
         Insert: {
           content: string
@@ -278,6 +327,7 @@ export type Database = {
           scheduled_at: string
           sent_at?: string | null
           status?: Database["public"]["Enums"]["scheduled_message_status"]
+          user_id?: string | null
         }
         Update: {
           content?: string
@@ -288,6 +338,7 @@ export type Database = {
           scheduled_at?: string
           sent_at?: string | null
           status?: Database["public"]["Enums"]["scheduled_message_status"]
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -299,14 +350,39 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "admin" | "user"
       order_status:
         | "pending"
         | "confirmed"
@@ -441,6 +517,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "user"],
       order_status: [
         "pending",
         "confirmed",
