@@ -3,34 +3,33 @@ import {
   BarChart3, Package, ShoppingCart, MessageSquare,
   Zap, Clock, Settings, Bot, Brain, ChevronLeft, ChevronRight
 } from "lucide-react";
-import { useState } from "react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 type NavItem = {
   id: string;
   label: string;
-  labelBn: string;
   icon: React.ElementType;
 };
 
 const navItems: NavItem[] = [
-  { id: "analytics", label: "Analytics", labelBn: "বিশ্লেষণ", icon: BarChart3 },
-  { id: "ai-training", label: "AI Training", labelBn: "AI ট্রেনিং", icon: Brain },
-  { id: "products", label: "Products", labelBn: "পণ্য", icon: Package },
-  { id: "orders", label: "Orders", labelBn: "অর্ডার", icon: ShoppingCart },
-  { id: "conversations", label: "Chats", labelBn: "চ্যাট", icon: MessageSquare },
-  { id: "auto-reply", label: "Auto-Reply", labelBn: "অটো-রিপ্লাই", icon: Zap },
-  { id: "scheduled", label: "Scheduled", labelBn: "নির্ধারিত", icon: Clock },
-  { id: "settings", label: "Settings", labelBn: "সেটিংস", icon: Settings },
+  { id: "analytics", label: "Analytics", icon: BarChart3 },
+  { id: "ai-training", label: "AI Training", icon: Brain },
+  { id: "products", label: "Products", icon: Package },
+  { id: "orders", label: "Orders", icon: ShoppingCart },
+  { id: "conversations", label: "Chats", icon: MessageSquare },
+  { id: "auto-reply", label: "Auto-Reply", icon: Zap },
+  { id: "scheduled", label: "Scheduled", icon: Clock },
+  { id: "settings", label: "Settings", icon: Settings },
 ];
 
 interface DashboardSidebarProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
+  collapsed: boolean;
+  onCollapsedChange: (collapsed: boolean) => void;
 }
 
-const DashboardSidebar = ({ activeTab, onTabChange }: DashboardSidebarProps) => {
-  const [collapsed, setCollapsed] = useState(false);
-
+const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange }: DashboardSidebarProps) => {
   return (
     <aside
       className={cn(
@@ -47,7 +46,7 @@ const DashboardSidebar = ({ activeTab, onTabChange }: DashboardSidebarProps) => 
         {!collapsed && (
           <div className="animate-fade-in overflow-hidden">
             <p className="font-semibold text-sm text-sidebar-primary-foreground leading-tight truncate">
-              FB Auto Bot
+              Fast Rep By ALVI
             </p>
             <p className="text-[11px] text-sidebar-foreground/60 leading-tight truncate">
               AI Messenger Bot
@@ -60,7 +59,7 @@ const DashboardSidebar = ({ activeTab, onTabChange }: DashboardSidebarProps) => 
       <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
-          return (
+          const button = (
             <button
               key={item.id}
               onClick={() => onTabChange(item.id)}
@@ -70,7 +69,8 @@ const DashboardSidebar = ({ activeTab, onTabChange }: DashboardSidebarProps) => 
                 "active:scale-[0.97]",
                 isActive
                   ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm shadow-sidebar-primary/30"
-                  : "text-sidebar-foreground"
+                  : "text-sidebar-foreground",
+                collapsed && "justify-center px-0"
               )}
             >
               <item.icon className="h-[18px] w-[18px] shrink-0" />
@@ -79,14 +79,30 @@ const DashboardSidebar = ({ activeTab, onTabChange }: DashboardSidebarProps) => 
               )}
             </button>
           );
+
+          if (collapsed) {
+            return (
+              <Tooltip key={item.id} delayDuration={0}>
+                <TooltipTrigger asChild>{button}</TooltipTrigger>
+                <TooltipContent side="right" className="font-medium">
+                  {item.label}
+                </TooltipContent>
+              </Tooltip>
+            );
+          }
+
+          return button;
         })}
       </nav>
 
       {/* Collapse toggle */}
       <div className="border-t border-sidebar-border p-2 shrink-0">
         <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+          onClick={() => onCollapsedChange(!collapsed)}
+          className={cn(
+            "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors",
+            collapsed && "justify-center px-0"
+          )}
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           {!collapsed && <span>Collapse</span>}
