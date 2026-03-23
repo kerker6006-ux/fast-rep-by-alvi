@@ -158,26 +158,34 @@ const FbPageConnection = () => {
         <div className="space-y-3">
           {pages.map((page: any) => (
             <Card key={page.id} className={!page.is_active ? "opacity-60" : ""}>
-              <CardContent className="flex items-center justify-between py-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Globe className="h-4 w-4 text-primary" />
-                    <span className="font-medium text-sm">{page.page_name || "Unnamed Page"}</span>
-                    <Badge variant={page.is_active ? "default" : "secondary"} className="text-[10px]">
-                      {page.is_active ? "Active" : "Inactive"}
-                    </Badge>
+              <CardContent className="py-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-primary" />
+                      <span className="font-medium text-sm">{page.page_name || "Unnamed Page"}</span>
+                      <Badge variant={page.is_active ? "default" : "secondary"} className="text-[10px]">
+                        {page.is_active ? "Active" : "Inactive"}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground font-mono">ID: {page.fb_page_id}</p>
                   </div>
-                  <p className="text-xs text-muted-foreground font-mono">ID: {page.fb_page_id}</p>
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={page.is_active}
+                      onCheckedChange={(checked) => togglePage.mutate({ id: page.id, is_active: checked })}
+                    />
+                    <Button variant="ghost" size="icon" onClick={() => deletePage.mutate(page.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Switch
-                    checked={page.is_active}
-                    onCheckedChange={(checked) => togglePage.mutate({ id: page.id, is_active: checked })}
-                  />
-                  <Button variant="ghost" size="icon" onClick={() => deletePage.mutate(page.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
+                {page.verify_token && (
+                  <div className="bg-muted/50 rounded-md px-3 py-2">
+                    <p className="text-xs text-muted-foreground mb-1">Verify Token (use in Facebook webhook settings):</p>
+                    <code className="text-xs font-mono select-all">{page.verify_token}</code>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
