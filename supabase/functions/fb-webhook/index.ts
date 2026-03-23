@@ -182,20 +182,6 @@ async function handleMessagingEvent(
   const attachments = event.message.attachments;
   const fbMessageId = event.message?.mid || null;
 
-  // Prevent duplicate replies
-  if (fbMessageId) {
-    const { data: existingIncoming } = await supabase
-      .from("messages")
-      .select("id")
-      .eq("fb_message_id", fbMessageId)
-      .maybeSingle();
-
-    if (existingIncoming) {
-      console.log("Duplicate incoming message ignored:", fbMessageId);
-      return;
-    }
-  }
-
   // Get or create conversation (with user_id)
   const conversationId = await getOrCreateConversation(supabase, senderId, pageAccessToken, userId);
   if (!conversationId) return;
@@ -206,8 +192,8 @@ async function handleMessagingEvent(
     if (imageAttachment) imageUrl = imageAttachment.payload?.url || null;
   }
 
-  // Save incoming message (with user_id)
-  await supabase.from("messages").insert({
+  // Save incoming message with DB-level idempotency guard (prevents duplicate replies)
+  const { error: incomingInsertError } = await supabase.from("messages").insert({
     conversation_id: conversationId,
     fb_message_id: fbMessageId,
     direction: "incoming",
@@ -215,6 +201,16 @@ async function handleMessagingEvent(
     image_url: imageUrl,
     user_id: userId,
   });
+
+  if (incomingInsertError) {
+    if (fbMessageId && incomingInsertError.code === "23505") {
+      console.log("Duplicate incoming message ignored:", fbMessageId);
+      return;
+    }
+
+    console.error("Failed to save incoming message:", incomingInsertError);
+    return;
+  }
 
   await supabase.from("conversations").update({
     last_message: messageText || "[Image]",
@@ -652,14 +648,9 @@ IMPORTANT: You are chatting on Facebook Messenger. Keep messages natural and con
   const historyWithoutLast = chatHistory.slice(0, -1);
 
   const requestBody: any = {
-    model: hasImage ? "google/gemini-2.5-pro" : "google/gemini-2.5-flash",
+    model: "google/gemini-2.5-flash",
     messages: [{ role: "system", content: systemPrompt }, ...historyWithoutLast, currentUserMessage],
   };
-
-  // Enable reasoning for image messages so the AI thinks deeply before responding
-  if (hasImage) {
-    requestBody.reasoning = { effort: "high" };
-  }
 
   const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
