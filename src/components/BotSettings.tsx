@@ -125,11 +125,7 @@ const BotSettings = () => {
               <Input readOnly value={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fb-webhook`} className="font-mono text-xs" />
               <p className="text-xs text-muted-foreground">Paste this in Facebook Developer App → Messenger → Webhooks → Callback URL</p>
             </div>
-            <div className="space-y-2">
-              <Label>Verify Token</Label>
-              <Input readOnly value={settings.verify_token || "fb_bot_verify_2024"} className="font-mono text-xs" />
-              <p className="text-xs text-muted-foreground">Paste this in Facebook Developer App → Messenger → Webhooks → Verify Token</p>
-            </div>
+            <p className="text-xs text-muted-foreground">Each connected Facebook Page has its own unique Verify Token. Go to the <strong>FB Pages</strong> tab to see yours.</p>
           </CardContent>
         </Card>
 

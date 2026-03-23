@@ -119,6 +119,7 @@ export type Database = {
           page_access_token: string
           page_name: string | null
           user_id: string
+          verify_token: string
         }
         Insert: {
           created_at?: string
@@ -128,6 +129,7 @@ export type Database = {
           page_access_token: string
           page_name?: string | null
           user_id: string
+          verify_token?: string
         }
         Update: {
           created_at?: string
@@ -137,6 +139,7 @@ export type Database = {
           page_access_token?: string
           page_name?: string | null
           user_id?: string
+          verify_token?: string
         }
         Relationships: []
       }
