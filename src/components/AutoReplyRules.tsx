@@ -14,6 +14,7 @@ import { Plus, Trash2, Zap } from "lucide-react";
 
 const AutoReplyRules = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ keywords: "", response: "", responseBn: "", priority: 0 });
 
