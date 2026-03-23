@@ -32,9 +32,20 @@ serve(async (req) => {
     const token = url.searchParams.get("hub.verify_token");
     const challenge = url.searchParams.get("hub.challenge");
 
-    if (mode === "subscribe" && token === VERIFY_TOKEN) {
-      console.log("Webhook verified!");
-      return new Response(challenge, { status: 200, headers: corsHeaders });
+    if (mode === "subscribe" && token) {
+      // Look up any fb_page with this verify_token
+      const { data: matchingPage } = await supabase
+        .from("fb_pages")
+        .select("id")
+        .eq("verify_token", token)
+        .eq("is_active", true)
+        .limit(1)
+        .single();
+
+      if (matchingPage) {
+        console.log("Webhook verified for page:", matchingPage.id);
+        return new Response(challenge, { status: 200, headers: corsHeaders });
+      }
     }
     return new Response("Forbidden", { status: 403, headers: corsHeaders });
   }
