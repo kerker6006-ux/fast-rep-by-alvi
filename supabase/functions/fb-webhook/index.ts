@@ -62,8 +62,14 @@ serve(async (req) => {
           if (!senderId) continue;
           if (senderId === entry.id) continue;
 
-          const messageText = event.message?.text;
-          const attachments = event.message?.attachments;
+          // Skip non-message events (delivery receipts, read receipts, etc.)
+          if (!event.message) continue;
+
+          // Skip echo messages (sent by the page itself)
+          if (event.message.is_echo) continue;
+
+          const messageText = event.message.text;
+          const attachments = event.message.attachments;
 
           // Get or create conversation
           const conversationId = await getOrCreateConversation(supabase, senderId, PAGE_ACCESS_TOKEN);
