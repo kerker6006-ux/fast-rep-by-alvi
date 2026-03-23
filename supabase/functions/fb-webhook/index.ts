@@ -501,8 +501,21 @@ async function generateAiReply(
   }));
 
   const hasImage = !!imageUrl;
+
+  // Build product image reference for visual matching
+  const productImageList = products?.filter((p: any) => p.image_url)
+    .map((p: any) => `${p.name}${p.name_bn ? ` (${p.name_bn})` : ""} [${p.category || 'uncategorized'}] — ৳${p.price} — image: ${p.image_url}`)
+    .join("\n") || "";
+
+  const imageAnalysisPrompt = messageText
+    ? `Customer said: "${messageText}" and sent this image.\n\nSTEP-BY-STEP ANALYSIS (do this internally before replying):\n1. LOOK at the image for 10 seconds. What EXACTLY is in it? Describe it to yourself.\n2. Item type: Is it a t-shirt (has sleeves, collar/round neck, body-length ends at waist/hip)? A hijab (head covering, flowing fabric, NO sleeves)? An abaya (full-length loose dress)? A sharee? A shoe? Something else entirely?\n3. COLOR: What exact color(s) do you see? Be specific — navy blue, forest green, maroon, cream, etc.\n4. PATTERN: Is it printed, plain, striped, embroidered?\n5. Now CHECK the catalog: Does ANY product match BOTH the item type AND the color? If a product matches the type but NOT the color, say that color is not available.\n6. If NOTHING in the catalog matches, say so honestly.\n\nDO NOT GUESS. If you're unsure, say you're unsure. Never call a t-shirt a hijab or vice versa.`
+    : `Customer sent this image without text.\n\nSTEP-BY-STEP ANALYSIS (do this internally before replying):\n1. LOOK at the image carefully. What EXACTLY is this item?\n2. Identify: item type, color(s), pattern, fabric type, any visible brand/text.\n3. Is it a t-shirt? (sleeves, collar, ends at waist) A hijab? (head covering, no sleeves) An abaya? (full-length dress) Something else?\n4. Check your product catalog — does any product match this item's type AND color?\n5. If no match, say honestly it's not available.\n\nDO NOT GUESS. Be precise about what you see.`;
+
   const currentUserMessage: any = imageUrl
-    ? { role: "user", content: [{ type: "text", text: messageText || "Customer sent this image. Look at it VERY carefully. Identify exactly what type of item it is (t-shirt, hijab, abaya, etc.) based on visual details like sleeves, collar, fabric, shape. Then check if it matches any product in the catalog." }, { type: "image_url", image_url: { url: imageUrl } }] }
+    ? { role: "user", content: [
+        { type: "text", text: imageAnalysisPrompt },
+        { type: "image_url", image_url: { url: imageUrl } }
+      ]}
     : { role: "user", content: messageText || "" };
 
   let examplesSection = "";
