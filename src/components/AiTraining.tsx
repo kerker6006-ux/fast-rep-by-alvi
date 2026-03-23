@@ -21,6 +21,7 @@ import {
 
 const AiTraining = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [exampleInput, setExampleInput] = useState("");
   const [exampleOutput, setExampleOutput] = useState("");
