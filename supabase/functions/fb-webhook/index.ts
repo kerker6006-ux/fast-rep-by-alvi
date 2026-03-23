@@ -296,21 +296,47 @@ async function generateAiReply(
     try {
       const examples = JSON.parse(settings.reply_examples);
       if (examples.length > 0) {
-        examplesSection = "\n\nREPLY EXAMPLES (follow this style):\n" +
-          examples.map((ex: any) => `Customer: "${ex.customer}"\nYou reply: "${ex.reply}"`).join("\n\n");
+        examplesSection = "\n\nREPLY EXAMPLES (follow this exact style):\n" +
+          examples.map((ex: any) => `Customer: "${ex.customer}"\nYou reply: "${ex.reply}"${ex.category ? ` [${ex.category}]` : ""}`).join("\n\n");
       }
     } catch {}
   }
 
-  const systemPrompt = `${settings.ai_personality || `You are an AI assistant for "${settings.business_name || "a business"}" Facebook page.`}
+  // Build never-say list
+  let neverSaySection = "";
+  if (settings.never_say_list) {
+    try {
+      const items = JSON.parse(settings.never_say_list);
+      if (items.length > 0) {
+        neverSaySection = "\n\nNEVER DO THESE:\n" + items.map((item: string) => `- ❌ ${item}`).join("\n");
+      }
+    } catch {}
+  }
+  if (settings.ai_never_say) {
+    neverSaySection += `\n${settings.ai_never_say}`;
+  }
+
+  // Build FAQ section
+  let faqSection = "";
+  if (settings.faq_list) {
+    try {
+      const faqs = JSON.parse(settings.faq_list);
+      if (faqs.length > 0) {
+        faqSection = "\n\nFAQ KNOWLEDGE BASE (use these for accurate answers):\n" +
+          faqs.map((f: any) => `Q: ${f.q}\nA: ${f.a}`).join("\n\n");
+      }
+    } catch {}
+  }
+
+  const systemPrompt = `${settings.ai_personality || `You are an AI assistant named "${settings.bot_name || "Fast Rep"}" for "${settings.business_name || "a business"}" Facebook page.`}
 ${settings.business_description ? `\nBusiness: ${settings.business_description}` : ""}
 ${settings.reply_tone ? `\nTone: ${settings.reply_tone}` : ""}
 ${settings.max_reply_length ? `\nReply Length: Keep replies ${settings.max_reply_length}` : ""}
+${settings.emoji_style ? `\nEmoji: ${settings.emoji_style}` : ""}
 
 LANGUAGE RULES:
 - Default language is Bangla (বাংলা). Reply in Bangla by default.
 - If the customer writes in English, reply in English.
-- If the customer writes in Bangla, reply in Bangla.
 - Match the customer's language style and formality level.
 
 PRODUCT CATALOG:
@@ -318,27 +344,29 @@ ${productCatalog}
 
 UNDERSTANDING RULES:
 - Deeply analyze every customer message to understand their actual intent, even if they use slang, shorthand, or informal language.
-- If a customer says "দাম কত" or "price" or "কত" — they're asking about pricing.
-- If a customer says "আছে কি" or "available" — they're asking about availability.
-- If they send an image, carefully match it with the product catalog by visual similarity.
-- Understand Bangla regional dialects and informal text (e.g. "bhai", "ভাই", "vai", "apu", "আপু").
+- "দাম কত", "price", "কত" = asking about pricing
+- "আছে কি", "available" = asking about availability
+- Understand Bangla slang: "bhai", "ভাই", "vai", "apu", "আপু", "bro" etc.
 - Detect sentiment — if frustrated, be extra patient. If excited, match their energy.
+${settings.angry_customer_handling ? `\nANGRY/FRUSTRATED CUSTOMERS:\n${settings.angry_customer_handling}` : ""}
+${settings.after_hours_message ? `\nFALLBACK:\n${settings.after_hours_message}` : ""}
 
-${settings.image_instructions || "IMAGE HANDLING:\n- When a customer sends a product image, identify it from the catalog and share name, price, availability.\n- If no match found, describe what you see and ask for clarification."}
+${settings.image_instructions || "IMAGE HANDLING:\n- When customer sends product image, identify it from catalog, share name, price, availability.\n- If no match, describe what you see and ask for clarification."}
+
+${settings.order_instructions || "ORDER HANDLING:\n- When customer wants to order, ask for: name, phone, address, confirm items.\n- Always mention price (৳) and delivery info."}
+${settings.delivery_info ? `\nDelivery: ${settings.delivery_info}` : ""}
+${settings.payment_methods ? `\nPayment: ${settings.payment_methods}` : ""}
 
 YOUR JOB:
-- Answer product questions, prices, availability, delivery info accurately.
+- Answer product questions, prices, availability accurately.
 - Always mention the price (৳) when discussing products.
 - Be warm, friendly, helpful like a real shop assistant.
-- If you can't find a matching product, politely ask for more details.
 - Keep responses concise but informative. Use emojis naturally 😊
-- When a customer wants to order, ask for: name, phone, address, and confirm items.
-- If the customer confirms an order, summarize: items, total price, delivery info.
-
-${settings.ai_never_say ? `\nNEVER DO:\n${settings.ai_never_say}` : ""}
-
+- When customer confirms order, summarize: items, total, delivery info.
+${neverSaySection}
 ${settings.custom_instructions || ""}
 ${examplesSection}
+${faqSection}
 
 IMPORTANT: You are chatting on Facebook Messenger. Keep messages short and conversational. Don't use markdown formatting.`;
 
