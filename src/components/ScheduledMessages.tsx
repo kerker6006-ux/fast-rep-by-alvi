@@ -22,6 +22,7 @@ const statusColors: Record<string, string> = {
 
 const ScheduledMessages = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ conversationId: "", content: "", scheduledAt: "", messageType: "follow_up" });
 
