@@ -425,10 +425,10 @@ async function saveOutgoingMessage(
 function parseMaxSentences(maxReplyLength?: string): number {
   if (!maxReplyLength) return 4;
   const match = maxReplyLength.match(/\d+/);
-  if (!match) return 2;
+  if (!match) return 4;
   const parsed = Number.parseInt(match[0], 10);
-  if (Number.isNaN(parsed)) return 2;
-  return Math.min(Math.max(parsed, 1), 4);
+  if (Number.isNaN(parsed)) return 4;
+  return Math.min(Math.max(parsed, 1), 6);
 }
 
 function sanitizeReplyText(reply: string, maxReplyLength?: string): string {
