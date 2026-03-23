@@ -14,7 +14,143 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bot_settings: {
+        Row: {
+          created_at: string
+          id: string
+          setting_key: string
+          setting_value: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          setting_key: string
+          setting_value: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          setting_key?: string
+          setting_value?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      conversations: {
+        Row: {
+          created_at: string
+          fb_sender_id: string
+          id: string
+          last_message: string | null
+          last_message_at: string | null
+          sender_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fb_sender_id: string
+          id?: string
+          last_message?: string | null
+          last_message_at?: string | null
+          sender_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fb_sender_id?: string
+          id?: string
+          last_message?: string | null
+          last_message_at?: string | null
+          sender_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          content: string | null
+          conversation_id: string
+          created_at: string
+          direction: string
+          fb_message_id: string | null
+          id: string
+          image_url: string | null
+        }
+        Insert: {
+          content?: string | null
+          conversation_id: string
+          created_at?: string
+          direction: string
+          fb_message_id?: string | null
+          id?: string
+          image_url?: string | null
+        }
+        Update: {
+          content?: string | null
+          conversation_id?: string
+          created_at?: string
+          direction?: string
+          fb_message_id?: string | null
+          id?: string
+          image_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          description_bn: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          keywords: string[] | null
+          name: string
+          name_bn: string | null
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          description_bn?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          keywords?: string[] | null
+          name: string
+          name_bn?: string | null
+          price?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          description_bn?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          keywords?: string[] | null
+          name?: string
+          name_bn?: string | null
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
