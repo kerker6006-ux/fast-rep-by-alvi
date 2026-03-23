@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      auto_reply_rules: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          priority: number
+          response_text: string
+          response_text_bn: string | null
+          trigger_keywords: string[]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          priority?: number
+          response_text: string
+          response_text_bn?: string | null
+          trigger_keywords?: string[]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          priority?: number
+          response_text?: string
+          response_text_bn?: string | null
+          trigger_keywords?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bot_settings: {
         Row: {
           created_at: string
@@ -106,6 +139,56 @@ export type Database = {
           },
         ]
       }
+      orders: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          customer_address: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          id: string
+          items: Json
+          notes: string | null
+          status: Database["public"]["Enums"]["order_status"]
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          customer_address?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          status?: Database["public"]["Enums"]["order_status"]
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          customer_address?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          status?: Database["public"]["Enums"]["order_status"]
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           category: string | null
@@ -151,6 +234,47 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_messages: {
+        Row: {
+          content: string
+          conversation_id: string | null
+          created_at: string
+          id: string
+          message_type: string
+          scheduled_at: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["scheduled_message_status"]
+        }
+        Insert: {
+          content: string
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          message_type?: string
+          scheduled_at: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["scheduled_message_status"]
+        }
+        Update: {
+          content?: string
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          message_type?: string
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["scheduled_message_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -159,7 +283,13 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      order_status:
+        | "pending"
+        | "confirmed"
+        | "processing"
+        | "delivered"
+        | "cancelled"
+      scheduled_message_status: "pending" | "sent" | "failed" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -286,6 +416,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      order_status: [
+        "pending",
+        "confirmed",
+        "processing",
+        "delivered",
+        "cancelled",
+      ],
+      scheduled_message_status: ["pending", "sent", "failed", "cancelled"],
+    },
   },
 } as const
