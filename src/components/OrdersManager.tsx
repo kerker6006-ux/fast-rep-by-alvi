@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import {
   Package, Phone, MapPin, User, Calendar as CalendarIcon,
   FileText, Pencil, Trash2, X, Search, ShoppingCart,
-  Clock, CheckCircle, Truck, XCircle, Settings2,
+  Clock, CheckCircle, Truck, XCircle, Settings2, Download,
 } from "lucide-react";
 
 type OrderStatus = "pending" | "confirmed" | "processing" | "delivered" | "cancelled";
