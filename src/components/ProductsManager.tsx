@@ -237,9 +237,20 @@ const ProductsManager = () => {
                   <span className="text-lg font-bold text-primary">৳{p.price}</span>
                 </div>
                 {p.description && <p className="text-sm text-muted-foreground line-clamp-2">{p.description}</p>}
-                {p.category && (
-                  <span className="inline-block text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">{p.category}</span>
-                )}
+                <div className="flex flex-wrap gap-1">
+                  {p.category && (
+                    <span className="inline-block text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">{p.category}</span>
+                  )}
+                  {(p as any).color && (
+                    <span className="inline-block text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{(p as any).color}</span>
+                  )}
+                  {(p as any).size && (
+                    <span className="inline-block text-xs bg-accent text-accent-foreground px-2 py-0.5 rounded-full">{(p as any).size}</span>
+                  )}
+                  {(p as any).material && (
+                    <span className="inline-block text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{(p as any).material}</span>
+                  )}
+                </div>
                 <div className="flex gap-2 pt-2">
                   <Button variant="outline" size="sm" onClick={() => openEdit(p)} className="gap-1">
                     <Pencil className="h-3 w-3" /> Edit
