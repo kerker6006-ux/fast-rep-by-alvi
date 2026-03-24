@@ -675,6 +675,12 @@ ${faqSection}`;
   const aiData = await aiResponse.json();
   const rawReply = aiData.choices?.[0]?.message?.content || "";
   const cleanedReply = sanitizeReplyText(rawReply, settings.max_reply_length);
+
+  // Log AI usage
+  const callType = hasImage ? "image" : "text";
+  const estimatedCost = hasImage ? 0.003 : 0.0005;
+  await logAiUsage(supabase, userId, callType, "google/gemini-2.5-flash", estimatedCost);
+
   return cleanedReply || settings.welcome_message || "ধন্যবাদ! আপনার মেসেজ পেয়েছি।";
 }
 
