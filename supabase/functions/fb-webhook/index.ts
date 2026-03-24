@@ -231,14 +231,40 @@ async function handleMessagingEvent(
   );
   if (imageRequestHandled) return;
 
+  // Check credit balance before AI reply
+  if (userId) {
+    const { data: creditRow } = await supabase
+      .from("user_credits")
+      .select("balance")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const balance = creditRow?.balance ?? 0;
+    if (balance <= 0) {
+      const noCreditsMsg = settings.no_credits_message || "দুঃখিত, এই মুহূর্তে আমাদের বট সেবা বন্ধ আছে। অনুগ্রহ করে পরে আবার চেষ্টা করুন।";
+      await sendFbMessage(pageAccessToken, senderId, noCreditsMsg);
+      await saveOutgoingMessage(supabase, conversationId, noCreditsMsg, null, userId);
+      return;
+    }
+  }
+
   // AI-powered response
   if (lovableApiKey) {
     try {
+      const hasImage = !!imageUrl;
       const replyText = await generateAiReply(
         supabase, lovableApiKey, conversationId, messageText, imageUrl, settings, userId
       );
       await sendFbMessage(pageAccessToken, senderId, replyText);
       await saveOutgoingMessage(supabase, conversationId, replyText, null, userId);
+
+      // Deduct credits
+      if (userId) {
+        const costPerText = Number(settings.credit_cost_text) || 1;
+        const costPerImage = Number(settings.credit_cost_image) || 3;
+        const deduction = hasImage ? costPerImage : costPerText;
+        await deductCredits(supabase, userId, deduction, hasImage ? "image_reply" : "text_reply");
+      }
 
       await detectAndCreateOrder(supabase, lovableApiKey, conversationId, messageText, replyText, userId);
     } catch (aiError) {
@@ -772,5 +798,35 @@ async function logAiUsage(
     });
   } catch (e) {
     console.error("Failed to log AI usage:", e);
+  }
+}
+
+async function deductCredits(
+  supabase: any, userId: string, amount: number, type: string
+) {
+  try {
+    const { data: creditRow } = await supabase
+      .from("user_credits")
+      .select("balance")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (!creditRow) return;
+
+    const newBalance = Math.max(0, Number(creditRow.balance) - amount);
+    await supabase
+      .from("user_credits")
+      .update({ balance: newBalance, updated_at: new Date().toISOString() })
+      .eq("user_id", userId);
+
+    // Log as negative transaction
+    await supabase.from("credit_transactions").insert({
+      user_id: userId,
+      amount: -amount,
+      type,
+      description: type === "image_reply" ? "AI image analysis" : "AI text reply",
+    });
+  } catch (e) {
+    console.error("Failed to deduct credits:", e);
   }
 }
