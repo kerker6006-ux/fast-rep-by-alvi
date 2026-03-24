@@ -184,12 +184,12 @@ const OrdersManager = () => {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Eye className="h-4 w-4 text-muted-foreground" />
-                    Order #{order.id.slice(0, 8)}
+                    {order.customer_name || order.conversations?.sender_name || `Order #${order.id.slice(0, 8)}`}
                   </CardTitle>
                   <Badge className={statusColors[order.status] || ""}>{order.status}</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {new Date(order.created_at).toLocaleString()}
+                  {new Date(order.created_at).toLocaleString()} · #{order.id.slice(0, 8)}
                 </p>
               </CardHeader>
               <CardContent className="pt-0">

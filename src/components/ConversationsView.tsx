@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquare, User, Bot, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MessageSquare, User, Clock, ArrowLeft } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 type Conversation = {
@@ -48,6 +49,8 @@ const ConversationsView = () => {
     refetchInterval: 5000,
   });
 
+  const selectedConversation = conversations?.find(c => c.id === selectedConvo);
+
   return (
     <div className="space-y-4">
       <div>
@@ -56,8 +59,8 @@ const ConversationsView = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[600px]">
-        {/* Conversation list */}
-        <Card className="md:col-span-1 overflow-hidden">
+        {/* Conversation list - hide on mobile when a convo is selected */}
+        <Card className={`md:col-span-1 overflow-hidden ${selectedConvo ? "hidden md:block" : ""}`}>
           <ScrollArea className="h-full">
             {isLoading ? (
               <div className="p-4 space-y-3">
@@ -80,8 +83,10 @@ const ConversationsView = () => {
                       <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                         <User className="h-4 w-4 text-primary" />
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{c.sender_name || c.fb_sender_id}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm truncate">
+                          {c.sender_name || `Customer ${c.fb_sender_id.slice(-6)}`}
+                        </p>
                         <p className="text-xs text-muted-foreground truncate">{c.last_message || "No messages"}</p>
                         {c.last_message_at && (
                           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
@@ -98,8 +103,8 @@ const ConversationsView = () => {
           </ScrollArea>
         </Card>
 
-        {/* Message thread */}
-        <Card className="md:col-span-2 overflow-hidden flex flex-col">
+        {/* Message thread - show on mobile when a convo is selected */}
+        <Card className={`md:col-span-2 overflow-hidden flex flex-col ${selectedConvo ? "" : "hidden md:flex"}`}>
           {!selectedConvo ? (
             <div className="flex-1 flex items-center justify-center text-muted-foreground">
               <div className="text-center">
@@ -108,27 +113,41 @@ const ConversationsView = () => {
               </div>
             </div>
           ) : (
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-3">
-                {messages?.map(m => (
-                  <div key={m.id} className={`flex ${m.direction === "outgoing" ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
-                      m.direction === "outgoing"
-                        ? "bg-primary text-primary-foreground rounded-br-md"
-                        : "bg-muted rounded-bl-md"
-                    }`}>
-                      {m.image_url && (
-                        <img src={m.image_url} alt="" className="rounded-lg max-w-[200px] mb-2" />
-                      )}
-                      {m.content && <p className="text-sm whitespace-pre-wrap">{m.content}</p>}
-                      <p className={`text-xs mt-1 ${m.direction === "outgoing" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                        {m.direction === "outgoing" ? "🤖 Bot" : "👤 Customer"} · {new Date(m.created_at).toLocaleTimeString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+            <>
+              {/* Header with back button */}
+              <div className="p-3 border-b flex items-center gap-3">
+                <Button variant="ghost" size="icon" className="md:hidden h-8 w-8" onClick={() => setSelectedConvo(null)}>
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <User className="h-4 w-4 text-primary" />
+                </div>
+                <span className="font-medium text-sm">
+                  {selectedConversation?.sender_name || `Customer ${selectedConversation?.fb_sender_id.slice(-6)}`}
+                </span>
               </div>
-            </ScrollArea>
+              <ScrollArea className="flex-1 p-4">
+                <div className="space-y-3">
+                  {messages?.map(m => (
+                    <div key={m.id} className={`flex ${m.direction === "outgoing" ? "justify-end" : "justify-start"}`}>
+                      <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
+                        m.direction === "outgoing"
+                          ? "bg-primary text-primary-foreground rounded-br-md"
+                          : "bg-muted rounded-bl-md"
+                      }`}>
+                        {m.image_url && (
+                          <img src={m.image_url} alt="" className="rounded-lg max-w-[200px] mb-2" />
+                        )}
+                        {m.content && <p className="text-sm whitespace-pre-wrap">{m.content}</p>}
+                        <p className={`text-xs mt-1 ${m.direction === "outgoing" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                          {m.direction === "outgoing" ? "🤖 Bot" : "👤 Customer"} · {new Date(m.created_at).toLocaleTimeString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </>
           )}
         </Card>
       </div>
