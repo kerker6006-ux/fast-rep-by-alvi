@@ -851,27 +851,32 @@ async function deductCredits(
   supabase: any, userId: string, amount: number, type: string
 ) {
   try {
-    const { data: creditRow } = await supabase
+    const { data: creditRow, error: selectErr } = await supabase
       .from("user_credits")
       .select("balance")
       .eq("user_id", userId)
       .maybeSingle();
 
-    if (!creditRow) return;
+    if (selectErr) { console.error("Credit select error:", selectErr); return; }
+    if (!creditRow) { console.error("No credit row found for user:", userId); return; }
 
     const newBalance = Math.max(0, Number(creditRow.balance) - amount);
-    await supabase
+    const { error: updateErr } = await supabase
       .from("user_credits")
       .update({ balance: newBalance, updated_at: new Date().toISOString() })
       .eq("user_id", userId);
 
+    if (updateErr) { console.error("Credit update error:", updateErr); return; }
+    console.log(`Credits deducted: ${amount} for ${type}. Balance: ${creditRow.balance} -> ${newBalance}`);
+
     // Log as negative transaction
-    await supabase.from("credit_transactions").insert({
+    const { error: insertErr } = await supabase.from("credit_transactions").insert({
       user_id: userId,
       amount: -amount,
       type,
       description: type === "image_reply" ? "AI image analysis" : "AI text reply",
     });
+    if (insertErr) console.error("Credit transaction insert error:", insertErr);
   } catch (e) {
     console.error("Failed to deduct credits:", e);
   }
