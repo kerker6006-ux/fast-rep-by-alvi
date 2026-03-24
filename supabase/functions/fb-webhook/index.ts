@@ -267,6 +267,7 @@ async function handleMessagingEvent(
       }
 
       await detectAndCreateOrder(supabase, lovableApiKey, conversationId, messageText, replyText, userId);
+      await detectAndCreateComplaint(supabase, lovableApiKey, conversationId, senderId, pageAccessToken, messageText, replyText, userId);
     } catch (aiError) {
       console.error("AI processing error:", aiError);
       const fallback = settings.welcome_message || "ধন্যবাদ! আমরা শীঘ্রই আপনার সাথে যোগাযোগ করব।";
