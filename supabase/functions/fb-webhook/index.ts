@@ -768,19 +768,33 @@ async function detectAndCreateOrder(
     const orderData = JSON.parse(toolCall.function.arguments);
     if (!orderData.is_order) return;
 
+    // Only create order if ALL required details are present
+    const hasName = !!orderData.customer_name && orderData.customer_name.trim().length > 0;
+    const hasPhone = !!orderData.customer_phone && orderData.customer_phone.trim().length > 0;
+    const hasAddress = !!orderData.customer_address && orderData.customer_address.trim().length > 0;
+    const hasItems = Array.isArray(orderData.items) && orderData.items.length > 0 && orderData.items.every((i: any) => i.name && i.quantity > 0);
+    const hasTotal = orderData.total > 0;
+
+    if (!hasName || !hasPhone || !hasAddress || !hasItems || !hasTotal) {
+      console.log("Order details incomplete, skipping creation. Missing:", {
+        name: !hasName, phone: !hasPhone, address: !hasAddress, items: !hasItems, total: !hasTotal
+      });
+      return;
+    }
+
     const insertData: any = {
       conversation_id: conversationId,
-      customer_name: orderData.customer_name || null,
-      customer_phone: orderData.customer_phone || null,
-      customer_address: orderData.customer_address || null,
-      items: orderData.items || [],
-      total: orderData.total || 0,
+      customer_name: orderData.customer_name,
+      customer_phone: orderData.customer_phone,
+      customer_address: orderData.customer_address,
+      items: orderData.items,
+      total: orderData.total,
       status: "pending",
     };
     if (userId) insertData.user_id = userId;
 
     await supabase.from("orders").insert(insertData);
-    console.log("Order created for conversation:", conversationId);
+    console.log("Order created with full details for conversation:", conversationId);
   } catch (e) {
     console.error("Order detection error:", e);
   }
