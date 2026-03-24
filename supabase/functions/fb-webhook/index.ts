@@ -446,6 +446,35 @@ async function findBestProductForImageRequest(
   return null;
 }
 
+function findMentionedProduct(products: any[], aiReply: string, customerMsg: string | null): any | null {
+  if (!products?.length) return null;
+  const combined = `${aiReply} ${customerMsg || ""}`.toLowerCase();
+  
+  let best: any = null;
+  let bestScore = 0;
+
+  for (const p of products) {
+    const terms = [
+      p.name, p.name_bn, p.color,
+      ...((p.keywords || []) as string[]),
+    ].filter(Boolean).map((t: string) => t.toLowerCase().trim()).filter((t: string) => t.length > 1);
+
+    let score = 0;
+    for (const term of terms) {
+      if (combined.includes(term)) score += term.length >= 4 ? 3 : 1;
+    }
+    // Boost if price is mentioned in the reply
+    if (score > 0 && aiReply.includes(String(p.price))) score += 2;
+
+    if (score > bestScore) {
+      best = p;
+      bestScore = score;
+    }
+  }
+
+  return bestScore >= 2 ? best : null;
+}
+
 async function sendFbMessage(pageAccessToken: string, recipientId: string, text: string) {
   await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${pageAccessToken}`, {
     method: "POST",
