@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,17 +11,24 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { Package, Phone, MapPin, User, Eye, Calendar as CalendarIcon, FileText, Pencil, Trash2, X, Search } from "lucide-react";
+import {
+  Package, Phone, MapPin, User, Calendar as CalendarIcon,
+  FileText, Pencil, Trash2, X, Search, ShoppingCart,
+  Clock, CheckCircle, Truck, XCircle, Settings2,
+} from "lucide-react";
 
-const statusColors: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  confirmed: "bg-blue-100 text-blue-800",
-  processing: "bg-purple-100 text-purple-800",
-  delivered: "bg-green-100 text-green-800",
-  cancelled: "bg-red-100 text-red-800",
+type OrderStatus = "pending" | "confirmed" | "processing" | "delivered" | "cancelled";
+
+const statusConfig: Record<OrderStatus, { label: string; icon: React.ElementType; color: string; bgColor: string }> = {
+  pending: { label: "Pending", icon: Clock, color: "text-amber-600", bgColor: "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800" },
+  confirmed: { label: "Confirmed", icon: CheckCircle, color: "text-primary", bgColor: "bg-primary/5 border-primary/20" },
+  processing: { label: "Processing", icon: Settings2, color: "text-violet-600", bgColor: "bg-violet-50 border-violet-200 dark:bg-violet-950/30 dark:border-violet-800" },
+  delivered: { label: "Delivered", icon: Truck, color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800" },
+  cancelled: { label: "Cancelled", icon: XCircle, color: "text-destructive", bgColor: "bg-destructive/5 border-destructive/20" },
 };
 
 const OrdersManager = () => {
@@ -31,6 +38,7 @@ const OrdersManager = () => {
   const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusTab, setStatusTab] = useState<string>("all");
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["orders"],
@@ -91,120 +99,150 @@ const OrdersManager = () => {
   });
 
   const filteredOrders = orders?.filter((o: any) => {
+    if (statusTab !== "all" && o.status !== statusTab) return false;
     if (dateFilter) {
-      const orderDate = new Date(o.created_at);
-      if (
-        orderDate.getFullYear() !== dateFilter.getFullYear() ||
-        orderDate.getMonth() !== dateFilter.getMonth() ||
-        orderDate.getDate() !== dateFilter.getDate()
-      ) return false;
+      const d = new Date(o.created_at);
+      if (d.getFullYear() !== dateFilter.getFullYear() || d.getMonth() !== dateFilter.getMonth() || d.getDate() !== dateFilter.getDate()) return false;
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const nameMatch = o.customer_name?.toLowerCase().includes(q);
-      const phoneMatch = o.customer_phone?.toLowerCase().includes(q);
-      if (!nameMatch && !phoneMatch) return false;
+      if (!o.customer_name?.toLowerCase().includes(q) && !o.customer_phone?.toLowerCase().includes(q)) return false;
     }
     return true;
   });
 
-  if (isLoading) return <div className="animate-pulse space-y-4">{[1,2,3].map(i => <div key={i} className="h-32 bg-muted rounded-lg" />)}</div>;
+  const getCount = (status: string) => orders?.filter((o: any) => o.status === status).length || 0;
+
+  if (isLoading) return <div className="animate-pulse space-y-4">{[1, 2, 3].map(i => <div key={i} className="h-28 bg-muted rounded-lg" />)}</div>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Orders</h2>
-          <p className="text-muted-foreground">Manage orders placed through Messenger.</p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search name or phone..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 h-9 w-[200px]"
-            />
-          </div>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className={cn("gap-2", dateFilter && "border-primary text-primary")}>
-                <CalendarIcon className="h-4 w-4" />
-                {dateFilter ? format(dateFilter, "dd MMM yyyy") : "Filter by date"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                mode="single"
-                selected={dateFilter}
-                onSelect={setDateFilter}
-                initialFocus
-                className={cn("p-3 pointer-events-auto")}
-              />
-            </PopoverContent>
-          </Popover>
-          {dateFilter && (
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDateFilter(undefined)}>
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
+    <div className="space-y-4">
+      {/* Header */}
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">Orders</h2>
+        <p className="text-muted-foreground text-sm">Manage orders from Messenger.</p>
       </div>
 
-      {/* Stats */}
-      {orders && orders.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          {["pending", "confirmed", "processing", "delivered", "cancelled"].map(s => (
-            <Card key={s}>
-              <CardContent className="p-3 text-center">
-                <p className="text-2xl font-bold">{orders.filter((o: any) => o.status === s).length}</p>
-                <p className="text-xs text-muted-foreground capitalize">{s}</p>
-              </CardContent>
-            </Card>
-          ))}
+      {/* Summary Cards */}
+      <div className="grid grid-cols-5 gap-2">
+        {(Object.keys(statusConfig) as OrderStatus[]).map(s => {
+          const cfg = statusConfig[s];
+          const Icon = cfg.icon;
+          const count = getCount(s);
+          return (
+            <button
+              key={s}
+              onClick={() => setStatusTab(statusTab === s ? "all" : s)}
+              className={cn(
+                "rounded-lg border p-2 text-center transition-all",
+                statusTab === s ? cfg.bgColor + " ring-1 ring-offset-1" : "bg-card hover:bg-muted/50",
+              )}
+            >
+              <Icon className={cn("h-4 w-4 mx-auto mb-0.5", cfg.color)} />
+              <p className="text-lg font-bold leading-tight">{count}</p>
+              <p className="text-[9px] text-muted-foreground capitalize leading-tight">{cfg.label}</p>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Search + Date Filter */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search name or phone..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8 h-9"
+          />
+        </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className={cn("gap-1 h-9 shrink-0", dateFilter && "border-primary text-primary")}>
+              <CalendarIcon className="h-3.5 w-3.5" />
+              {dateFilter ? format(dateFilter, "dd MMM") : "Date"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="end">
+            <Calendar mode="single" selected={dateFilter} onSelect={setDateFilter} initialFocus className="p-3 pointer-events-auto" />
+          </PopoverContent>
+        </Popover>
+        {dateFilter && (
+          <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => setDateFilter(undefined)}>
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+
+      {/* Active filter indicator */}
+      {statusTab !== "all" && (
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="gap-1">
+            Showing: {statusConfig[statusTab as OrderStatus]?.label}
+            <button onClick={() => setStatusTab("all")} className="ml-1 hover:text-foreground">
+              <X className="h-3 w-3" />
+            </button>
+          </Badge>
+          <span className="text-xs text-muted-foreground">{filteredOrders?.length || 0} orders</span>
         </div>
       )}
 
+      {/* Order List */}
       {!filteredOrders?.length ? (
         <div className="text-center py-16">
-          <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold">{dateFilter ? "No orders on this date" : "No orders yet"}</h3>
-          <p className="text-muted-foreground">{dateFilter ? "Try selecting a different date." : "Orders placed via Messenger will appear here."}</p>
+          <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+          <h3 className="text-lg font-semibold">No orders found</h3>
+          <p className="text-sm text-muted-foreground">
+            {statusTab !== "all" ? `No ${statusConfig[statusTab as OrderStatus]?.label.toLowerCase()} orders.` : "Orders from Messenger will appear here."}
+          </p>
         </div>
       ) : (
-        <div className="grid gap-4">
-          {filteredOrders.map((order: any) => (
-            <Card
-              key={order.id}
-              className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => setSelectedOrder(order)}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Eye className="h-4 w-4 text-muted-foreground" />
-                    {order.customer_name || order.conversations?.sender_name || `Order #${order.id.slice(0, 8)}`}
-                  </CardTitle>
-                  <Badge className={statusColors[order.status] || ""}>{order.status}</Badge>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {new Date(order.created_at).toLocaleString()} · #{order.id.slice(0, 8)}
-                </p>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="flex flex-wrap gap-4 text-sm">
-                  {order.customer_name && (
-                    <span className="flex items-center gap-1"><User className="h-3.5 w-3.5" /> {order.customer_name}</span>
-                  )}
-                  {order.customer_phone && (
-                    <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" /> {order.customer_phone}</span>
-                  )}
-                  <span className="font-semibold ml-auto">৳{order.total}</span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="space-y-2">
+          {filteredOrders.map((order: any) => {
+            const cfg = statusConfig[order.status as OrderStatus] || statusConfig.pending;
+            const Icon = cfg.icon;
+            const displayName = order.customer_name || order.conversations?.sender_name || `Order #${order.id.slice(0, 6)}`;
+
+            return (
+              <Card
+                key={order.id}
+                className={cn("cursor-pointer transition-all hover:shadow-md border-l-4", `border-l-current ${cfg.color}`)}
+                onClick={() => setSelectedOrder(order)}
+              >
+                <CardContent className="p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-sm truncate">{displayName}</h3>
+                        <Badge className={cn("text-[10px] shrink-0 border", cfg.bgColor, cfg.color)}>
+                          <Icon className="h-2.5 w-2.5 mr-0.5" />
+                          {cfg.label}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        {order.customer_phone && (
+                          <span className="flex items-center gap-0.5">
+                            <Phone className="h-3 w-3" /> {order.customer_phone}
+                          </span>
+                        )}
+                        <span>{new Date(order.created_at).toLocaleDateString()}</span>
+                      </div>
+                      {order.items && Array.isArray(order.items) && order.items.length > 0 && (
+                        <p className="text-[11px] text-muted-foreground mt-1 truncate">
+                          {order.items.map((i: any) => `${i.name} ×${i.quantity}`).join(", ")}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-bold">৳{Number(order.total).toLocaleString()}</p>
+                      <p className="text-[10px] text-muted-foreground">#{order.id.slice(0, 6)}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
@@ -212,86 +250,98 @@ const OrdersManager = () => {
       <Dialog open={!!selectedOrder && !editingOrder} onOpenChange={() => setSelectedOrder(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Order #{selectedOrder?.id?.slice(0, 8)}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5 text-primary" />
+              Order #{selectedOrder?.id?.slice(0, 8)}
+            </DialogTitle>
           </DialogHeader>
-          {selectedOrder && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Badge className={statusColors[selectedOrder.status] || ""}>
-                  {selectedOrder.status}
-                </Badge>
-                <Select
-                  value={selectedOrder.status}
-                  onValueChange={(status) => {
-                    updateStatus.mutate({ id: selectedOrder.id, status });
-                    setSelectedOrder({ ...selectedOrder, status });
-                  }}
-                >
-                  <SelectTrigger className="w-[160px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="confirmed">Confirmed</SelectItem>
-                    <SelectItem value="processing">Processing</SelectItem>
-                    <SelectItem value="delivered">Delivered</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-                <p className="text-sm font-semibold mb-2">Customer Info</p>
-                <div className="grid gap-2 text-sm">
-                  {selectedOrder.customer_name && (
-                    <div className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground" /><span className="font-medium">Name:</span> {selectedOrder.customer_name}</div>
-                  )}
-                  {selectedOrder.customer_phone && (
-                    <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /><span className="font-medium">Phone:</span> {selectedOrder.customer_phone}</div>
-                  )}
-                  {selectedOrder.customer_address && (
-                    <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted-foreground" /><span className="font-medium">Address:</span> {selectedOrder.customer_address}</div>
-                  )}
-                  {selectedOrder.conversations?.sender_name && (
-                    <div className="flex items-center gap-2"><FileText className="h-4 w-4 text-muted-foreground" /><span className="font-medium">FB:</span> {selectedOrder.conversations.sender_name}</div>
-                  )}
-                  <div className="flex items-center gap-2"><CalendarIcon className="h-4 w-4 text-muted-foreground" /><span className="font-medium">Date:</span> {new Date(selectedOrder.created_at).toLocaleString()}</div>
+          {selectedOrder && (() => {
+            const cfg = statusConfig[selectedOrder.status as OrderStatus] || statusConfig.pending;
+            return (
+              <div className="space-y-4">
+                {/* Status Control */}
+                <div className={cn("rounded-lg p-3 border flex items-center justify-between", cfg.bgColor)}>
+                  <div className="flex items-center gap-2">
+                    <cfg.icon className={cn("h-5 w-5", cfg.color)} />
+                    <span className={cn("font-semibold text-sm", cfg.color)}>{cfg.label}</span>
+                  </div>
+                  <Select
+                    value={selectedOrder.status}
+                    onValueChange={(status) => {
+                      updateStatus.mutate({ id: selectedOrder.id, status });
+                      setSelectedOrder({ ...selectedOrder, status });
+                    }}
+                  >
+                    <SelectTrigger className="w-[130px] h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(statusConfig) as OrderStatus[]).map(s => (
+                        <SelectItem key={s} value={s}>
+                          <span className="flex items-center gap-1.5">
+                            {statusConfig[s].label}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
 
-              {selectedOrder.items && Array.isArray(selectedOrder.items) && selectedOrder.items.length > 0 && (
-                <div className="bg-muted/50 rounded-lg p-4">
-                  <p className="text-sm font-semibold mb-2">Items</p>
-                  {selectedOrder.items.map((item: any, i: number) => (
-                    <div key={i} className="flex justify-between text-sm py-1">
-                      <span>{item.name} × {item.quantity}</span>
-                      <span>৳{item.price * item.quantity}</span>
-                    </div>
-                  ))}
-                  <div className="border-t mt-2 pt-2 flex justify-between font-bold text-sm">
-                    <span>Total</span>
-                    <span>৳{selectedOrder.total}</span>
+                {/* Customer Info */}
+                <div className="bg-muted/50 rounded-lg p-4 space-y-2.5">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Customer Info</p>
+                  <div className="grid gap-2 text-sm">
+                    {selectedOrder.customer_name && (
+                      <div className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground shrink-0" /> <span>{selectedOrder.customer_name}</span></div>
+                    )}
+                    {selectedOrder.customer_phone && (
+                      <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground shrink-0" /> <span>{selectedOrder.customer_phone}</span></div>
+                    )}
+                    {selectedOrder.customer_address && (
+                      <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted-foreground shrink-0" /> <span>{selectedOrder.customer_address}</span></div>
+                    )}
+                    {selectedOrder.conversations?.sender_name && (
+                      <div className="flex items-center gap-2"><FileText className="h-4 w-4 text-muted-foreground shrink-0" /> <span>FB: {selectedOrder.conversations.sender_name}</span></div>
+                    )}
+                    <div className="flex items-center gap-2"><CalendarIcon className="h-4 w-4 text-muted-foreground shrink-0" /> <span>{new Date(selectedOrder.created_at).toLocaleString()}</span></div>
                   </div>
                 </div>
-              )}
 
-              {selectedOrder.notes && (
-                <div className="bg-muted/50 rounded-lg p-4">
-                  <p className="text-sm font-semibold mb-1">Notes</p>
-                  <p className="text-sm">{selectedOrder.notes}</p>
-                </div>
-              )}
+                {/* Items */}
+                {selectedOrder.items && Array.isArray(selectedOrder.items) && selectedOrder.items.length > 0 && (
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Items</p>
+                    {selectedOrder.items.map((item: any, i: number) => (
+                      <div key={i} className="flex justify-between text-sm py-1.5 border-b border-border/50 last:border-0">
+                        <span>{item.name} <span className="text-muted-foreground">× {item.quantity}</span></span>
+                        <span className="font-medium">৳{(item.price * item.quantity).toLocaleString()}</span>
+                      </div>
+                    ))}
+                    <div className="border-t-2 border-border mt-2 pt-2 flex justify-between font-bold">
+                      <span>Total</span>
+                      <span className="text-primary">৳{Number(selectedOrder.total).toLocaleString()}</span>
+                    </div>
+                  </div>
+                )}
 
-              <DialogFooter className="gap-2">
-                <Button variant="outline" size="sm" className="gap-1" onClick={() => setEditingOrder({ ...selectedOrder })}>
-                  <Pencil className="h-3.5 w-3.5" /> Edit
-                </Button>
-                <Button variant="destructive" size="sm" className="gap-1" onClick={() => setDeleteOrderId(selectedOrder.id)}>
-                  <Trash2 className="h-3.5 w-3.5" /> Delete
-                </Button>
-              </DialogFooter>
-            </div>
-          )}
+                {selectedOrder.notes && (
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Notes</p>
+                    <p className="text-sm">{selectedOrder.notes}</p>
+                  </div>
+                )}
+
+                <DialogFooter className="gap-2">
+                  <Button variant="outline" size="sm" className="gap-1" onClick={() => setEditingOrder({ ...selectedOrder })}>
+                    <Pencil className="h-3.5 w-3.5" /> Edit
+                  </Button>
+                  <Button variant="destructive" size="sm" className="gap-1" onClick={() => setDeleteOrderId(selectedOrder.id)}>
+                    <Trash2 className="h-3.5 w-3.5" /> Delete
+                  </Button>
+                </DialogFooter>
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
 
@@ -339,7 +389,7 @@ const OrdersManager = () => {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this order?</AlertDialogTitle>
-            <AlertDialogDescription>This action cannot be undone. The order will be permanently removed.</AlertDialogDescription>
+            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
