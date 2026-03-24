@@ -748,21 +748,35 @@ async function detectAndCreateOrder(
 ) {
   if (!customerMessage) return;
 
-  const orderKeywords = ["order", "অর্ডার", "কিনতে", "নিব", "দিন", "চাই", "confirm", "buy", "purchase"];
+  const orderKeywords = [
+    "order", "অর্ডার", "কিনতে", "নিব", "দিন", "চাই", "confirm", "confirmed", "confirmation",
+    "buy", "purchase", "book", "ok", "okay", "yes", "হ্যাঁ", "হ্যা", "জি", "ঠিক আছে", "done",
+  ];
   const lowerMsg = customerMessage.toLowerCase();
   const hasOrderIntent = orderKeywords.some(kw => lowerMsg.includes(kw));
 
   if (!hasOrderIntent) return;
 
   try {
+    const { data: recentMessages } = await supabase
+      .from("messages")
+      .select("direction, content, created_at")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: true })
+      .limit(20);
+
+    const transcript = (recentMessages || [])
+      .map((m: any) => `${m.direction === "incoming" ? "Customer" : "Bot"}: ${m.content || ""}`)
+      .join("\n");
+
     const extractResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash-lite",
         messages: [
-          { role: "system", content: "Extract order details from this conversation. ONLY set is_order=true if the customer has CONFIRMED the order AND all details (name, phone, address, product name, quantity, total) are clearly present. If any detail is missing or customer hasn't confirmed yet, set is_order=false." },
-          { role: "user", content: `Customer: ${customerMessage}\nBot reply: ${aiReply}` },
+          { role: "system", content: "Extract order details from the full conversation. ONLY set is_order=true if the customer has CONFIRMED the order and all details (name, phone, address, product name, quantity, total) are clearly available in the transcript. Use historical messages to fill details. If anything is missing or not confirmed yet, set is_order=false." },
+          { role: "user", content: `Conversation Transcript:\n${transcript}\n\nLatest Customer: ${customerMessage}\nLatest Bot Reply: ${aiReply}` },
         ],
         tools: [{
           type: "function",
@@ -820,12 +834,39 @@ async function detectAndCreateOrder(
       customer_address: orderData.customer_address,
       items: orderData.items,
       total: orderData.total,
-      status: "pending",
+      status: "confirmed",
     };
     if (userId) insertData.user_id = userId;
 
-    await supabase.from("orders").insert(insertData);
-    console.log("Order created with full details for conversation:", conversationId);
+    const { data: existingOrder } = await supabase
+      .from("orders")
+      .select("id, status")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingOrder) {
+      const { error: updateError } = await supabase
+        .from("orders")
+        .update({ ...insertData, updated_at: new Date().toISOString() })
+        .eq("id", existingOrder.id);
+
+      if (updateError) {
+        console.error("Failed to confirm existing order:", updateError);
+        return;
+      }
+      console.log("Order updated and confirmed for conversation:", conversationId);
+      return;
+    }
+
+    const { error: insertError } = await supabase.from("orders").insert(insertData);
+    if (insertError) {
+      console.error("Failed to create confirmed order:", insertError);
+      return;
+    }
+
+    console.log("Order created as confirmed for conversation:", conversationId);
   } catch (e) {
     console.error("Order detection error:", e);
   }
