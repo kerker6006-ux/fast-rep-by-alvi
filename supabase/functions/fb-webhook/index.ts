@@ -498,21 +498,44 @@ async function generateAiReply(
 
   const hasImage = !!imageUrl;
 
-  // Build product image reference for visual matching
-  const productImageList = products?.filter((p: any) => p.image_url)
-    .map((p: any) => `${p.name}${p.name_bn ? ` (${p.name_bn})` : ""} [${p.category || 'uncategorized'}] — ৳${p.price} — image: ${p.image_url}`)
+  // Build product image references
+  const productsWithImages = products?.filter((p: any) => p.image_url) || [];
+  const productImageList = productsWithImages
+    .map((p: any) => `${p.name}${p.name_bn ? ` (${p.name_bn})` : ""} [${p.category || 'uncategorized'}] — ৳${p.price}`)
     .join("\n") || "";
 
-  const imageAnalysisPrompt = messageText
-    ? `Customer said: "${messageText}" and sent this image.\n\nSTEP-BY-STEP ANALYSIS (do this internally before replying):\n1. LOOK at the image for 10 seconds. What EXACTLY is in it? Describe it to yourself.\n2. Item type: Is it a t-shirt (has sleeves, collar/round neck, body-length ends at waist/hip)? A hijab (head covering, flowing fabric, NO sleeves)? An abaya (full-length loose dress)? A sharee? A shoe? Something else entirely?\n3. COLOR: What exact color(s) do you see? Be specific — navy blue, forest green, maroon, cream, etc.\n4. PATTERN: Is it printed, plain, striped, embroidered?\n5. Now CHECK the catalog: Does ANY product match BOTH the item type AND the color? If a product matches the type but NOT the color, say that color is not available.\n6. If NOTHING in the catalog matches, say so honestly.\n\nDO NOT GUESS. If you're unsure, say you're unsure. Never call a t-shirt a hijab or vice versa.`
-    : `Customer sent this image without text.\n\nSTEP-BY-STEP ANALYSIS (do this internally before replying):\n1. LOOK at the image carefully. What EXACTLY is this item?\n2. Identify: item type, color(s), pattern, fabric type, any visible brand/text.\n3. Is it a t-shirt? (sleeves, collar, ends at waist) A hijab? (head covering, no sleeves) An abaya? (full-length dress) Something else?\n4. Check your product catalog — does any product match this item's type AND color?\n5. If no match, say honestly it's not available.\n\nDO NOT GUESS. Be precise about what you see.`;
+  // When customer sends an image, include product images so AI can visually compare
+  let currentUserMessage: any;
+  if (imageUrl) {
+    const contentParts: any[] = [];
 
-  const currentUserMessage: any = imageUrl
-    ? { role: "user", content: [
-        { type: "text", text: imageAnalysisPrompt },
-        { type: "image_url", image_url: { url: imageUrl } }
-      ]}
-    : { role: "user", content: messageText || "" };
+    // Add instruction text
+    const imageAnalysisPrompt = messageText
+      ? `Customer said: "${messageText}" and sent an image. Compare it visually with our product images below. If the customer's image matches any product (same type + similar color/design), tell the name and price. If no match, say "এটা আমাদের কালেকশনে নেই।" Keep reply 1-2 sentences max.`
+      : `Customer sent this image. Compare it visually with our product images below. If it matches any product, tell the name and price. If no match, say "এটা আমাদের কালেকশনে নেই।" Keep reply 1-2 sentences max.`;
+
+    contentParts.push({ type: "text", text: imageAnalysisPrompt });
+
+    // Add customer's image
+    contentParts.push({ type: "text", text: "CUSTOMER'S IMAGE:" });
+    contentParts.push({ type: "image_url", image_url: { url: imageUrl } });
+
+    // Add product images for visual comparison (limit to 10 to stay within token limits)
+    if (productsWithImages.length > 0) {
+      contentParts.push({ type: "text", text: "OUR PRODUCT IMAGES (compare customer's image against these):" });
+      for (const p of productsWithImages.slice(0, 10)) {
+        contentParts.push({
+          type: "text",
+          text: `Product: ${p.name}${p.name_bn ? ` (${p.name_bn})` : ""} — ৳${p.price}`
+        });
+        contentParts.push({ type: "image_url", image_url: { url: p.image_url } });
+      }
+    }
+
+    currentUserMessage = { role: "user", content: contentParts };
+  } else {
+    currentUserMessage = { role: "user", content: messageText || "" };
+  }
 
   let examplesSection = "";
   if (settings.reply_examples) {
