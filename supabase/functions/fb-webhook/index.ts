@@ -751,6 +751,7 @@ async function detectAndCreateOrder(
   const orderKeywords = [
     "order", "অর্ডার", "কিনতে", "নিব", "দিন", "চাই", "confirm", "confirmed", "confirmation",
     "buy", "purchase", "book", "ok", "okay", "yes", "হ্যাঁ", "হ্যা", "জি", "ঠিক আছে", "done",
+    "কনফার্ম", "নিতে", "লাগবে", "দরকার", "korbo", "nibo", "chai", "lagbe",
   ];
   const lowerMsg = customerMessage.toLowerCase();
   const hasOrderIntent = orderKeywords.some(kw => lowerMsg.includes(kw));
@@ -758,16 +759,23 @@ async function detectAndCreateOrder(
   if (!hasOrderIntent) return;
 
   try {
+    // Fetch more messages for better context
     const { data: recentMessages } = await supabase
       .from("messages")
       .select("direction, content, created_at")
       .eq("conversation_id", conversationId)
       .order("created_at", { ascending: true })
-      .limit(20);
+      .limit(40);
 
     const transcript = (recentMessages || [])
       .map((m: any) => `${m.direction === "incoming" ? "Customer" : "Bot"}: ${m.content || ""}`)
       .join("\n");
+
+    // Also fetch products to help calculate totals
+    let productQuery = supabase.from("products").select("name, name_bn, price").eq("is_active", true);
+    if (userId) productQuery = productQuery.eq("user_id", userId);
+    const { data: products } = await productQuery;
+    const productList = (products || []).map((p: any) => `${p.name}${p.name_bn ? ` (${p.name_bn})` : ""}: ৳${p.price}`).join(", ");
 
     const extractResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -775,20 +783,30 @@ async function detectAndCreateOrder(
       body: JSON.stringify({
         model: "google/gemini-2.5-flash-lite",
         messages: [
-          { role: "system", content: "Extract order details from the full conversation. ONLY set is_order=true if the customer has CONFIRMED the order and all details (name, phone, address, product name, quantity, total) are clearly available in the transcript. Use historical messages to fill details. If anything is missing or not confirmed yet, set is_order=false." },
-          { role: "user", content: `Conversation Transcript:\n${transcript}\n\nLatest Customer: ${customerMessage}\nLatest Bot Reply: ${aiReply}` },
+          { role: "system", content: `You extract order details from Facebook Messenger conversations. Read the ENTIRE transcript carefully.
+
+RULES:
+- Set is_order=true if the customer has shown clear intent to buy AND provided their details (name, phone, address) anywhere in the conversation.
+- Customer saying "ok", "yes", "confirm", "done", "জি", "হ্যাঁ", "ঠিক আছে" after the bot summarized an order = CONFIRMED ORDER.
+- Customer providing name + phone + address in a single message (even separated by newlines) = order details provided.
+- If customer says "ager details e" or "same details" or "আগের ডিটেইলস", look for details from earlier in the transcript.
+- Calculate total from items × prices if not explicitly stated. Use these product prices: ${productList}
+- A short address like "49/4" or "Mirpur 10" is valid. Don't reject it.
+- A Bangladeshi phone number starting with 01 (11 digits) is valid.
+- Extract the customer's name even if it's just a first name like "Alvi".` },
+          { role: "user", content: `Full Conversation:\n${transcript}\n\nLatest message from customer: "${customerMessage}"\nBot's reply: "${aiReply}"` },
         ],
         tools: [{
           type: "function",
           function: {
             name: "create_order",
-            description: "Create an order if the customer is clearly placing one",
+            description: "Extract order from conversation",
             parameters: {
               type: "object",
               properties: {
-                is_order: { type: "boolean", description: "true if customer is placing an order" },
+                is_order: { type: "boolean", description: "true if customer confirmed an order with sufficient details" },
                 items: { type: "array", items: { type: "object", properties: { name: { type: "string" }, quantity: { type: "number" }, price: { type: "number" } }, required: ["name", "quantity", "price"] } },
-                total: { type: "number" },
+                total: { type: "number", description: "Sum of item prices × quantities" },
                 customer_name: { type: "string" },
                 customer_phone: { type: "string" },
                 customer_address: { type: "string" },
@@ -801,39 +819,69 @@ async function detectAndCreateOrder(
       }),
     });
 
-    if (!extractResponse.ok) return;
+    if (!extractResponse.ok) {
+      const errText = await extractResponse.text();
+      console.error("Order extraction API error:", extractResponse.status, errText);
+      return;
+    }
     const extractData = await extractResponse.json();
 
-    // Log order detection AI usage
     await logAiUsage(supabase, userId, "order_detection", "google/gemini-2.5-flash-lite", 0.0002);
 
     const toolCall = extractData.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall) return;
+    if (!toolCall) {
+      console.log("No tool call in order extraction response");
+      return;
+    }
 
     const orderData = JSON.parse(toolCall.function.arguments);
-    if (!orderData.is_order) return;
+    console.log("Order extraction result:", JSON.stringify(orderData));
 
-    // Only create order if ALL required details are present
-    const hasName = !!orderData.customer_name && orderData.customer_name.trim().length > 0;
-    const hasPhone = !!orderData.customer_phone && orderData.customer_phone.trim().length > 0;
-    const hasAddress = !!orderData.customer_address && orderData.customer_address.trim().length > 0;
-    const hasItems = Array.isArray(orderData.items) && orderData.items.length > 0 && orderData.items.every((i: any) => i.name && i.quantity > 0);
-    const hasTotal = orderData.total > 0;
+    if (!orderData.is_order) {
+      console.log("AI determined this is not an order");
+      return;
+    }
 
-    if (!hasName || !hasPhone || !hasAddress || !hasItems || !hasTotal) {
-      console.log("Order details incomplete, skipping creation. Missing:", {
-        name: !hasName, phone: !hasPhone, address: !hasAddress, items: !hasItems, total: !hasTotal
-      });
+    const hasName = !!orderData.customer_name?.trim();
+    const hasPhone = !!orderData.customer_phone?.trim();
+    const hasAddress = !!orderData.customer_address?.trim();
+    const hasItems = Array.isArray(orderData.items) && orderData.items.length > 0;
+
+    // Auto-calculate total from items if missing
+    let total = orderData.total || 0;
+    if ((!total || total <= 0) && hasItems) {
+      total = orderData.items.reduce((sum: number, i: any) => sum + (i.price || 0) * (i.quantity || 1), 0);
+    }
+
+    // If items have no price, try to match from products
+    if (hasItems && total <= 0 && products?.length) {
+      for (const item of orderData.items) {
+        if (!item.price || item.price <= 0) {
+          const match = products.find((p: any) =>
+            p.name.toLowerCase().includes(item.name.toLowerCase()) ||
+            item.name.toLowerCase().includes(p.name.toLowerCase()) ||
+            (p.name_bn && item.name.includes(p.name_bn))
+          );
+          if (match) item.price = match.price;
+        }
+      }
+      total = orderData.items.reduce((sum: number, i: any) => sum + (i.price || 0) * (i.quantity || 1), 0);
+    }
+
+    // Require at minimum: items + at least 2 of (name, phone, address)
+    const detailCount = [hasName, hasPhone, hasAddress].filter(Boolean).length;
+    if (!hasItems || detailCount < 2) {
+      console.log("Order details insufficient. has:", { name: hasName, phone: hasPhone, address: hasAddress, items: hasItems, total });
       return;
     }
 
     const insertData: any = {
       conversation_id: conversationId,
-      customer_name: orderData.customer_name,
-      customer_phone: orderData.customer_phone,
-      customer_address: orderData.customer_address,
+      customer_name: orderData.customer_name?.trim() || null,
+      customer_phone: orderData.customer_phone?.trim() || null,
+      customer_address: orderData.customer_address?.trim() || null,
       items: orderData.items,
-      total: orderData.total,
+      total: total,
       status: "confirmed",
     };
     if (userId) insertData.user_id = userId;
@@ -853,16 +901,16 @@ async function detectAndCreateOrder(
         .eq("id", existingOrder.id);
 
       if (updateError) {
-        console.error("Failed to confirm existing order:", updateError);
+        console.error("Failed to update order:", updateError);
         return;
       }
-      console.log("Order updated and confirmed for conversation:", conversationId);
+      console.log("Order updated for conversation:", conversationId);
       return;
     }
 
     const { error: insertError } = await supabase.from("orders").insert(insertData);
     if (insertError) {
-      console.error("Failed to create confirmed order:", insertError);
+      console.error("Failed to create order:", insertError);
       return;
     }
 
