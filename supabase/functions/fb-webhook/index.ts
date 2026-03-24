@@ -740,7 +740,7 @@ async function detectAndCreateOrder(
       body: JSON.stringify({
         model: "google/gemini-2.5-flash-lite",
         messages: [
-          { role: "system", content: "Extract order details from this conversation. If there's a clear order being placed, extract items and details. If it's just inquiry, return null." },
+          { role: "system", content: "Extract order details from this conversation. ONLY set is_order=true if the customer has CONFIRMED the order AND all details (name, phone, address, product name, quantity, total) are clearly present. If any detail is missing or customer hasn't confirmed yet, set is_order=false." },
           { role: "user", content: `Customer: ${customerMessage}\nBot reply: ${aiReply}` },
         ],
         tools: [{
