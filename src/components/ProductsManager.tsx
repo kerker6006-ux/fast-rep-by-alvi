@@ -112,7 +112,7 @@ const ProductsManager = () => {
     setForm({
       name: p.name, name_bn: p.name_bn || "", description: p.description || "",
       description_bn: p.description_bn || "", price: String(p.price), category: p.category || "",
-      keywords: p.keywords?.join(", ") || "", is_active: p.is_active,
+      keywords: p.keywords?.join(", ") || "", color: (p as any).color || "", size: (p as any).size || "", material: (p as any).material || "", is_active: p.is_active,
     });
     setIsOpen(true);
   };
