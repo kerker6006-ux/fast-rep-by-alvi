@@ -3,8 +3,9 @@ Facebook Auto-Reply Bot SaaS platform. Multi-tenant, Bangla-first, English suppo
 - Multi-tenant: user_id on all tables
 - DB tables: products, conversations, messages, bot_settings, orders, auto_reply_rules, scheduled_messages, ai_usage, user_credits, credit_transactions, user_roles, fb_pages, profiles
 - Credit system: user_credits (balance per user), credit_transactions (recharge/deduction log), bot stops when balance=0
+- Per-message cost: ৳0.30 per text, ৳1.50 per image (configurable via bot_settings: credit_cost_text, credit_cost_image)
 - Admin can add credits via Admin Panel (bKash manual recharge flow)
-- Per-message cost configurable via bot_settings: credit_cost_text (default 1), credit_cost_image (default 3)
+- User approval: profiles.is_approved — new users default false, admin must approve from Admin Panel
 - RLS: All tables isolated by user_id. Admins can read/manage all via has_role()
 - Storage bucket: product-images (public)
 - Edge function: fb-webhook — checks credits before AI reply, deducts after, logs usage

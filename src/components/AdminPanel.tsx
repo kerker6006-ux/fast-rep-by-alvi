@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Users, ShoppingCart, MessageSquare, Package, Globe, Coins, Plus } from "lucide-react";
+import { Users, ShoppingCart, MessageSquare, Package, Globe, Coins, Plus, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,7 +15,6 @@ import {
 const AdminPanel = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [selectedUser, setSelectedUser] = useState<any>(null);
   const [rechargeAmount, setRechargeAmount] = useState("");
   const [rechargeNote, setRechargeNote] = useState("");
 
@@ -24,7 +23,7 @@ const AdminPanel = () => {
     queryFn: async () => {
       const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("id, display_name, created_at")
+        .select("id, display_name, created_at, is_approved")
         .order("created_at", { ascending: false });
       if (error) throw error;
 
@@ -53,7 +52,6 @@ const AdminPanel = () => {
 
   const rechargeMutation = useMutation({
     mutationFn: async ({ userId, amount, note }: { userId: string; amount: number; note: string }) => {
-      // Upsert credit balance
       const { data: existing } = await supabase
         .from("user_credits")
         .select("balance")
@@ -73,7 +71,6 @@ const AdminPanel = () => {
         if (error) throw error;
       }
 
-      // Log transaction
       const { error: txError } = await supabase.from("credit_transactions").insert({
         user_id: userId,
         amount,
@@ -88,9 +85,23 @@ const AdminPanel = () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
       setRechargeAmount("");
       setRechargeNote("");
-      setSelectedUser(null);
     },
     onError: () => toast.error("Failed to add credits"),
+  });
+
+  const approvalMutation = useMutation({
+    mutationFn: async ({ userId, approve }: { userId: string; approve: boolean }) => {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ is_approved: approve })
+        .eq("id", userId);
+      if (error) throw error;
+    },
+    onSuccess: (_, { approve }) => {
+      toast.success(approve ? "User approved!" : "User approval revoked!");
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: () => toast.error("Failed to update approval status"),
   });
 
   if (isLoading) {
@@ -103,11 +114,14 @@ const AdminPanel = () => {
     );
   }
 
+  const pendingUsers = users?.filter(u => !u.is_approved) || [];
+  const approvedUsers = users?.filter(u => u.is_approved) || [];
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Admin Panel</h2>
-        <p className="text-muted-foreground">Manage users and credits.</p>
+        <p className="text-muted-foreground">Manage users, approvals, and credits.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -120,17 +134,17 @@ const AdminPanel = () => {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Pending Approval</CardTitle>
+            <XCircle className="h-4 w-4 text-destructive" />
+          </CardHeader>
+          <CardContent><div className="text-2xl font-bold text-destructive">{pendingUsers.length}</div></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Connected Pages</CardTitle>
             <Globe className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent><div className="text-2xl font-bold">{users?.reduce((s, u) => s + u.fbPages.length, 0) || 0}</div></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Products</CardTitle>
-            <Package className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent><div className="text-2xl font-bold">{users?.reduce((s, u) => s + u.productCount, 0) || 0}</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -141,6 +155,41 @@ const AdminPanel = () => {
         </Card>
       </div>
 
+      {/* Pending Approval Section */}
+      {pendingUsers.length > 0 && (
+        <Card className="border-destructive/30">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <XCircle className="h-5 w-5 text-destructive" /> Pending Approval ({pendingUsers.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {pendingUsers.map((u) => (
+                <div key={u.id} className="flex items-center justify-between border-b pb-3 last:border-0 gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm truncate">{u.display_name || "Unnamed"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Joined: {new Date(u.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => approvalMutation.mutate({ userId: u.id, approve: true })}
+                      disabled={approvalMutation.isPending}
+                    >
+                      <CheckCircle className="h-3 w-3 mr-1" /> Approve
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* All Users */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">All Users & Credits</CardTitle>
@@ -153,7 +202,14 @@ const AdminPanel = () => {
               {users.map((u) => (
                 <div key={u.id} className="flex items-center justify-between border-b pb-3 last:border-0 gap-3">
                   <div className="space-y-1 min-w-0 flex-1">
-                    <p className="font-medium text-sm truncate">{u.display_name || "Unnamed"}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-sm truncate">{u.display_name || "Unnamed"}</p>
+                      {u.is_approved ? (
+                        <Badge variant="default" className="text-[10px]">Approved</Badge>
+                      ) : (
+                        <Badge variant="destructive" className="text-[10px]">Pending</Badge>
+                      )}
+                    </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                       <span className="flex items-center gap-1"><Package className="h-3 w-3" /> {u.productCount}</span>
                       <span className="flex items-center gap-1"><ShoppingCart className="h-3 w-3" /> {u.orderCount}</span>
@@ -172,49 +228,71 @@ const AdminPanel = () => {
                       </div>
                     )}
                   </div>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button size="sm" variant="outline" className="shrink-0" onClick={() => setSelectedUser(u)}>
-                        <Plus className="h-3 w-3 mr-1" /> Add Credits
+                  <div className="flex gap-2 shrink-0">
+                    {!u.is_approved ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => approvalMutation.mutate({ userId: u.id, approve: true })}
+                        disabled={approvalMutation.isPending}
+                      >
+                        <CheckCircle className="h-3 w-3 mr-1" /> Approve
                       </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Add Credits — {u.display_name || "User"}</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4 pt-2">
-                        <p className="text-sm text-muted-foreground">
-                          Current balance: <span className="font-bold text-foreground">৳{Number(u.creditBalance).toLocaleString()}</span>
-                        </p>
-                        <Input
-                          type="number"
-                          placeholder="Amount (৳)"
-                          value={rechargeAmount}
-                          onChange={(e) => setRechargeAmount(e.target.value)}
-                        />
-                        <Input
-                          placeholder="Note (e.g., bKash TrxID: ABC123)"
-                          value={rechargeNote}
-                          onChange={(e) => setRechargeNote(e.target.value)}
-                        />
-                        <DialogClose asChild>
-                          <Button
-                            className="w-full"
-                            disabled={!rechargeAmount || Number(rechargeAmount) <= 0}
-                            onClick={() => {
-                              rechargeMutation.mutate({
-                                userId: u.id,
-                                amount: Number(rechargeAmount),
-                                note: rechargeNote,
-                              });
-                            }}
-                          >
-                            Add ৳{rechargeAmount || "0"} Credits
-                          </Button>
-                        </DialogClose>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive"
+                        onClick={() => approvalMutation.mutate({ userId: u.id, approve: false })}
+                        disabled={approvalMutation.isPending}
+                      >
+                        Revoke
+                      </Button>
+                    )}
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button size="sm" variant="outline">
+                          <Plus className="h-3 w-3 mr-1" /> Credits
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Add Credits — {u.display_name || "User"}</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 pt-2">
+                          <p className="text-sm text-muted-foreground">
+                            Current balance: <span className="font-bold text-foreground">৳{Number(u.creditBalance).toLocaleString()}</span>
+                          </p>
+                          <Input
+                            type="number"
+                            placeholder="Amount (৳)"
+                            value={rechargeAmount}
+                            onChange={(e) => setRechargeAmount(e.target.value)}
+                          />
+                          <Input
+                            placeholder="Note (e.g., bKash TrxID: ABC123)"
+                            value={rechargeNote}
+                            onChange={(e) => setRechargeNote(e.target.value)}
+                          />
+                          <DialogClose asChild>
+                            <Button
+                              className="w-full"
+                              disabled={!rechargeAmount || Number(rechargeAmount) <= 0}
+                              onClick={() => {
+                                rechargeMutation.mutate({
+                                  userId: u.id,
+                                  amount: Number(rechargeAmount),
+                                  note: rechargeNote,
+                                });
+                              }}
+                            >
+                              Add ৳{rechargeAmount || "0"} Credits
+                            </Button>
+                          </DialogClose>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </div>
               ))}
             </div>

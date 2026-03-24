@@ -260,8 +260,8 @@ async function handleMessagingEvent(
 
       // Deduct credits
       if (userId) {
-        const costPerText = Number(settings.credit_cost_text) || 1;
-        const costPerImage = Number(settings.credit_cost_image) || 3;
+        const costPerText = Number(settings.credit_cost_text) || 0.30;
+        const costPerImage = Number(settings.credit_cost_image) || 1.50;
         const deduction = hasImage ? costPerImage : costPerText;
         await deductCredits(supabase, userId, deduction, hasImage ? "image_reply" : "text_reply");
       }

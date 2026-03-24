@@ -25,8 +25,8 @@ const CreditDashboard = () => {
       return {
         balance: credits.data?.balance ?? 0,
         transactions: transactions.data || [],
-        costText: Number(settingsMap.credit_cost_text) || 1,
-        costImage: Number(settingsMap.credit_cost_image) || 3,
+        costText: Number(settingsMap.credit_cost_text) || 0.30,
+        costImage: Number(settingsMap.credit_cost_image) || 1.50,
       };
     },
   });
