@@ -166,6 +166,19 @@ const ProductsManager = () => {
                   <Input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder="e.g. Clothing, Electronics" />
                 </div>
               </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Color / রং</Label>
+                  <Input value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} placeholder="e.g. Red, Pink, মেরুন" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Size / সাইজ</Label>
+                  <Input value={form.size} onChange={e => setForm(f => ({ ...f, size: e.target.value }))} placeholder="e.g. Free, M, L, XL" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Material / কাপড়</Label>
+                  <Input value={form.material} onChange={e => setForm(f => ({ ...f, material: e.target.value }))} placeholder="e.g. Cotton, Georgette" />
+                </div>
               <div className="space-y-2">
                 <Label>Keywords (comma separated, helps AI match products)</Label>
                 <Input value={form.keywords} onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))} placeholder="shirt, tshirt, jersey, জার্সি" />
