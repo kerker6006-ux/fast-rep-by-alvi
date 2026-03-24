@@ -942,4 +942,3 @@ async function detectAndCreateComplaint(
     console.error("Complaint detection error:", e);
   }
 }
-}
