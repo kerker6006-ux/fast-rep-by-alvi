@@ -71,6 +71,9 @@ const ProductsManager = () => {
         category: form.category || null,
         is_active: form.is_active,
         keywords: form.keywords ? form.keywords.split(",").map(k => k.trim()) : null,
+        color: form.color || null,
+        size: form.size || null,
+        material: form.material || null,
         user_id: user?.id,
       };
       if (editingProduct) {
