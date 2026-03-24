@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_usage: {
+        Row: {
+          call_type: string
+          created_at: string
+          estimated_cost: number
+          id: string
+          model: string
+          user_id: string
+        }
+        Insert: {
+          call_type?: string
+          created_at?: string
+          estimated_cost?: number
+          id?: string
+          model?: string
+          user_id: string
+        }
+        Update: {
+          call_type?: string
+          created_at?: string
+          estimated_cost?: number
+          id?: string
+          model?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       auto_reply_rules: {
         Row: {
           created_at: string
