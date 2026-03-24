@@ -91,13 +91,21 @@ const OrdersManager = () => {
   });
 
   const filteredOrders = orders?.filter((o: any) => {
-    if (!dateFilter) return true;
-    const orderDate = new Date(o.created_at);
-    return (
-      orderDate.getFullYear() === dateFilter.getFullYear() &&
-      orderDate.getMonth() === dateFilter.getMonth() &&
-      orderDate.getDate() === dateFilter.getDate()
-    );
+    if (dateFilter) {
+      const orderDate = new Date(o.created_at);
+      if (
+        orderDate.getFullYear() !== dateFilter.getFullYear() ||
+        orderDate.getMonth() !== dateFilter.getMonth() ||
+        orderDate.getDate() !== dateFilter.getDate()
+      ) return false;
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const nameMatch = o.customer_name?.toLowerCase().includes(q);
+      const phoneMatch = o.customer_phone?.toLowerCase().includes(q);
+      if (!nameMatch && !phoneMatch) return false;
+    }
+    return true;
   });
 
   if (isLoading) return <div className="animate-pulse space-y-4">{[1,2,3].map(i => <div key={i} className="h-32 bg-muted rounded-lg" />)}</div>;
