@@ -664,7 +664,17 @@ ${settings.image_instructions || `IMAGE HANDLING:
 - No match → "এটা আমাদের কালেকশনে নেই।" That's it. Don't elaborate.
 - Be precise about item types. Don't confuse t-shirt with hijab.`}
 
-${settings.order_instructions || "ORDER: Ask name, phone, address. Confirm items + total. Keep it simple."}
+${settings.order_instructions || `ORDER COLLECTION — VERY IMPORTANT:
+- When customer wants to order, you MUST collect ALL of these before confirming:
+  1. Full name (নাম)
+  2. Phone number (ফোন নম্বর)
+  3. Full delivery address (ঠিকানা)
+  4. Which product(s) they want (পণ্যের নাম)
+  5. Quantity of each product (কয়টা)
+- Ask for missing info one step at a time. Do NOT confirm until ALL details are collected.
+- Once you have everything, summarize: "নাম: X, ফোন: X, ঠিকানা: X, পণ্য: X (Xটা), মোট: ৳X — কনফার্ম করবেন?"
+- Only after customer says "হ্যাঁ/yes/confirm/কনফার্ম" should the order be considered confirmed.
+- Do NOT say "অর্ডার কনফার্ম" until customer explicitly confirms the summary.`}
 ${settings.delivery_info ? `Delivery: ${settings.delivery_info}` : ""}
 ${settings.payment_methods ? `Payment: ${settings.payment_methods}` : ""}
 
@@ -730,7 +740,7 @@ async function detectAndCreateOrder(
       body: JSON.stringify({
         model: "google/gemini-2.5-flash-lite",
         messages: [
-          { role: "system", content: "Extract order details from this conversation. If there's a clear order being placed, extract items and details. If it's just inquiry, return null." },
+          { role: "system", content: "Extract order details from this conversation. ONLY set is_order=true if the customer has CONFIRMED the order AND all details (name, phone, address, product name, quantity, total) are clearly present. If any detail is missing or customer hasn't confirmed yet, set is_order=false." },
           { role: "user", content: `Customer: ${customerMessage}\nBot reply: ${aiReply}` },
         ],
         tools: [{
@@ -768,19 +778,33 @@ async function detectAndCreateOrder(
     const orderData = JSON.parse(toolCall.function.arguments);
     if (!orderData.is_order) return;
 
+    // Only create order if ALL required details are present
+    const hasName = !!orderData.customer_name && orderData.customer_name.trim().length > 0;
+    const hasPhone = !!orderData.customer_phone && orderData.customer_phone.trim().length > 0;
+    const hasAddress = !!orderData.customer_address && orderData.customer_address.trim().length > 0;
+    const hasItems = Array.isArray(orderData.items) && orderData.items.length > 0 && orderData.items.every((i: any) => i.name && i.quantity > 0);
+    const hasTotal = orderData.total > 0;
+
+    if (!hasName || !hasPhone || !hasAddress || !hasItems || !hasTotal) {
+      console.log("Order details incomplete, skipping creation. Missing:", {
+        name: !hasName, phone: !hasPhone, address: !hasAddress, items: !hasItems, total: !hasTotal
+      });
+      return;
+    }
+
     const insertData: any = {
       conversation_id: conversationId,
-      customer_name: orderData.customer_name || null,
-      customer_phone: orderData.customer_phone || null,
-      customer_address: orderData.customer_address || null,
-      items: orderData.items || [],
-      total: orderData.total || 0,
+      customer_name: orderData.customer_name,
+      customer_phone: orderData.customer_phone,
+      customer_address: orderData.customer_address,
+      items: orderData.items,
+      total: orderData.total,
       status: "pending",
     };
     if (userId) insertData.user_id = userId;
 
     await supabase.from("orders").insert(insertData);
-    console.log("Order created for conversation:", conversationId);
+    console.log("Order created with full details for conversation:", conversationId);
   } catch (e) {
     console.error("Order detection error:", e);
   }
@@ -829,6 +853,7 @@ async function deductCredits(
     });
   } catch (e) {
     console.error("Failed to deduct credits:", e);
+  }
 }
 
 async function detectAndCreateComplaint(
@@ -916,5 +941,4 @@ async function detectAndCreateComplaint(
   } catch (e) {
     console.error("Complaint detection error:", e);
   }
-}
 }
