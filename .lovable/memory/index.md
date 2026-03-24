@@ -12,7 +12,7 @@ Facebook Auto-Reply Bot SaaS platform. Multi-tenant, Bangla-first, English suppo
 - AI model: google/gemini-2.5-flash (text+image), google/gemini-2.5-flash-lite (order extraction)
 - Default language: Bangla (বাংলা), auto-detects English and Banglish
 - Reply style: SHORT and DIRECT — max 1-2 sentences
-- Dashboard sidebar: Analytics, Credits, AI Usage, AI Training, Products, Orders, Chats, Auto-Reply, Scheduled, FB Pages, Settings, Admin
+- Dashboard sidebar: Analytics, Credits, AI Usage, AI Training, Products, Orders, Complaints, Chats, Auto-Reply, Scheduled, FB Pages, Settings, Admin
 - Design: Blue primary (hsl 217 72% 52%), dark sidebar, clean card-based layout
 - AI Training UI: simplified — Bot Identity, Personality, Welcome Messages, FAQ, Never Say, Comment Auto-Reply
 - Trigger on auth.users creates profile + user_credits row automatically
