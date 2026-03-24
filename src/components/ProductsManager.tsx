@@ -34,7 +34,7 @@ const ProductsManager = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [form, setForm] = useState({
     name: "", name_bn: "", description: "", description_bn: "",
-    price: "", category: "", keywords: "", is_active: true,
+    price: "", category: "", keywords: "", color: "", size: "", material: "", is_active: true,
   });
 
   const { data: products, isLoading } = useQuery({
@@ -71,6 +71,9 @@ const ProductsManager = () => {
         category: form.category || null,
         is_active: form.is_active,
         keywords: form.keywords ? form.keywords.split(",").map(k => k.trim()) : null,
+        color: form.color || null,
+        size: form.size || null,
+        material: form.material || null,
         user_id: user?.id,
       };
       if (editingProduct) {
@@ -101,7 +104,7 @@ const ProductsManager = () => {
   });
 
   const resetForm = () => {
-    setForm({ name: "", name_bn: "", description: "", description_bn: "", price: "", category: "", keywords: "", is_active: true });
+    setForm({ name: "", name_bn: "", description: "", description_bn: "", price: "", category: "", keywords: "", color: "", size: "", material: "", is_active: true });
     setImageFile(null);
     setEditingProduct(null);
     setIsOpen(false);
@@ -112,7 +115,7 @@ const ProductsManager = () => {
     setForm({
       name: p.name, name_bn: p.name_bn || "", description: p.description || "",
       description_bn: p.description_bn || "", price: String(p.price), category: p.category || "",
-      keywords: p.keywords?.join(", ") || "", is_active: p.is_active,
+      keywords: p.keywords?.join(", ") || "", color: (p as any).color || "", size: (p as any).size || "", material: (p as any).material || "", is_active: p.is_active,
     });
     setIsOpen(true);
   };
@@ -161,6 +164,20 @@ const ProductsManager = () => {
                 <div className="space-y-2">
                   <Label>Category</Label>
                   <Input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder="e.g. Clothing, Electronics" />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Color / রং</Label>
+                  <Input value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} placeholder="e.g. Red, Pink, মেরুন" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Size / সাইজ</Label>
+                  <Input value={form.size} onChange={e => setForm(f => ({ ...f, size: e.target.value }))} placeholder="e.g. Free, M, L, XL" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Material / কাপড়</Label>
+                  <Input value={form.material} onChange={e => setForm(f => ({ ...f, material: e.target.value }))} placeholder="e.g. Cotton, Georgette" />
                 </div>
               </div>
               <div className="space-y-2">
@@ -220,9 +237,20 @@ const ProductsManager = () => {
                   <span className="text-lg font-bold text-primary">৳{p.price}</span>
                 </div>
                 {p.description && <p className="text-sm text-muted-foreground line-clamp-2">{p.description}</p>}
-                {p.category && (
-                  <span className="inline-block text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">{p.category}</span>
-                )}
+                <div className="flex flex-wrap gap-1">
+                  {p.category && (
+                    <span className="inline-block text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">{p.category}</span>
+                  )}
+                  {(p as any).color && (
+                    <span className="inline-block text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{(p as any).color}</span>
+                  )}
+                  {(p as any).size && (
+                    <span className="inline-block text-xs bg-accent text-accent-foreground px-2 py-0.5 rounded-full">{(p as any).size}</span>
+                  )}
+                  {(p as any).material && (
+                    <span className="inline-block text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{(p as any).material}</span>
+                  )}
+                </div>
                 <div className="flex gap-2 pt-2">
                   <Button variant="outline" size="sm" onClick={() => openEdit(p)} className="gap-1">
                     <Pencil className="h-3 w-3" /> Edit

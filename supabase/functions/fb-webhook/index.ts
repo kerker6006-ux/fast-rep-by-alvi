@@ -264,6 +264,18 @@ async function handleMessagingEvent(
       const replyText = await generateAiReply(
         supabase, lovableApiKey, conversationId, messageText, imageUrl, settings, userId
       );
+
+      // Detect if AI reply mentions a specific product — send its image first
+      let productQuery = supabase.from("products").select("name, name_bn, price, image_url, color, keywords").eq("is_active", true).not("image_url", "is", null);
+      if (userId) productQuery = productQuery.eq("user_id", userId);
+      const { data: allProducts } = await productQuery;
+      
+      const mentionedProduct = findMentionedProduct(allProducts || [], replyText, messageText);
+      if (mentionedProduct?.image_url) {
+        await sendFbImage(pageAccessToken, senderId, mentionedProduct.image_url);
+        await saveOutgoingMessage(supabase, conversationId, `[${mentionedProduct.name}]`, mentionedProduct.image_url, userId);
+      }
+
       await sendFbMessage(pageAccessToken, senderId, replyText);
       await saveOutgoingMessage(supabase, conversationId, replyText, null, userId);
 
@@ -385,7 +397,7 @@ async function findBestProductForImageRequest(
 ) {
   let query = supabase
     .from("products")
-    .select("name, name_bn, price, image_url, keywords")
+    .select("name, name_bn, price, image_url, keywords, color")
     .eq("is_active", true)
     .not("image_url", "is", null);
   if (userId) query = query.eq("user_id", userId);
@@ -412,6 +424,7 @@ async function findBestProductForImageRequest(
     const terms = [
       product.name,
       product.name_bn,
+      product.color,
       ...((product.keywords || []) as string[]),
     ]
       .filter(Boolean)
@@ -432,6 +445,35 @@ async function findBestProductForImageRequest(
   if (best) return best;
   if (products.length === 1) return products[0];
   return null;
+}
+
+function findMentionedProduct(products: any[], aiReply: string, customerMsg: string | null): any | null {
+  if (!products?.length) return null;
+  const combined = `${aiReply} ${customerMsg || ""}`.toLowerCase();
+  
+  let best: any = null;
+  let bestScore = 0;
+
+  for (const p of products) {
+    const terms = [
+      p.name, p.name_bn, p.color,
+      ...((p.keywords || []) as string[]),
+    ].filter(Boolean).map((t: string) => t.toLowerCase().trim()).filter((t: string) => t.length > 1);
+
+    let score = 0;
+    for (const term of terms) {
+      if (combined.includes(term)) score += term.length >= 4 ? 3 : 1;
+    }
+    // Boost if price is mentioned in the reply
+    if (score > 0 && aiReply.includes(String(p.price))) score += 2;
+
+    if (score > bestScore) {
+      best = p;
+      bestScore = score;
+    }
+  }
+
+  return bestScore >= 2 ? best : null;
 }
 
 async function sendFbMessage(pageAccessToken: string, recipientId: string, text: string) {
@@ -528,13 +570,13 @@ async function generateAiReply(
     .eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(20);
 
   let productQuery = supabase
-    .from("products").select("name, name_bn, description, description_bn, price, category, keywords, image_url")
+    .from("products").select("name, name_bn, description, description_bn, price, category, keywords, image_url, color, size, material")
     .eq("is_active", true);
   if (userId) productQuery = productQuery.eq("user_id", userId);
   const { data: products } = await productQuery;
 
   const productCatalog = products?.map((p: any) =>
-    `- ${p.name}${p.name_bn ? ` (${p.name_bn})` : ""}: ৳${p.price}${p.description ? ` — ${p.description}` : ""}${p.category ? ` [${p.category}]` : ""}${p.keywords?.length ? ` [${p.keywords.join(", ")}]` : ""}`
+    `- ${p.name}${p.name_bn ? ` (${p.name_bn})` : ""}: ৳${p.price}${p.color ? ` | Color: ${p.color}` : ""}${p.size ? ` | Size: ${p.size}` : ""}${p.material ? ` | Material: ${p.material}` : ""}${p.description ? ` — ${p.description}` : ""}${p.category ? ` [${p.category}]` : ""}${p.keywords?.length ? ` [${p.keywords.join(", ")}]` : ""}`
   ).join("\n") || "No products available.";
 
   const chatHistory = (recentMessages || []).reverse().map((m: any) => ({
