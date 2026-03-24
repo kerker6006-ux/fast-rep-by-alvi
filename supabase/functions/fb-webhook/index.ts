@@ -631,13 +631,11 @@ CONTEXT RULES:
 ${settings.angry_customer_handling ? `\nANGRY CUSTOMERS: ${settings.angry_customer_handling}` : ""}
 
 ${settings.image_instructions || `IMAGE HANDLING:
-- Identify item type (t-shirt/hijab/abaya/sharee) and exact color.
-- Match with catalog. If match found → name + price. If no match → say it's not available.
-- Be precise about colors. Don't guess.
-- Unknown/competitor items → "এটা আমাদের কালেকশনে নেই"
-
-PRODUCT IMAGES:
-${productImageList || "No product images available."}`}
+- When customer sends an image, you will receive both their image AND our product images.
+- VISUALLY compare: same item type (t-shirt/hijab/sharee etc) AND similar color/design = match.
+- Match found → say product name + price in 1 sentence.
+- No match → "এটা আমাদের কালেকশনে নেই।" That's it. Don't elaborate.
+- Be precise about item types. Don't confuse t-shirt with hijab.`}
 
 ${settings.order_instructions || "ORDER: Ask name, phone, address. Confirm items + total. Keep it simple."}
 ${settings.delivery_info ? `Delivery: ${settings.delivery_info}` : ""}
