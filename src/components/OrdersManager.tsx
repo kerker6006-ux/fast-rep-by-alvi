@@ -72,7 +72,7 @@ const OrdersManager = () => {
         customer_address: order.customer_address,
         notes: order.notes,
         total: order.total,
-      } as any).eq("id", order.id);
+      }).eq("id", order.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -81,7 +81,7 @@ const OrdersManager = () => {
       setEditingOrder(null);
       setSelectedOrder(null);
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => { console.error("Order update error:", e); toast.error(e.message); },
   });
 
   const deleteOrder = useMutation({
