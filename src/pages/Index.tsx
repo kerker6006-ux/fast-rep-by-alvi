@@ -11,9 +11,11 @@ import AiTraining from "@/components/AiTraining";
 import AdminPanel from "@/components/AdminPanel";
 import FbPageConnection from "@/components/FbPageConnection";
 import AiUsageDashboard from "@/components/AiUsageDashboard";
+import CreditDashboard from "@/components/CreditDashboard";
 
 const tabs: Record<string, React.ComponentType> = {
   analytics: AnalyticsDashboard,
+  credits: CreditDashboard,
   "ai-usage": AiUsageDashboard,
   "ai-training": AiTraining,
   products: ProductsManager,

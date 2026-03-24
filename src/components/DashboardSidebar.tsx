@@ -16,6 +16,7 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { id: "analytics", label: "Analytics", icon: BarChart3 },
+  { id: "credits", label: "Credits", icon: Coins },
   { id: "ai-usage", label: "AI Usage", icon: Activity },
   { id: "ai-training", label: "AI Training", icon: Brain },
   { id: "products", label: "Products", icon: Package },

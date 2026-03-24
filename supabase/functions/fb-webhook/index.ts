@@ -800,3 +800,33 @@ async function logAiUsage(
     console.error("Failed to log AI usage:", e);
   }
 }
+
+async function deductCredits(
+  supabase: any, userId: string, amount: number, type: string
+) {
+  try {
+    const { data: creditRow } = await supabase
+      .from("user_credits")
+      .select("balance")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (!creditRow) return;
+
+    const newBalance = Math.max(0, Number(creditRow.balance) - amount);
+    await supabase
+      .from("user_credits")
+      .update({ balance: newBalance, updated_at: new Date().toISOString() })
+      .eq("user_id", userId);
+
+    // Log as negative transaction
+    await supabase.from("credit_transactions").insert({
+      user_id: userId,
+      amount: -amount,
+      type,
+      description: type === "image_reply" ? "AI image analysis" : "AI text reply",
+    });
+  } catch (e) {
+    console.error("Failed to deduct credits:", e);
+  }
+}
