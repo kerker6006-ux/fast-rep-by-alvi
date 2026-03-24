@@ -843,6 +843,7 @@ async function deductCredits(
     });
   } catch (e) {
     console.error("Failed to deduct credits:", e);
+  }
 }
 
 async function detectAndCreateComplaint(
