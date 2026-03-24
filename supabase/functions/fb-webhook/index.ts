@@ -758,3 +758,19 @@ async function detectAndCreateOrder(
     console.error("Order detection error:", e);
   }
 }
+
+async function logAiUsage(
+  supabase: any, userId: string | null, callType: string, model: string, estimatedCost: number
+) {
+  if (!userId) return;
+  try {
+    await supabase.from("ai_usage").insert({
+      user_id: userId,
+      call_type: callType,
+      model,
+      estimated_cost: estimatedCost,
+    });
+  } catch (e) {
+    console.error("Failed to log AI usage:", e);
+  }
+}
