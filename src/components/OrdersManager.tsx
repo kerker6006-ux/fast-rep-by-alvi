@@ -95,7 +95,7 @@ const OrdersManager = () => {
       setDeleteOrderId(null);
       setSelectedOrder(null);
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => { console.error("Order delete error:", e); toast.error(e.message); },
   });
 
   const filteredOrders = orders?.filter((o: any) => {
