@@ -113,14 +113,45 @@ const OrdersManager = () => {
 
   const getCount = (status: string) => orders?.filter((o: any) => o.status === status).length || 0;
 
+  const exportCSV = () => {
+    const data = filteredOrders || [];
+    if (!data.length) { toast.error("No orders to export"); return; }
+    const headers = ["Order ID", "Customer Name", "Phone", "Address", "Status", "Total (৳)", "Items", "Notes", "Date"];
+    const rows = data.map((o: any) => [
+      o.id.slice(0, 8),
+      o.customer_name || o.conversations?.sender_name || "",
+      o.customer_phone || "",
+      o.customer_address || "",
+      o.status,
+      o.total,
+      Array.isArray(o.items) ? o.items.map((i: any) => `${i.name} x${i.quantity}`).join("; ") : "",
+      o.notes || "",
+      new Date(o.created_at).toLocaleString(),
+    ]);
+    const csv = [headers, ...rows].map(r => r.map((c: any) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `orders-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Orders exported!");
+  };
+
   if (isLoading) return <div className="animate-pulse space-y-4">{[1, 2, 3].map(i => <div key={i} className="h-28 bg-muted rounded-lg" />)}</div>;
 
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Orders</h2>
-        <p className="text-muted-foreground text-sm">Manage orders from Messenger.</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Orders</h2>
+          <p className="text-muted-foreground text-sm">Manage orders from Messenger.</p>
+        </div>
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={exportCSV}>
+          <Download className="h-3.5 w-3.5" /> Export
+        </Button>
       </div>
 
       {/* Summary Cards */}
