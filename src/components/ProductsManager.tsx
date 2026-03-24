@@ -101,7 +101,7 @@ const ProductsManager = () => {
   });
 
   const resetForm = () => {
-    setForm({ name: "", name_bn: "", description: "", description_bn: "", price: "", category: "", keywords: "", is_active: true });
+    setForm({ name: "", name_bn: "", description: "", description_bn: "", price: "", category: "", keywords: "", color: "", size: "", material: "", is_active: true });
     setImageFile(null);
     setEditingProduct(null);
     setIsOpen(false);
