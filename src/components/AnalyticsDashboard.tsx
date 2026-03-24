@@ -16,7 +16,7 @@ const AnalyticsDashboard = () => {
         supabase.from("messages").select("id", { count: "exact", head: true }),
         supabase.from("messages").select("id", { count: "exact", head: true }).gte("created_at", today),
         supabase.from("orders").select("id, total, status", { count: "exact" }),
-        supabase.from("conversations").select("id, sender_name, last_message, last_message_at")
+        supabase.from("conversations").select("id, sender_name, fb_sender_id, last_message, last_message_at")
           .gte("last_message_at", weekAgo).order("last_message_at", { ascending: false }).limit(10),
       ]);
 
@@ -79,7 +79,7 @@ const AnalyticsDashboard = () => {
               {stats.recentConversations.map((c: any) => (
                 <div key={c.id} className="flex items-center justify-between border-b pb-2 last:border-0">
                   <div>
-                    <p className="font-medium text-sm">{c.sender_name || "Unknown"}</p>
+                    <p className="font-medium text-sm">{c.sender_name || `Customer ${c.fb_sender_id?.slice(-4) || "?"}`}</p>
                     <p className="text-xs text-muted-foreground line-clamp-1">{c.last_message}</p>
                   </div>
                   <p className="text-xs text-muted-foreground whitespace-nowrap ml-4">

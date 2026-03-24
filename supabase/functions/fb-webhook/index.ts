@@ -285,16 +285,28 @@ async function getOrCreateConversation(
   if (userId) query = query.eq("user_id", userId);
   const { data: existingConvo } = await query.maybeSingle();
 
-  if (existingConvo) return existingConvo.id;
-
+  // Always try to fetch sender name from FB profile
   let senderName = null;
   try {
     const profileRes = await fetch(
       `https://graph.facebook.com/${senderId}?fields=first_name,last_name&access_token=${pageAccessToken}`
     );
     const profile = await profileRes.json();
-    senderName = `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || null;
-  } catch {}
+    if (profile.first_name || profile.last_name) {
+      senderName = `${profile.first_name || ""} ${profile.last_name || ""}`.trim();
+    }
+    console.log("FB profile for", senderId, ":", JSON.stringify(profile));
+  } catch (e) {
+    console.error("FB profile fetch error:", e);
+  }
+
+  if (existingConvo) {
+    // Update sender_name if we got one and it's currently missing
+    if (senderName) {
+      await supabase.from("conversations").update({ sender_name: senderName }).eq("id", existingConvo.id);
+    }
+    return existingConvo.id;
+  }
 
   const insertData: any = { fb_sender_id: senderId, sender_name: senderName };
   if (userId) insertData.user_id = userId;
