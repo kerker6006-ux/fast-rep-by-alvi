@@ -14,7 +14,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { Package, Phone, MapPin, User, Eye, Calendar as CalendarIcon, FileText, Pencil, Trash2, X } from "lucide-react";
+import { Package, Phone, MapPin, User, Eye, Calendar as CalendarIcon, FileText, Pencil, Trash2, X, Search } from "lucide-react";
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
