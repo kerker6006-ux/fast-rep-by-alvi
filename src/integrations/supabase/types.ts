@@ -104,6 +104,53 @@ export type Database = {
         }
         Relationships: []
       }
+      complaints: {
+        Row: {
+          complaint_text: string
+          conversation_id: string | null
+          created_at: string
+          customer_name: string | null
+          customer_phone: string | null
+          id: string
+          notes: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          complaint_text: string
+          conversation_id?: string | null
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          complaint_text?: string
+          conversation_id?: string | null
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaints_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           created_at: string
