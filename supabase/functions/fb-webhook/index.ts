@@ -664,7 +664,17 @@ ${settings.image_instructions || `IMAGE HANDLING:
 - No match → "এটা আমাদের কালেকশনে নেই।" That's it. Don't elaborate.
 - Be precise about item types. Don't confuse t-shirt with hijab.`}
 
-${settings.order_instructions || "ORDER: Ask name, phone, address. Confirm items + total. Keep it simple."}
+${settings.order_instructions || `ORDER COLLECTION — VERY IMPORTANT:
+- When customer wants to order, you MUST collect ALL of these before confirming:
+  1. Full name (নাম)
+  2. Phone number (ফোন নম্বর)
+  3. Full delivery address (ঠিকানা)
+  4. Which product(s) they want (পণ্যের নাম)
+  5. Quantity of each product (কয়টা)
+- Ask for missing info one step at a time. Do NOT confirm until ALL details are collected.
+- Once you have everything, summarize: "নাম: X, ফোন: X, ঠিকানা: X, পণ্য: X (Xটা), মোট: ৳X — কনফার্ম করবেন?"
+- Only after customer says "হ্যাঁ/yes/confirm/কনফার্ম" should the order be considered confirmed.
+- Do NOT say "অর্ডার কনফার্ম" until customer explicitly confirms the summary.`}
 ${settings.delivery_info ? `Delivery: ${settings.delivery_info}` : ""}
 ${settings.payment_methods ? `Payment: ${settings.payment_methods}` : ""}
 
