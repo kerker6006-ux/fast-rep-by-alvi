@@ -54,14 +54,14 @@ const OrdersManager = () => {
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase.from("orders").update({ status } as any).eq("id", id);
+      const { error } = await supabase.from("orders").update({ status: status as any }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast.success("Order status updated");
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => { console.error("Status update error:", e); toast.error(e.message); },
   });
 
   const updateOrder = useMutation({
