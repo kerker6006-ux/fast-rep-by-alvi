@@ -424,6 +424,7 @@ async function findBestProductForImageRequest(
     const terms = [
       product.name,
       product.name_bn,
+      product.color,
       ...((product.keywords || []) as string[]),
     ]
       .filter(Boolean)
