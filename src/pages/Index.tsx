@@ -10,9 +10,11 @@ import ScheduledMessages from "@/components/ScheduledMessages";
 import AiTraining from "@/components/AiTraining";
 import AdminPanel from "@/components/AdminPanel";
 import FbPageConnection from "@/components/FbPageConnection";
+import AiUsageDashboard from "@/components/AiUsageDashboard";
 
 const tabs: Record<string, React.ComponentType> = {
   analytics: AnalyticsDashboard,
+  "ai-usage": AiUsageDashboard,
   "ai-training": AiTraining,
   products: ProductsManager,
   orders: OrdersManager,
