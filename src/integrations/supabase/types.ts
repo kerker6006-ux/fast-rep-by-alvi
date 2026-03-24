@@ -344,6 +344,7 @@ export type Database = {
       products: {
         Row: {
           category: string | null
+          color: string | null
           created_at: string
           description: string | null
           description_bn: string | null
@@ -351,14 +352,17 @@ export type Database = {
           image_url: string | null
           is_active: boolean
           keywords: string[] | null
+          material: string | null
           name: string
           name_bn: string | null
           price: number
+          size: string | null
           updated_at: string
           user_id: string | null
         }
         Insert: {
           category?: string | null
+          color?: string | null
           created_at?: string
           description?: string | null
           description_bn?: string | null
@@ -366,14 +370,17 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           keywords?: string[] | null
+          material?: string | null
           name: string
           name_bn?: string | null
           price?: number
+          size?: string | null
           updated_at?: string
           user_id?: string | null
         }
         Update: {
           category?: string | null
+          color?: string | null
           created_at?: string
           description?: string | null
           description_bn?: string | null
@@ -381,9 +388,11 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           keywords?: string[] | null
+          material?: string | null
           name?: string
           name_bn?: string | null
           price?: number
+          size?: string | null
           updated_at?: string
           user_id?: string | null
         }
