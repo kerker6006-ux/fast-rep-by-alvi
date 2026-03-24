@@ -1,0 +1,1 @@
+UPDATE public.fb_pages SET fb_page_id = '104708989358116' WHERE id = '7bfc130b-0706-4df6-af2a-8499c4313d2d';

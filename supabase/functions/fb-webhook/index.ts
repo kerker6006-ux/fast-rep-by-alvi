@@ -80,9 +80,18 @@ serve(async (req) => {
             console.error("No fb_page found for page_id:", pageId, "and no fallback token");
             continue;
           }
-          // Process with fallback (no user_id)
+          // Try to find any active fb_page to get the user_id
+          const { data: anyPage } = await supabase
+            .from("fb_pages")
+            .select("user_id")
+            .eq("is_active", true)
+            .limit(1)
+            .maybeSingle();
+          const fallbackUserId = anyPage?.user_id || null;
+          const fallbackSettings = fallbackUserId ? await loadSettings(supabase, fallbackUserId) : {};
+          console.log("Using fallback token with user_id:", fallbackUserId);
           for (const event of entry.messaging || []) {
-            await handleMessagingEvent(supabase, event, pageId, fallbackToken, LOVABLE_API_KEY, {}, null);
+            await handleMessagingEvent(supabase, event, pageId, fallbackToken, LOVABLE_API_KEY, fallbackSettings, fallbackUserId);
           }
           continue;
         }
@@ -842,27 +851,32 @@ async function deductCredits(
   supabase: any, userId: string, amount: number, type: string
 ) {
   try {
-    const { data: creditRow } = await supabase
+    const { data: creditRow, error: selectErr } = await supabase
       .from("user_credits")
       .select("balance")
       .eq("user_id", userId)
       .maybeSingle();
 
-    if (!creditRow) return;
+    if (selectErr) { console.error("Credit select error:", selectErr); return; }
+    if (!creditRow) { console.error("No credit row found for user:", userId); return; }
 
     const newBalance = Math.max(0, Number(creditRow.balance) - amount);
-    await supabase
+    const { error: updateErr } = await supabase
       .from("user_credits")
       .update({ balance: newBalance, updated_at: new Date().toISOString() })
       .eq("user_id", userId);
 
+    if (updateErr) { console.error("Credit update error:", updateErr); return; }
+    console.log(`Credits deducted: ${amount} for ${type}. Balance: ${creditRow.balance} -> ${newBalance}`);
+
     // Log as negative transaction
-    await supabase.from("credit_transactions").insert({
+    const { error: insertErr } = await supabase.from("credit_transactions").insert({
       user_id: userId,
       amount: -amount,
       type,
       description: type === "image_reply" ? "AI image analysis" : "AI text reply",
     });
+    if (insertErr) console.error("Credit transaction insert error:", insertErr);
   } catch (e) {
     console.error("Failed to deduct credits:", e);
   }
