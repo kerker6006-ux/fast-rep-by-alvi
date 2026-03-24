@@ -731,6 +731,10 @@ async function detectAndCreateOrder(
 
     if (!extractResponse.ok) return;
     const extractData = await extractResponse.json();
+
+    // Log order detection AI usage
+    await logAiUsage(supabase, userId, "order_detection", "google/gemini-2.5-flash-lite", 0.0002);
+
     const toolCall = extractData.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) return;
 
