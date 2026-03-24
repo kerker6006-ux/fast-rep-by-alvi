@@ -675,6 +675,12 @@ ${faqSection}`;
   const aiData = await aiResponse.json();
   const rawReply = aiData.choices?.[0]?.message?.content || "";
   const cleanedReply = sanitizeReplyText(rawReply, settings.max_reply_length);
+
+  // Log AI usage
+  const callType = hasImage ? "image" : "text";
+  const estimatedCost = hasImage ? 0.003 : 0.0005;
+  await logAiUsage(supabase, userId, callType, "google/gemini-2.5-flash", estimatedCost);
+
   return cleanedReply || settings.welcome_message || "ধন্যবাদ! আপনার মেসেজ পেয়েছি।";
 }
 
@@ -725,6 +731,10 @@ async function detectAndCreateOrder(
 
     if (!extractResponse.ok) return;
     const extractData = await extractResponse.json();
+
+    // Log order detection AI usage
+    await logAiUsage(supabase, userId, "order_detection", "google/gemini-2.5-flash-lite", 0.0002);
+
     const toolCall = extractData.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) return;
 
@@ -746,5 +756,21 @@ async function detectAndCreateOrder(
     console.log("Order created for conversation:", conversationId);
   } catch (e) {
     console.error("Order detection error:", e);
+  }
+}
+
+async function logAiUsage(
+  supabase: any, userId: string | null, callType: string, model: string, estimatedCost: number
+) {
+  if (!userId) return;
+  try {
+    await supabase.from("ai_usage").insert({
+      user_id: userId,
+      call_type: callType,
+      model,
+      estimated_cost: estimatedCost,
+    });
+  } catch (e) {
+    console.error("Failed to log AI usage:", e);
   }
 }

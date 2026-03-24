@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import {
   BarChart3, Package, ShoppingCart, MessageSquare,
-  Zap, Clock, Settings, Bot, Brain, ChevronLeft, ChevronRight, LogOut, Globe, ShieldCheck
+  Zap, Clock, Settings, Bot, Brain, ChevronLeft, ChevronRight, LogOut, Globe, ShieldCheck, Activity
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,6 +16,7 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { id: "analytics", label: "Analytics", icon: BarChart3 },
+  { id: "ai-usage", label: "AI Usage", icon: Activity },
   { id: "ai-training", label: "AI Training", icon: Brain },
   { id: "products", label: "Products", icon: Package },
   { id: "orders", label: "Orders", icon: ShoppingCart },
