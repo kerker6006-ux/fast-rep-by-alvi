@@ -179,6 +179,7 @@ const ProductsManager = () => {
                   <Label>Material / কাপড়</Label>
                   <Input value={form.material} onChange={e => setForm(f => ({ ...f, material: e.target.value }))} placeholder="e.g. Cotton, Georgette" />
                 </div>
+              </div>
               <div className="space-y-2">
                 <Label>Keywords (comma separated, helps AI match products)</Label>
                 <Input value={form.keywords} onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))} placeholder="shirt, tshirt, jersey, জার্সি" />
