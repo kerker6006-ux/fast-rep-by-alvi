@@ -14,7 +14,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { Package, Phone, MapPin, User, Eye, Calendar as CalendarIcon, FileText, Pencil, Trash2, X } from "lucide-react";
+import { Package, Phone, MapPin, User, Eye, Calendar as CalendarIcon, FileText, Pencil, Trash2, X, Search } from "lucide-react";
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -30,6 +30,7 @@ const OrdersManager = () => {
   const [editingOrder, setEditingOrder] = useState<any>(null);
   const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["orders"],
@@ -90,13 +91,21 @@ const OrdersManager = () => {
   });
 
   const filteredOrders = orders?.filter((o: any) => {
-    if (!dateFilter) return true;
-    const orderDate = new Date(o.created_at);
-    return (
-      orderDate.getFullYear() === dateFilter.getFullYear() &&
-      orderDate.getMonth() === dateFilter.getMonth() &&
-      orderDate.getDate() === dateFilter.getDate()
-    );
+    if (dateFilter) {
+      const orderDate = new Date(o.created_at);
+      if (
+        orderDate.getFullYear() !== dateFilter.getFullYear() ||
+        orderDate.getMonth() !== dateFilter.getMonth() ||
+        orderDate.getDate() !== dateFilter.getDate()
+      ) return false;
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const nameMatch = o.customer_name?.toLowerCase().includes(q);
+      const phoneMatch = o.customer_phone?.toLowerCase().includes(q);
+      if (!nameMatch && !phoneMatch) return false;
+    }
+    return true;
   });
 
   if (isLoading) return <div className="animate-pulse space-y-4">{[1,2,3].map(i => <div key={i} className="h-32 bg-muted rounded-lg" />)}</div>;
@@ -108,7 +117,16 @@ const OrdersManager = () => {
           <h2 className="text-2xl font-bold tracking-tight">Orders</h2>
           <p className="text-muted-foreground">Manage orders placed through Messenger.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search name or phone..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8 h-9 w-[200px]"
+            />
+          </div>
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className={cn("gap-2", dateFilter && "border-primary text-primary")}>
