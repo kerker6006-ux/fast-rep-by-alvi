@@ -528,13 +528,13 @@ async function generateAiReply(
     .eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(20);
 
   let productQuery = supabase
-    .from("products").select("name, name_bn, description, description_bn, price, category, keywords, image_url")
+    .from("products").select("name, name_bn, description, description_bn, price, category, keywords, image_url, color, size, material")
     .eq("is_active", true);
   if (userId) productQuery = productQuery.eq("user_id", userId);
   const { data: products } = await productQuery;
 
   const productCatalog = products?.map((p: any) =>
-    `- ${p.name}${p.name_bn ? ` (${p.name_bn})` : ""}: ৳${p.price}${p.description ? ` — ${p.description}` : ""}${p.category ? ` [${p.category}]` : ""}${p.keywords?.length ? ` [${p.keywords.join(", ")}]` : ""}`
+    `- ${p.name}${p.name_bn ? ` (${p.name_bn})` : ""}: ৳${p.price}${p.color ? ` | Color: ${p.color}` : ""}${p.size ? ` | Size: ${p.size}` : ""}${p.material ? ` | Material: ${p.material}` : ""}${p.description ? ` — ${p.description}` : ""}${p.category ? ` [${p.category}]` : ""}${p.keywords?.length ? ` [${p.keywords.join(", ")}]` : ""}`
   ).join("\n") || "No products available.";
 
   const chatHistory = (recentMessages || []).reverse().map((m: any) => ({
