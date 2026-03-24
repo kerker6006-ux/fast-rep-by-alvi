@@ -829,5 +829,92 @@ async function deductCredits(
     });
   } catch (e) {
     console.error("Failed to deduct credits:", e);
+}
+
+async function detectAndCreateComplaint(
+  supabase: any, apiKey: string, conversationId: string,
+  senderId: string, pageAccessToken: string,
+  customerMessage: string | null, aiReply: string, userId: string | null
+) {
+  if (!customerMessage) return;
+
+  const complaintKeywords = [
+    "complaint", "complain", "problem", "issue", "broken", "damaged", "wrong", "bad", "terrible", "worst",
+    "অভিযোগ", "সমস্যা", "নষ্ট", "ভাঙ্গা", "খারাপ", "ক্ষতি", "ভুল", "পণ্য ভুল", "ডেমেজ",
+    "সমস্যা হচ্ছে", "কাজ করে না", "ফেরত", "return", "refund", "exchange",
+    "somossa", "bhangga", "nossto", "kharap", "vul", "damage"
+  ];
+  const lowerMsg = customerMessage.toLowerCase();
+  const hasComplaintIntent = complaintKeywords.some(kw => lowerMsg.includes(kw));
+
+  if (!hasComplaintIntent) return;
+
+  try {
+    const extractResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-lite",
+        messages: [
+          { role: "system", content: "Extract complaint details. If customer has a genuine complaint, extract info. Return is_complaint=false if just asking a question." },
+          { role: "user", content: `Customer: ${customerMessage}\nBot reply: ${aiReply}` },
+        ],
+        tools: [{
+          type: "function",
+          function: {
+            name: "create_complaint",
+            description: "Create a complaint record",
+            parameters: {
+              type: "object",
+              properties: {
+                is_complaint: { type: "boolean" },
+                complaint_text: { type: "string", description: "Summary of what went wrong" },
+                customer_name: { type: "string" },
+                customer_phone: { type: "string" },
+              },
+              required: ["is_complaint"],
+            },
+          },
+        }],
+        tool_choice: { type: "function", function: { name: "create_complaint" } },
+      }),
+    });
+
+    if (!extractResponse.ok) return;
+    const extractData = await extractResponse.json();
+    await logAiUsage(supabase, userId, "complaint_detection", "google/gemini-2.5-flash-lite", 0.0002);
+
+    const toolCall = extractData.choices?.[0]?.message?.tool_calls?.[0];
+    if (!toolCall) return;
+
+    const data = JSON.parse(toolCall.function.arguments);
+    if (!data.is_complaint) return;
+
+    // If no phone number yet, ask for it
+    if (!data.customer_phone) {
+      const askPhoneMsg = "আপনার অভিযোগ আমরা নোট করেছি। অনুগ্রহ করে আপনার ফোন নম্বর দিন, আমরা আপনাকে কল দিবো। 📞";
+      await sendFbMessage(pageAccessToken, senderId, askPhoneMsg);
+      await saveOutgoingMessage(supabase, conversationId, askPhoneMsg, null, userId);
+    } else {
+      const confirmMsg = "আপনার অভিযোগ রেকর্ড করা হয়েছে। আমরা আপনাকে কল দিবো। ধন্যবাদ। 🙏";
+      await sendFbMessage(pageAccessToken, senderId, confirmMsg);
+      await saveOutgoingMessage(supabase, conversationId, confirmMsg, null, userId);
+    }
+
+    // Save complaint
+    const insertData: any = {
+      conversation_id: conversationId,
+      customer_name: data.customer_name || null,
+      customer_phone: data.customer_phone || null,
+      complaint_text: data.complaint_text || customerMessage,
+      status: "pending",
+    };
+    if (userId) insertData.user_id = userId;
+
+    await supabase.from("complaints").insert(insertData);
+    console.log("Complaint created for conversation:", conversationId);
+  } catch (e) {
+    console.error("Complaint detection error:", e);
   }
+}
 }
