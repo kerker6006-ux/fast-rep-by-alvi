@@ -34,7 +34,7 @@ const ProductsManager = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [form, setForm] = useState({
     name: "", name_bn: "", description: "", description_bn: "",
-    price: "", category: "", keywords: "", is_active: true,
+    price: "", category: "", keywords: "", color: "", size: "", material: "", is_active: true,
   });
 
   const { data: products, isLoading } = useQuery({
