@@ -275,7 +275,7 @@ async function handleMessagingEvent(
         await deductCredits(supabase, userId, deduction, hasImage ? "image_reply" : "text_reply");
       }
 
-      await detectAndCreateOrder(supabase, lovableApiKey, conversationId, messageText, replyText, userId);
+      await detectAndProcessOrder(supabase, lovableApiKey, conversationId, messageText, replyText, userId);
       await detectAndCreateComplaint(supabase, lovableApiKey, conversationId, senderId, pageAccessToken, messageText, replyText, userId);
     } catch (aiError) {
       console.error("AI processing error:", aiError);
@@ -742,16 +742,23 @@ ${faqSection}`;
   return cleanedReply || settings.welcome_message || "ধন্যবাদ! আপনার মেসেজ পেয়েছি।";
 }
 
-async function detectAndCreateOrder(
+async function detectAndProcessOrder(
   supabase: any, apiKey: string, conversationId: string,
   customerMessage: string | null, aiReply: string, userId: string | null
 ) {
   if (!customerMessage) return;
 
+  // Broader keyword set: covers new orders, modifications, and cancellations
   const orderKeywords = [
     "order", "অর্ডার", "কিনতে", "নিব", "দিন", "চাই", "confirm", "confirmed", "confirmation",
     "buy", "purchase", "book", "ok", "okay", "yes", "হ্যাঁ", "হ্যা", "জি", "ঠিক আছে", "done",
     "কনফার্ম", "নিতে", "লাগবে", "দরকার", "korbo", "nibo", "chai", "lagbe",
+    // Modification keywords
+    "আরো", "aro", "more", "add", "যোগ", "change", "পরিবর্তন", "update", "বাড়াও", "কমাও",
+    "another", "extra", "সাথে", "sathe", "আরেকটা", "arekta",
+    // Cancellation keywords
+    "cancel", "বাতিল", "batil", "remove", "মুছে", "না চাই", "na chai", "don't want",
+    "চাই না", "লাগবে না", "lagbe na", "বাদ", "bad", "রাখবো না", "রাখব না",
   ];
   const lowerMsg = customerMessage.toLowerCase();
   const hasOrderIntent = orderKeywords.some(kw => lowerMsg.includes(kw));
@@ -759,7 +766,7 @@ async function detectAndCreateOrder(
   if (!hasOrderIntent) return;
 
   try {
-    // Fetch more messages for better context
+    // Fetch conversation history
     const { data: recentMessages } = await supabase
       .from("messages")
       .select("direction, content, created_at")
@@ -771,11 +778,24 @@ async function detectAndCreateOrder(
       .map((m: any) => `${m.direction === "incoming" ? "Customer" : "Bot"}: ${m.content || ""}`)
       .join("\n");
 
-    // Also fetch products to help calculate totals
+    // Fetch products for price lookup
     let productQuery = supabase.from("products").select("name, name_bn, price").eq("is_active", true);
     if (userId) productQuery = productQuery.eq("user_id", userId);
     const { data: products } = await productQuery;
     const productList = (products || []).map((p: any) => `${p.name}${p.name_bn ? ` (${p.name_bn})` : ""}: ৳${p.price}`).join(", ");
+
+    // Check if there's already an existing order for this conversation
+    const { data: existingOrder } = await supabase
+      .from("orders")
+      .select("id, status, items, total, customer_name, customer_phone, customer_address")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const existingOrderInfo = existingOrder
+      ? `\n\nEXISTING ORDER (already in system):\n- Status: ${existingOrder.status}\n- Items: ${JSON.stringify(existingOrder.items)}\n- Total: ৳${existingOrder.total}\n- Name: ${existingOrder.customer_name || "N/A"}\n- Phone: ${existingOrder.customer_phone || "N/A"}\n- Address: ${existingOrder.customer_address || "N/A"}`
+      : "\n\nNo existing order for this conversation.";
 
     const extractResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -783,39 +803,62 @@ async function detectAndCreateOrder(
       body: JSON.stringify({
         model: "google/gemini-2.5-flash-lite",
         messages: [
-          { role: "system", content: `You extract order details from Facebook Messenger conversations. Read the ENTIRE transcript carefully.
+          { role: "system", content: `You are an order management AI for a Facebook Messenger shop. Read the FULL conversation and determine what action to take.
 
-RULES:
-- Set is_order=true if the customer has shown clear intent to buy AND provided their details (name, phone, address) anywhere in the conversation.
-- Customer saying "ok", "yes", "confirm", "done", "জি", "হ্যাঁ", "ঠিক আছে" after the bot summarized an order = CONFIRMED ORDER.
-- Customer providing name + phone + address in a single message (even separated by newlines) = order details provided.
-- If customer says "ager details e" or "same details" or "আগের ডিটেইলস", look for details from earlier in the transcript.
-- Calculate total from items × prices if not explicitly stated. Use these product prices: ${productList}
-- A short address like "49/4" or "Mirpur 10" is valid. Don't reject it.
-- A Bangladeshi phone number starting with 01 (11 digits) is valid.
-- Extract the customer's name even if it's just a first name like "Alvi".` },
-          { role: "user", content: `Full Conversation:\n${transcript}\n\nLatest message from customer: "${customerMessage}"\nBot's reply: "${aiReply}"` },
+AVAILABLE ACTIONS:
+1. "new_order" — Customer is placing a new order with details
+2. "update_order" — Customer wants to ADD more items, CHANGE quantity, or MODIFY an existing order
+3. "cancel_order" — Customer wants to CANCEL their order
+4. "no_action" — No order-related action needed
+
+PRODUCT PRICES: ${productList}
+${existingOrderInfo}
+
+RULES FOR "new_order":
+- Customer must have shown intent to buy AND provided details (name, phone, address) somewhere in the conversation
+- "ok", "yes", "confirm", "done", "জি", "হ্যাঁ" after bot summary = confirmed order
+- "ager details e" or "same details" = reuse details from earlier messages
+- Short addresses like "49/4" or "Mirpur 10" are valid
+- Phone starting with 01 (11 digits) is valid
+- Calculate total = sum of (item price × quantity)
+
+RULES FOR "update_order":
+- Only if an existing order already exists
+- Customer says things like "আরো 2টা দিন", "add 1 more", "change to 3", "সাথে আরেকটা", "I want 2 more"
+- Merge new items with existing items. If same product, update quantity. If new product, add it.
+- Keep existing customer details unless customer provides new ones
+- Recalculate total after changes
+
+RULES FOR "cancel_order":
+- Customer clearly says cancel/বাতিল/don't want/চাই না/লাগবে না
+- Only if an existing order exists
+
+RULES FOR "no_action":
+- Customer is just asking questions, browsing, or chatting — not ordering
+- Details are too incomplete (no items identified)` },
+          { role: "user", content: `Full Conversation:\n${transcript}\n\nLatest customer message: "${customerMessage}"\nBot's reply: "${aiReply}"` },
         ],
         tools: [{
           type: "function",
           function: {
-            name: "create_order",
-            description: "Extract order from conversation",
+            name: "process_order",
+            description: "Process order action based on conversation",
             parameters: {
               type: "object",
               properties: {
-                is_order: { type: "boolean", description: "true if customer confirmed an order with sufficient details" },
-                items: { type: "array", items: { type: "object", properties: { name: { type: "string" }, quantity: { type: "number" }, price: { type: "number" } }, required: ["name", "quantity", "price"] } },
-                total: { type: "number", description: "Sum of item prices × quantities" },
+                action: { type: "string", enum: ["new_order", "update_order", "cancel_order", "no_action"], description: "What action to take" },
+                items: { type: "array", description: "FULL updated list of items (for new_order and update_order)", items: { type: "object", properties: { name: { type: "string" }, quantity: { type: "number" }, price: { type: "number" } }, required: ["name", "quantity", "price"] } },
+                total: { type: "number", description: "Total price after all changes" },
                 customer_name: { type: "string" },
                 customer_phone: { type: "string" },
                 customer_address: { type: "string" },
+                cancel_reason: { type: "string", description: "Why customer is cancelling (if cancel_order)" },
               },
-              required: ["is_order"],
+              required: ["action"],
             },
           },
         }],
-        tool_choice: { type: "function", function: { name: "create_order" } },
+        tool_choice: { type: "function", function: { name: "process_order" } },
       }),
     });
 
@@ -835,26 +878,43 @@ RULES:
     }
 
     const orderData = JSON.parse(toolCall.function.arguments);
-    console.log("Order extraction result:", JSON.stringify(orderData));
+    console.log("Order action:", orderData.action, "Data:", JSON.stringify(orderData));
 
-    if (!orderData.is_order) {
-      console.log("AI determined this is not an order");
+    // ---- CANCEL ORDER ----
+    if (orderData.action === "cancel_order") {
+      if (!existingOrder) {
+        console.log("Cancel requested but no existing order found");
+        return;
+      }
+      const { error } = await supabase
+        .from("orders")
+        .update({
+          status: "cancelled",
+          notes: orderData.cancel_reason || "Cancelled by customer via Messenger",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existingOrder.id);
+
+      if (error) console.error("Failed to cancel order:", error);
+      else console.log("Order cancelled:", existingOrder.id);
       return;
     }
 
-    const hasName = !!orderData.customer_name?.trim();
-    const hasPhone = !!orderData.customer_phone?.trim();
-    const hasAddress = !!orderData.customer_address?.trim();
-    const hasItems = Array.isArray(orderData.items) && orderData.items.length > 0;
-
-    // Auto-calculate total from items if missing
-    let total = orderData.total || 0;
-    if ((!total || total <= 0) && hasItems) {
-      total = orderData.items.reduce((sum: number, i: any) => sum + (i.price || 0) * (i.quantity || 1), 0);
+    // ---- NO ACTION ----
+    if (orderData.action === "no_action") {
+      console.log("No order action needed");
+      return;
     }
 
-    // If items have no price, try to match from products
-    if (hasItems && total <= 0 && products?.length) {
+    // ---- NEW ORDER or UPDATE ORDER ----
+    const hasItems = Array.isArray(orderData.items) && orderData.items.length > 0;
+    if (!hasItems) {
+      console.log("No items found, skipping order action");
+      return;
+    }
+
+    // Auto-fill prices from product catalog
+    if (products?.length) {
       for (const item of orderData.items) {
         if (!item.price || item.price <= 0) {
           const match = products.find((p: any) =>
@@ -865,58 +925,61 @@ RULES:
           if (match) item.price = match.price;
         }
       }
-      total = orderData.items.reduce((sum: number, i: any) => sum + (i.price || 0) * (i.quantity || 1), 0);
     }
 
-    // Require at minimum: items + at least 2 of (name, phone, address)
-    const detailCount = [hasName, hasPhone, hasAddress].filter(Boolean).length;
-    if (!hasItems || detailCount < 2) {
-      console.log("Order details insufficient. has:", { name: hasName, phone: hasPhone, address: hasAddress, items: hasItems, total });
-      return;
+    // Calculate total
+    let total = orderData.items.reduce((sum: number, i: any) => sum + (i.price || 0) * (i.quantity || 1), 0);
+    if (orderData.total && orderData.total > 0) total = orderData.total;
+
+    // Get customer details — prefer new data, fall back to existing order
+    const customerName = orderData.customer_name?.trim() || existingOrder?.customer_name || null;
+    const customerPhone = orderData.customer_phone?.trim() || existingOrder?.customer_phone || null;
+    const customerAddress = orderData.customer_address?.trim() || existingOrder?.customer_address || null;
+
+    // For new orders, require items + at least 2 customer details
+    if (orderData.action === "new_order") {
+      const detailCount = [!!customerName, !!customerPhone, !!customerAddress].filter(Boolean).length;
+      if (detailCount < 2) {
+        console.log("New order details insufficient:", { name: !!customerName, phone: !!customerPhone, address: !!customerAddress });
+        return;
+      }
     }
 
-    const insertData: any = {
+    const upsertData: any = {
       conversation_id: conversationId,
-      customer_name: orderData.customer_name?.trim() || null,
-      customer_phone: orderData.customer_phone?.trim() || null,
-      customer_address: orderData.customer_address?.trim() || null,
+      customer_name: customerName,
+      customer_phone: customerPhone,
+      customer_address: customerAddress,
       items: orderData.items,
       total: total,
       status: "confirmed",
+      updated_at: new Date().toISOString(),
     };
-    if (userId) insertData.user_id = userId;
-
-    const { data: existingOrder } = await supabase
-      .from("orders")
-      .select("id, status")
-      .eq("conversation_id", conversationId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    if (userId) upsertData.user_id = userId;
 
     if (existingOrder) {
-      const { error: updateError } = await supabase
+      // UPDATE existing order (modification or re-confirmation)
+      const { error } = await supabase
         .from("orders")
-        .update({ ...insertData, updated_at: new Date().toISOString() })
+        .update(upsertData)
         .eq("id", existingOrder.id);
 
-      if (updateError) {
-        console.error("Failed to update order:", updateError);
+      if (error) {
+        console.error("Failed to update order:", error);
         return;
       }
-      console.log("Order updated for conversation:", conversationId);
-      return;
+      console.log(`Order ${orderData.action === "update_order" ? "updated" : "confirmed"}:`, existingOrder.id, "Items:", JSON.stringify(orderData.items), "Total:", total);
+    } else {
+      // INSERT new order
+      const { error } = await supabase.from("orders").insert(upsertData);
+      if (error) {
+        console.error("Failed to create order:", error);
+        return;
+      }
+      console.log("New order created. Items:", JSON.stringify(orderData.items), "Total:", total);
     }
-
-    const { error: insertError } = await supabase.from("orders").insert(insertData);
-    if (insertError) {
-      console.error("Failed to create order:", insertError);
-      return;
-    }
-
-    console.log("Order created as confirmed for conversation:", conversationId);
   } catch (e) {
-    console.error("Order detection error:", e);
+    console.error("Order processing error:", e);
   }
 }
 
