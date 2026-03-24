@@ -21,6 +21,7 @@ const tabs: Record<string, React.ComponentType> = {
   "ai-training": AiTraining,
   products: ProductsManager,
   orders: OrdersManager,
+  complaints: ComplaintsManager,
   conversations: ConversationsView,
   "auto-reply": AutoReplyRules,
   scheduled: ScheduledMessages,
