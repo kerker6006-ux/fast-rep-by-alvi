@@ -30,6 +30,7 @@ const OrdersManager = () => {
   const [editingOrder, setEditingOrder] = useState<any>(null);
   const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["orders"],
