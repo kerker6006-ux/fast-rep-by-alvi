@@ -264,6 +264,18 @@ async function handleMessagingEvent(
       const replyText = await generateAiReply(
         supabase, lovableApiKey, conversationId, messageText, imageUrl, settings, userId
       );
+
+      // Detect if AI reply mentions a specific product — send its image first
+      let productQuery = supabase.from("products").select("name, name_bn, price, image_url, color, keywords").eq("is_active", true).not("image_url", "is", null);
+      if (userId) productQuery = productQuery.eq("user_id", userId);
+      const { data: allProducts } = await productQuery;
+      
+      const mentionedProduct = findMentionedProduct(allProducts || [], replyText, messageText);
+      if (mentionedProduct?.image_url) {
+        await sendFbImage(pageAccessToken, senderId, mentionedProduct.image_url);
+        await saveOutgoingMessage(supabase, conversationId, `[${mentionedProduct.name}]`, mentionedProduct.image_url, userId);
+      }
+
       await sendFbMessage(pageAccessToken, senderId, replyText);
       await saveOutgoingMessage(supabase, conversationId, replyText, null, userId);
 
