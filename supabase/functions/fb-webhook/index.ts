@@ -80,9 +80,18 @@ serve(async (req) => {
             console.error("No fb_page found for page_id:", pageId, "and no fallback token");
             continue;
           }
-          // Process with fallback (no user_id)
+          // Try to find any active fb_page to get the user_id
+          const { data: anyPage } = await supabase
+            .from("fb_pages")
+            .select("user_id")
+            .eq("is_active", true)
+            .limit(1)
+            .maybeSingle();
+          const fallbackUserId = anyPage?.user_id || null;
+          const fallbackSettings = fallbackUserId ? await loadSettings(supabase, fallbackUserId) : {};
+          console.log("Using fallback token with user_id:", fallbackUserId);
           for (const event of entry.messaging || []) {
-            await handleMessagingEvent(supabase, event, pageId, fallbackToken, LOVABLE_API_KEY, {}, null);
+            await handleMessagingEvent(supabase, event, pageId, fallbackToken, LOVABLE_API_KEY, fallbackSettings, fallbackUserId);
           }
           continue;
         }
