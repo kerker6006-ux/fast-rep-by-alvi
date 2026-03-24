@@ -397,7 +397,7 @@ async function findBestProductForImageRequest(
 ) {
   let query = supabase
     .from("products")
-    .select("name, name_bn, price, image_url, keywords")
+    .select("name, name_bn, price, image_url, keywords, color")
     .eq("is_active", true)
     .not("image_url", "is", null);
   if (userId) query = query.eq("user_id", userId);
