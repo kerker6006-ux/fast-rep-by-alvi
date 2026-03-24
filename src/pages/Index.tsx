@@ -4,6 +4,7 @@ import ProductsManager from "@/components/ProductsManager";
 import ConversationsView from "@/components/ConversationsView";
 import BotSettings from "@/components/BotSettings";
 import OrdersManager from "@/components/OrdersManager";
+import ComplaintsManager from "@/components/ComplaintsManager";
 import AutoReplyRules from "@/components/AutoReplyRules";
 import AnalyticsDashboard from "@/components/AnalyticsDashboard";
 import ScheduledMessages from "@/components/ScheduledMessages";
@@ -20,6 +21,7 @@ const tabs: Record<string, React.ComponentType> = {
   "ai-training": AiTraining,
   products: ProductsManager,
   orders: OrdersManager,
+  complaints: ComplaintsManager,
   conversations: ConversationsView,
   "auto-reply": AutoReplyRules,
   scheduled: ScheduledMessages,
