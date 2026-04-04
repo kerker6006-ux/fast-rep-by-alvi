@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, ImageIcon, FolderOpen } from "lucide-react";
+import { Plus, Pencil, Trash2, ImageIcon, FolderOpen, Search, Package, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 type Product = {
@@ -40,6 +40,7 @@ const ProductsManager = () => {
   const [newCategory, setNewCategory] = useState("");
   const [showNewCategory, setShowNewCategory] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [form, setForm] = useState({
     name: "", name_bn: "", description: "", description_bn: "",
     price: "", category: "", keywords: "", color: "", size: "", material: "", is_active: true,
@@ -54,7 +55,6 @@ const ProductsManager = () => {
     },
   });
 
-  // Extract unique categories from existing products
   const categories = useMemo(() => {
     if (!products) return [];
     const cats = new Set<string>();
@@ -62,13 +62,45 @@ const ProductsManager = () => {
     return Array.from(cats).sort();
   }, [products]);
 
-  // Group products by category for display
   const filteredProducts = useMemo(() => {
     if (!products) return [];
-    if (filterCategory === "all") return products;
-    if (filterCategory === "uncategorized") return products.filter(p => !p.category);
-    return products.filter(p => p.category === filterCategory);
-  }, [products, filterCategory]);
+    let result = products;
+    if (filterCategory !== "all") {
+      if (filterCategory === "uncategorized") result = result.filter(p => !p.category);
+      else result = result.filter(p => p.category === filterCategory);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        p.name_bn?.toLowerCase().includes(q) ||
+        p.color?.toLowerCase().includes(q) ||
+        p.category?.toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [products, filterCategory, searchQuery]);
+
+  // Group filtered products by category for display
+  const groupedProducts = useMemo(() => {
+    const groups: Record<string, Product[]> = {};
+    filteredProducts.forEach(p => {
+      const cat = p.category || "Uncategorized";
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(p);
+    });
+    return groups;
+  }, [filteredProducts]);
+
+  const categoryProductCounts = useMemo(() => {
+    if (!products) return {};
+    const counts: Record<string, number> = { all: products.length, uncategorized: 0 };
+    products.forEach(p => {
+      if (p.category) counts[p.category] = (counts[p.category] || 0) + 1;
+      else counts.uncategorized++;
+    });
+    return counts;
+  }, [products]);
 
   const uploadImage = async (file: File): Promise<string> => {
     const ext = file.name.split(".").pop();
@@ -162,64 +194,44 @@ const ProductsManager = () => {
     }
   };
 
-  const categoryProductCounts = useMemo(() => {
-    if (!products) return {};
-    const counts: Record<string, number> = { all: products.length, uncategorized: 0 };
-    products.forEach(p => {
-      if (p.category) {
-        counts[p.category] = (counts[p.category] || 0) + 1;
-      } else {
-        counts.uncategorized++;
-      }
-    });
-    return counts;
-  }, [products]);
-
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Products & Services</h2>
-          <p className="text-muted-foreground text-sm">Organize by category so the AI bot can match products perfectly.</p>
+          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            <Package className="h-6 w-6 text-primary" />
+            Products & Catalog
+          </h2>
+          <p className="text-muted-foreground text-sm mt-1">
+            {products?.length || 0} products across {categories.length} categories
+          </p>
         </div>
         <Dialog open={isOpen} onOpenChange={(v) => { if (!v) resetForm(); setIsOpen(v); }}>
           <DialogTrigger asChild>
-            <Button className="gap-2"><Plus className="h-4 w-4" /> Add Product</Button>
+            <Button className="gap-2 shadow-md"><Plus className="h-4 w-4" /> Add Product</Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              {/* Category Selection - Prominent */}
               <div className="space-y-2 p-3 rounded-lg border-2 border-dashed border-primary/30 bg-primary/5">
                 <Label className="text-sm font-semibold flex items-center gap-2">
-                  <FolderOpen className="h-4 w-4 text-primary" /> Category (e.g. Hijab, Sharee, T-Shirt)
+                  <FolderOpen className="h-4 w-4 text-primary" /> Category
                 </Label>
-                <Select
-                  value={showNewCategory ? "__new__" : (form.category || undefined)}
-                  onValueChange={handleCategorySelect}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select or create category" />
-                  </SelectTrigger>
+                <Select value={showNewCategory ? "__new__" : (form.category || undefined)} onValueChange={handleCategorySelect}>
+                  <SelectTrigger><SelectValue placeholder="Select or create category" /></SelectTrigger>
                   <SelectContent>
                     {categories.map(cat => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat} ({categoryProductCounts[cat] || 0} items)
-                      </SelectItem>
+                      <SelectItem key={cat} value={cat}>{cat} ({categoryProductCounts[cat] || 0})</SelectItem>
                     ))}
                     <SelectItem value="__new__">➕ Create new category</SelectItem>
                   </SelectContent>
                 </Select>
                 {showNewCategory && (
                   <div className="flex gap-2">
-                    <Input
-                      value={newCategory}
-                      onChange={e => setNewCategory(e.target.value)}
-                      placeholder="e.g. Hijab, Sharee, Three-Piece"
-                      onKeyDown={e => e.key === "Enter" && handleAddNewCategory()}
-                    />
+                    <Input value={newCategory} onChange={e => setNewCategory(e.target.value)} placeholder="e.g. Hijab, Sharee" onKeyDown={e => e.key === "Enter" && handleAddNewCategory()} />
                     <Button size="sm" onClick={handleAddNewCategory} disabled={!newCategory.trim()}>Add</Button>
                   </div>
                 )}
@@ -227,7 +239,6 @@ const ProductsManager = () => {
                   <p className="text-xs text-muted-foreground">Selected: <strong>{form.category}</strong></p>
                 )}
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Name (English)</Label>
@@ -240,7 +251,7 @@ const ProductsManager = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Description (English)</Label>
+                  <Label>Description</Label>
                   <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Product description" />
                 </div>
                 <div className="space-y-2">
@@ -248,39 +259,35 @@ const ProductsManager = () => {
                   <Textarea value={form.description_bn} onChange={e => setForm(f => ({ ...f, description_bn: e.target.value }))} placeholder="পণ্যের বিবরণ" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Price (৳)</Label>
                   <Input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="0" />
                 </div>
                 <div className="space-y-2">
                   <Label>Color / রং</Label>
-                  <Input value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} placeholder="e.g. Red, Maroon, মেরুন" />
+                  <Input value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} placeholder="Red, মেরুন" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Size</Label>
+                  <Input value={form.size} onChange={e => setForm(f => ({ ...f, size: e.target.value }))} placeholder="M, L, XL" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Size / সাইজ</Label>
-                  <Input value={form.size} onChange={e => setForm(f => ({ ...f, size: e.target.value }))} placeholder="e.g. Free, M, L, XL" />
+                  <Label>Material / কাপড়</Label>
+                  <Input value={form.material} onChange={e => setForm(f => ({ ...f, material: e.target.value }))} placeholder="Cotton, Georgette" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Material / কাপড়</Label>
-                  <Input value={form.material} onChange={e => setForm(f => ({ ...f, material: e.target.value }))} placeholder="e.g. Cotton, Georgette" />
+                  <Label>Keywords (comma separated)</Label>
+                  <Input value={form.keywords} onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))} placeholder="hijab, scarf, হিজাব" />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Keywords (comma separated, helps AI match)</Label>
-                <Input value={form.keywords} onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))} placeholder="hijab, scarf, চাদর, হিজাব" />
               </div>
               <div className="space-y-2">
                 <Label>Product Image</Label>
                 <div className="flex items-center gap-4">
                   {(editingProduct?.image_url || imageFile) && (
-                    <img
-                      src={imageFile ? URL.createObjectURL(imageFile) : editingProduct?.image_url || ""}
-                      alt="Preview"
-                      className="h-20 w-20 rounded-lg object-cover border"
-                    />
+                    <img src={imageFile ? URL.createObjectURL(imageFile) : editingProduct?.image_url || ""} alt="Preview" className="h-20 w-20 rounded-lg object-cover border" />
                   )}
                   <Input type="file" accept="image/*" onChange={e => setImageFile(e.target.files?.[0] || null)} />
                 </div>
@@ -297,90 +304,115 @@ const ProductsManager = () => {
         </Dialog>
       </div>
 
-      {/* Category Filter Tabs */}
-      {categories.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          <Badge
-            variant={filterCategory === "all" ? "default" : "outline"}
-            className="cursor-pointer px-3 py-1.5 text-sm"
-            onClick={() => setFilterCategory("all")}
-          >
-            All ({categoryProductCounts.all || 0})
-          </Badge>
-          {categories.map(cat => (
-            <Badge
-              key={cat}
-              variant={filterCategory === cat ? "default" : "outline"}
-              className="cursor-pointer px-3 py-1.5 text-sm"
-              onClick={() => setFilterCategory(cat)}
-            >
-              {cat} ({categoryProductCounts[cat] || 0})
-            </Badge>
-          ))}
-          {(categoryProductCounts.uncategorized || 0) > 0 && (
-            <Badge
-              variant={filterCategory === "uncategorized" ? "default" : "outline"}
-              className="cursor-pointer px-3 py-1.5 text-sm"
-              onClick={() => setFilterCategory("uncategorized")}
-            >
-              Uncategorized ({categoryProductCounts.uncategorized})
-            </Badge>
-          )}
+      {/* Search + Category Filter */}
+      <div className="space-y-3">
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search products by name, color..."
+            className="pl-9"
+          />
         </div>
-      )}
+        {categories.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setFilterCategory("all")}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${filterCategory === "all" ? "bg-primary text-primary-foreground shadow-md" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+            >
+              All ({categoryProductCounts.all || 0})
+            </button>
+            {categories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setFilterCategory(cat)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${filterCategory === cat ? "bg-primary text-primary-foreground shadow-md" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+              >
+                {cat} ({categoryProductCounts[cat] || 0})
+              </button>
+            ))}
+            {(categoryProductCounts.uncategorized || 0) > 0 && (
+              <button
+                onClick={() => setFilterCategory("uncategorized")}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${filterCategory === "uncategorized" ? "bg-primary text-primary-foreground shadow-md" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+              >
+                Uncategorized ({categoryProductCounts.uncategorized})
+              </button>
+            )}
+          </div>
+        )}
+      </div>
 
+      {/* Products grouped by category */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map(i => <Card key={i} className="animate-pulse h-48" />)}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => <div key={i} className="animate-pulse bg-muted rounded-xl h-56" />)}
         </div>
       ) : filteredProducts.length === 0 ? (
-        <Card className="p-12 text-center">
+        <Card className="p-12 text-center border-dashed">
           <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <h3 className="text-lg font-semibold">No products {filterCategory !== "all" ? `in "${filterCategory}"` : "yet"}</h3>
-          <p className="text-muted-foreground mt-1">Add products with a category so the AI bot can understand and match them perfectly.</p>
+          <p className="text-muted-foreground mt-1 text-sm">Add products with categories so the AI bot can match them perfectly.</p>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredProducts.map(p => (
-            <Card key={p.id} className={`overflow-hidden transition-shadow hover:shadow-md ${!p.is_active ? "opacity-60" : ""}`}>
-              {p.image_url && (
-                <div className="h-40 overflow-hidden">
-                  <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
-                </div>
-              )}
-              <CardContent className="p-4 space-y-2">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="font-semibold">{p.name}</h3>
-                    {p.name_bn && <p className="text-sm text-muted-foreground">{p.name_bn}</p>}
-                  </div>
-                  <span className="text-lg font-bold text-primary">৳{p.price}</span>
-                </div>
-                {p.description && <p className="text-sm text-muted-foreground line-clamp-2">{p.description}</p>}
-                <div className="flex flex-wrap gap-1">
-                  {p.category && (
-                    <Badge variant="secondary" className="text-xs">{p.category}</Badge>
-                  )}
-                  {p.color && (
-                    <Badge variant="outline" className="text-xs">{p.color}</Badge>
-                  )}
-                  {p.size && (
-                    <Badge variant="outline" className="text-xs">{p.size}</Badge>
-                  )}
-                  {p.material && (
-                    <Badge variant="outline" className="text-xs">{p.material}</Badge>
-                  )}
-                </div>
-                <div className="flex gap-2 pt-2">
-                  <Button variant="outline" size="sm" onClick={() => openEdit(p)} className="gap-1">
-                    <Pencil className="h-3 w-3" /> Edit
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={() => deleteMutation.mutate(p.id)} className="gap-1">
-                    <Trash2 className="h-3 w-3" /> Delete
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+        <div className="space-y-8">
+          {Object.entries(groupedProducts).map(([category, prods]) => (
+            <div key={category}>
+              <div className="flex items-center gap-2 mb-4">
+                <h3 className="text-lg font-bold text-foreground">{category}</h3>
+                <Badge variant="secondary" className="text-xs">{prods.length} items</Badge>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {prods.map(p => (
+                  <Card
+                    key={p.id}
+                    className={`group overflow-hidden transition-all hover:shadow-lg hover:-translate-y-0.5 ${!p.is_active ? "opacity-50" : ""}`}
+                  >
+                    {/* Image */}
+                    <div className="aspect-square bg-muted overflow-hidden relative">
+                      {p.image_url ? (
+                        <img src={p.image_url} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <ImageIcon className="h-10 w-10 text-muted-foreground/40" />
+                        </div>
+                      )}
+                      {!p.is_active && (
+                        <div className="absolute top-2 left-2">
+                          <Badge variant="destructive" className="text-[10px]">Inactive</Badge>
+                        </div>
+                      )}
+                      {/* Hover actions */}
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <Button size="sm" variant="secondary" onClick={() => openEdit(p)} className="h-8 text-xs gap-1">
+                          <Pencil className="h-3 w-3" /> Edit
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => deleteMutation.mutate(p.id)} className="h-8 text-xs gap-1">
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                    {/* Info */}
+                    <CardContent className="p-3 space-y-1">
+                      <div className="flex items-start justify-between gap-1">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm truncate">{p.name}</p>
+                          {p.name_bn && <p className="text-xs text-muted-foreground truncate">{p.name_bn}</p>}
+                        </div>
+                        <span className="text-sm font-bold text-primary whitespace-nowrap">৳{p.price}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {p.color && <Badge variant="outline" className="text-[10px] px-1.5 py-0">{p.color}</Badge>}
+                        {p.size && <Badge variant="outline" className="text-[10px] px-1.5 py-0">{p.size}</Badge>}
+                        {p.material && <Badge variant="outline" className="text-[10px] px-1.5 py-0">{p.material}</Badge>}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}
