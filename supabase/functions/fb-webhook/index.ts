@@ -575,9 +575,30 @@ async function generateAiReply(
   if (userId) productQuery = productQuery.eq("user_id", userId);
   const { data: products } = await productQuery;
 
-  const productCatalog = products?.map((p: any) =>
-    `- ${p.name}${p.name_bn ? ` (${p.name_bn})` : ""}: ৳${p.price}${p.color ? ` | Color: ${p.color}` : ""}${p.size ? ` | Size: ${p.size}` : ""}${p.material ? ` | Material: ${p.material}` : ""}${p.description ? ` — ${p.description}` : ""}${p.category ? ` [${p.category}]` : ""}${p.keywords?.length ? ` [${p.keywords.join(", ")}]` : ""}`
-  ).join("\n") || "No products available.";
+  // Group products by category for the AI
+  const productsByCategory: Record<string, any[]> = {};
+  products?.forEach((p: any) => {
+    const cat = p.category || "Other";
+    if (!productsByCategory[cat]) productsByCategory[cat] = [];
+    productsByCategory[cat].push(p);
+  });
+
+  const productCatalog = Object.entries(productsByCategory).map(([category, items]) => {
+    const itemList = items.map((p: any) =>
+      `  - ${p.name}${p.name_bn ? ` (${p.name_bn})` : ""}: ৳${p.price}${p.color ? ` | Color: ${p.color}` : ""}${p.size ? ` | Size: ${p.size}` : ""}${p.material ? ` | Material: ${p.material}` : ""}${p.description ? ` — ${p.description}` : ""}${p.keywords?.length ? ` [${p.keywords.join(", ")}]` : ""}`
+    ).join("\n");
+    return `📁 ${category} (${items.length} items):\n${itemList}`;
+  }).join("\n\n") || "No products available.";
+
+  // Build category summary for smart questioning
+  const categorySummary = Object.entries(productsByCategory).map(([cat, items]) => {
+    const colors = [...new Set(items.map((p: any) => p.color).filter(Boolean))];
+    const sizes = [...new Set(items.map((p: any) => p.size).filter(Boolean))];
+    const priceRange = items.length > 1
+      ? `৳${Math.min(...items.map((p: any) => p.price))} - ৳${Math.max(...items.map((p: any) => p.price))}`
+      : `৳${items[0].price}`;
+    return `- ${cat}: ${items.length} variants${colors.length ? `, Colors: ${colors.join(", ")}` : ""}${sizes.length ? `, Sizes: ${sizes.join(", ")}` : ""}, Price: ${priceRange}`;
+  }).join("\n");
 
   const chatHistory = (recentMessages || []).reverse().map((m: any) => ({
     role: m.direction === "incoming" ? "user" as const : "assistant" as const,
@@ -711,8 +732,22 @@ LANGUAGE DETAILS:
 - Use "ভাই/আপু" naturally. Use "আপনি" for respect.
 - Understand Banglish: "ki dam" = "কত দাম", "ache ki" = "আছে কি"
 
-PRODUCT CATALOG:
+PRODUCT CATALOG (organized by category):
 ${productCatalog}
+
+CATEGORY SUMMARY:
+${categorySummary}
+
+#############################
+# SMART PRODUCT QUESTIONING
+#############################
+When customer asks about a CATEGORY (e.g. "hijab দেখাও", "hijab ache?"):
+1. Check how many variants exist in that category.
+2. If multiple colors/variants → ASK which color/type they want FIRST.
+   Example: "জি আপু, আমাদের হিজাবে মেরুন, পিংক, কালো আছে। কোনটা দেখবেন?"
+3. If only 1 variant → show it directly with name + price.
+4. Customer specifies color → find exact match and show it.
+5. NEVER dump all products at once. Guide step by step.
 
 CONTEXT RULES:
 - Read conversation history. Don't repeat info already given.
@@ -721,24 +756,21 @@ CONTEXT RULES:
 ${settings.angry_customer_handling ? `\nANGRY CUSTOMERS: ${settings.angry_customer_handling}` : ""}
 
 ${settings.image_instructions || `IMAGE HANDLING:
-- When customer sends an image, you will receive both their image AND our product images.
-- VISUALLY compare: same item type (t-shirt/hijab/sharee etc) AND similar color/design = match.
-- Match found → say product name + price in 1 sentence.
-- No exact match → suggest the closest similar product we have. Say something like "এটার মতো আমাদের [product name] আছে, দাম ৳X" or ask what they're looking for.
-- NEVER say "এটা আমাদের কালেকশনে নেই" or "not in our collection." Always try to help.
-- Be precise about item types. Don't confuse t-shirt with hijab.`}
+- When customer sends an image, compare with ALL products.
+- If it matches a category, show the closest color match.
+- No exact match → show available colors in that category.
+- NEVER say "এটা আমাদের কালেকশনে নেই". Always suggest alternatives.`}
 
 ${settings.order_instructions || `ORDER COLLECTION — VERY IMPORTANT:
-- When customer wants to order, you MUST collect ALL of these before confirming:
+- When customer wants to order, collect ALL before confirming:
   1. Full name (নাম)
   2. Phone number (ফোন নম্বর)
   3. Full delivery address (ঠিকানা)
-  4. Which product(s) they want (পণ্যের নাম)
-  5. Quantity of each product (কয়টা)
-- Ask for missing info one step at a time. Do NOT confirm until ALL details are collected.
-- Once you have everything, summarize: "নাম: X, ফোন: X, ঠিকানা: X, পণ্য: X (Xটা), মোট: ৳X — কনফার্ম করবেন?"
-- Only after customer says "হ্যাঁ/yes/confirm/কনফার্ম" should the order be considered confirmed.
-- Do NOT say "অর্ডার কনফার্ম" until customer explicitly confirms the summary.`}
+  4. Which product(s) (পণ্যের নাম)
+  5. Quantity (কয়টা)
+- Ask for missing info one step at a time.
+- Once complete, summarize: "নাম: X, ফোন: X, ঠিকানা: X, পণ্য: X (Xটা), মোট: ৳X — কনফার্ম করবেন?"
+- Only confirm after customer says "হ্যাঁ/yes/confirm/কনফার্ম".`}
 ${settings.delivery_info ? `Delivery: ${settings.delivery_info}` : ""}
 ${settings.payment_methods ? `Payment: ${settings.payment_methods}` : ""}
 
