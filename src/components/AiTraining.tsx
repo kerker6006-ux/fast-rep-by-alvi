@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   Brain, Save, Plus, X, MessageCircle, Send, Bot, User,
-  Sparkles, Settings2, Loader2, CheckCircle, RotateCcw,
+  Sparkles, Settings2, Loader2, CheckCircle, RotateCcw, Wand2,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -37,6 +37,8 @@ const AiTraining = () => {
   const [faqQuestion, setFaqQuestion] = useState("");
   const [faqAnswer, setFaqAnswer] = useState("");
   const [neverSayItem, setNeverSayItem] = useState("");
+  const [aiSuggestedFaqs, setAiSuggestedFaqs] = useState<{q: string; a: string}[]>([]);
+  const [isLoadingFaqSuggestions, setIsLoadingFaqSuggestions] = useState(false);
 
   const { data: dbSettings, isLoading } = useQuery({
     queryKey: ["bot-settings"],
@@ -201,6 +203,58 @@ const AiTraining = () => {
     const existing = parseJSON(settings.never_say_list, []);
     existing.splice(i, 1);
     update("never_say_list", JSON.stringify(existing));
+  };
+
+  const generateFaqFromChats = async () => {
+    setIsLoadingFaqSuggestions(true);
+    try {
+      // Fetch recent incoming messages from customers
+      const { data: messages } = await supabase
+        .from("messages")
+        .select("content")
+        .eq("direction", "incoming")
+        .not("content", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      if (!messages?.length) {
+        toast.error("No customer messages found yet. Start chatting first!");
+        setIsLoadingFaqSuggestions(false);
+        return;
+      }
+
+      const customerMessages = messages.map(m => m.content).filter(Boolean).join("\n");
+
+      const { data, error } = await supabase.functions.invoke("ai-training-chat", {
+        body: {
+          messages: [{ role: "user", content: `Analyze these real customer messages and suggest 8-10 FAQ entries (question + answer pairs). Focus on the MOST COMMON questions customers ask. Return JSON array: [{"q":"question","a":"suggested answer"}]. Customer messages:\n${customerMessages}` }],
+          action: "faq_suggestions",
+          settings,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.faqs) {
+        const existingFaqs = parseJSON(settings.faq_list, []);
+        const filtered = data.faqs.filter((s: any) => !existingFaqs.some((f: any) => f.q === s.q));
+        setAiSuggestedFaqs(filtered);
+        if (filtered.length === 0) toast.info("No new suggestions — you've covered the common questions!");
+      } else if (data?.reply) {
+        // Try to parse from reply
+        try {
+          const parsed = JSON.parse(data.reply);
+          const existingFaqs = parseJSON(settings.faq_list, []);
+          const filtered = (Array.isArray(parsed) ? parsed : []).filter((s: any) => !existingFaqs.some((f: any) => f.q === s.q));
+          setAiSuggestedFaqs(filtered);
+        } catch {
+          toast.error("Couldn't parse suggestions. Try again.");
+        }
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to generate suggestions");
+    } finally {
+      setIsLoadingFaqSuggestions(false);
+    }
   };
 
   if (isLoading) {
@@ -462,7 +516,45 @@ const AiTraining = () => {
                 </Button>
               </div>
 
-              {/* FAQ Suggestions */}
+              {/* AI-Generated Suggestions from Real Chats */}
+              <div className="space-y-2 pt-2 border-t">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                    <Wand2 className="h-3 w-3" /> AI Suggestions from Real Chats
+                  </p>
+                  <Button size="sm" variant="outline" onClick={generateFaqFromChats} disabled={isLoadingFaqSuggestions} className="h-7 text-xs gap-1">
+                    {isLoadingFaqSuggestions ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                    {isLoadingFaqSuggestions ? "Analyzing..." : "Suggest from Chats"}
+                  </Button>
+                </div>
+                {aiSuggestedFaqs.length > 0 && (
+                  <div className="grid gap-1.5">
+                    {aiSuggestedFaqs.map((s, i) => (
+                      <button
+                        key={`ai-${i}`}
+                        onClick={() => {
+                          const existing = parseJSON(settings.faq_list, []);
+                          existing.push({ q: s.q, a: s.a });
+                          update("faq_list", JSON.stringify(existing));
+                          setAiSuggestedFaqs(prev => prev.filter((_, idx) => idx !== i));
+                          toast.success("Added!");
+                        }}
+                        className="flex items-center gap-2 text-left bg-primary/5 hover:bg-primary/10 border border-primary/10 hover:border-primary/20 rounded-lg p-2 transition-all group"
+                      >
+                        <div className="h-6 w-6 rounded-full bg-primary/15 flex items-center justify-center shrink-0 group-hover:bg-primary/25 transition-colors">
+                          <Plus className="h-3 w-3 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium">{s.q}</p>
+                          <p className="text-[10px] text-muted-foreground">{s.a}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Quick Add — Common Questions */}
               <div className="space-y-2 pt-2 border-t">
                 <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                   <Sparkles className="h-3 w-3" /> Quick Add — Common Questions
@@ -479,8 +571,6 @@ const AiTraining = () => {
                     { q: "Do you have return policy?", a: "Yes, return/exchange within 3 days of receiving the product." },
                     { q: "অর্ডার কিভাবে করব?", a: "আপনার নাম, ফোন নম্বর এবং ঠিকানা দিন, আমরা অর্ডার কনফার্ম করে দিব।" },
                     { q: "How to order?", a: "Send your name, phone and address. We'll confirm your order." },
-                    { q: "পণ্যের দাম কি ফিক্সড?", a: "জি, আমাদের সব পণ্যের দাম ফিক্সড।" },
-                    { q: "Are prices fixed?", a: "Yes, all our prices are fixed." },
                     { q: "COD আছে?", a: "জি, ক্যাশ অন ডেলিভারি সুবিধা আছে।" },
                     { q: "Is COD available?", a: "Yes, Cash on Delivery is available." },
                   ]
@@ -506,9 +596,6 @@ const AiTraining = () => {
                       </button>
                     ))}
                 </div>
-                {faqList.length > 0 && parseJSON(settings.faq_list, []).length >= 14 && (
-                  <p className="text-[10px] text-muted-foreground text-center">✅ All suggestions added!</p>
-                )}
               </div>
             </CardContent>
           </Card>

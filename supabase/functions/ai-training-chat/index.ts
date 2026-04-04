@@ -120,7 +120,56 @@ IMPORTANT:
       });
     }
 
-    // Default action: chat with training assistant
+    // Action: generate FAQ suggestions from real customer messages
+    if (action === "faq_suggestions") {
+      const customerMsgs = messages?.[0]?.content || "";
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-lite",
+          messages: [
+            {
+              role: "system",
+              content: `You analyze real customer messages from a Facebook page and identify the most frequently asked questions. Generate FAQ entries with appropriate answers.
+
+Business context:
+${settings?.business_name ? `Business: ${settings.business_name}` : ""}
+${settings?.delivery_info ? `Delivery: ${settings.delivery_info}` : ""}
+${settings?.payment_methods ? `Payment: ${settings.payment_methods}` : ""}
+
+Rules:
+- Identify 8-10 most common question PATTERNS from the messages
+- Write questions in the language customers actually use (Bangla or English)
+- Write helpful, concise answers based on the business context
+- Include both Bangla and English versions if customers use both
+- Focus on REAL patterns you see, not generic questions
+- Return ONLY a JSON array: [{"q":"question","a":"answer"}]`
+            },
+            { role: "user", content: customerMsgs }
+          ],
+          response_format: { type: "json_object" },
+        }),
+      });
+
+      if (!response.ok) throw new Error(`AI error: ${response.status}`);
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content || "[]";
+      let faqs;
+      try {
+        const parsed = JSON.parse(content);
+        faqs = Array.isArray(parsed) ? parsed : parsed.faqs || parsed.faq || [];
+      } catch {
+        faqs = [];
+      }
+
+      return new Response(JSON.stringify({ faqs }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const currentSettingsSummary = settings ? Object.entries(settings)
       .filter(([_, v]) => v && String(v).trim())
       .map(([k, v]) => `${k}: ${String(v).slice(0, 200)}`)
