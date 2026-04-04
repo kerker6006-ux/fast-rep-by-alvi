@@ -205,7 +205,58 @@ const AiTraining = () => {
     update("never_say_list", JSON.stringify(existing));
   };
 
-  if (isLoading) {
+  const generateFaqFromChats = async () => {
+    setIsLoadingFaqSuggestions(true);
+    try {
+      // Fetch recent incoming messages from customers
+      const { data: messages } = await supabase
+        .from("messages")
+        .select("content")
+        .eq("direction", "incoming")
+        .not("content", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      if (!messages?.length) {
+        toast.error("No customer messages found yet. Start chatting first!");
+        setIsLoadingFaqSuggestions(false);
+        return;
+      }
+
+      const customerMessages = messages.map(m => m.content).filter(Boolean).join("\n");
+
+      const { data, error } = await supabase.functions.invoke("ai-training-chat", {
+        body: {
+          messages: [{ role: "user", content: `Analyze these real customer messages and suggest 8-10 FAQ entries (question + answer pairs). Focus on the MOST COMMON questions customers ask. Return JSON array: [{"q":"question","a":"suggested answer"}]. Customer messages:\n${customerMessages}` }],
+          action: "faq_suggestions",
+          settings,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.faqs) {
+        const existingFaqs = parseJSON(settings.faq_list, []);
+        const filtered = data.faqs.filter((s: any) => !existingFaqs.some((f: any) => f.q === s.q));
+        setAiSuggestedFaqs(filtered);
+        if (filtered.length === 0) toast.info("No new suggestions — you've covered the common questions!");
+      } else if (data?.reply) {
+        // Try to parse from reply
+        try {
+          const parsed = JSON.parse(data.reply);
+          const existingFaqs = parseJSON(settings.faq_list, []);
+          const filtered = (Array.isArray(parsed) ? parsed : []).filter((s: any) => !existingFaqs.some((f: any) => f.q === s.q));
+          setAiSuggestedFaqs(filtered);
+        } catch {
+          toast.error("Couldn't parse suggestions. Try again.");
+        }
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to generate suggestions");
+    } finally {
+      setIsLoadingFaqSuggestions(false);
+    }
+  };
+
     return (
       <div className="space-y-4">
         {[1, 2, 3].map((i) => (
