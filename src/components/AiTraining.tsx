@@ -257,6 +257,7 @@ const AiTraining = () => {
     }
   };
 
+  if (isLoading) {
     return (
       <div className="space-y-4">
         {[1, 2, 3].map((i) => (
