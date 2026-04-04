@@ -436,6 +436,7 @@ const AiTraining = () => {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm">FAQ</CardTitle>
+              <CardDescription className="text-xs">Add common questions customers ask. Use suggestions below to get started quickly.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {faqList.length > 0 && (
@@ -459,6 +460,55 @@ const AiTraining = () => {
                 <Button size="sm" variant="outline" onClick={addFaq} className="h-7 text-xs gap-1">
                   <Plus className="h-3 w-3" /> Add
                 </Button>
+              </div>
+
+              {/* FAQ Suggestions */}
+              <div className="space-y-2 pt-2 border-t">
+                <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                  <Sparkles className="h-3 w-3" /> Quick Add — Common Questions
+                </p>
+                <div className="grid gap-1.5">
+                  {[
+                    { q: "ডেলিভারি চার্জ কত?", a: settings.delivery_info || "ঢাকায় ৬০ টাকা, ঢাকার বাইরে ১২০ টাকা।" },
+                    { q: "How much is delivery?", a: settings.delivery_info || "60 TK inside Dhaka, 120 TK outside." },
+                    { q: "পেমেন্ট কিভাবে করব?", a: settings.payment_methods || "bKash, Nagad অথবা ক্যাশ অন ডেলিভারি।" },
+                    { q: "How can I pay?", a: settings.payment_methods || "bKash, Nagad, or Cash on Delivery." },
+                    { q: "ডেলিভারি কতদিন লাগে?", a: "ঢাকায় ১-২ দিন, ঢাকার বাইরে ২-৩ দিন।" },
+                    { q: "How long is delivery?", a: "1-2 days in Dhaka, 2-3 days outside." },
+                    { q: "রিটার্ন/এক্সচেঞ্জ পলিসি কী?", a: "পণ্য পাওয়ার ৩ দিনের মধ্যে রিটার্ন/এক্সচেঞ্জ করা যাবে।" },
+                    { q: "Do you have return policy?", a: "Yes, return/exchange within 3 days of receiving the product." },
+                    { q: "অর্ডার কিভাবে করব?", a: "আপনার নাম, ফোন নম্বর এবং ঠিকানা দিন, আমরা অর্ডার কনফার্ম করে দিব।" },
+                    { q: "How to order?", a: "Send your name, phone and address. We'll confirm your order." },
+                    { q: "পণ্যের দাম কি ফিক্সড?", a: "জি, আমাদের সব পণ্যের দাম ফিক্সড।" },
+                    { q: "Are prices fixed?", a: "Yes, all our prices are fixed." },
+                    { q: "COD আছে?", a: "জি, ক্যাশ অন ডেলিভারি সুবিধা আছে।" },
+                    { q: "Is COD available?", a: "Yes, Cash on Delivery is available." },
+                  ]
+                    .filter((s) => !faqList.some((f: any) => f.q === s.q))
+                    .map((s, i) => (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          const existing = parseJSON(settings.faq_list, []);
+                          existing.push({ q: s.q, a: s.a });
+                          update("faq_list", JSON.stringify(existing));
+                          toast.success("Added!");
+                        }}
+                        className="flex items-center gap-2 text-left bg-muted/30 hover:bg-muted/60 border border-transparent hover:border-primary/20 rounded-lg p-2 transition-all group"
+                      >
+                        <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                          <Plus className="h-3 w-3 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate">{s.q}</p>
+                          <p className="text-[10px] text-muted-foreground truncate">{s.a}</p>
+                        </div>
+                      </button>
+                    ))}
+                </div>
+                {faqList.length > 0 && parseJSON(settings.faq_list, []).length >= 14 && (
+                  <p className="text-[10px] text-muted-foreground text-center">✅ All suggestions added!</p>
+                )}
               </div>
             </CardContent>
           </Card>
