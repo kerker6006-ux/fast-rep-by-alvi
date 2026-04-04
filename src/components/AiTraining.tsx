@@ -155,8 +155,38 @@ const AiTraining = () => {
 
       const generated = data.settings;
       const newSettings = { ...settings };
+      const arrayKeys = ["faq_list", "never_say_list", "reply_examples"];
       for (const [key, value] of Object.entries(generated)) {
-        if (value && String(value).trim()) {
+        if (!value || !String(value).trim()) continue;
+        if (arrayKeys.includes(key)) {
+          // Merge arrays instead of replacing
+          try {
+            const existingArr = parseJSON(settings[key], []);
+            const newArr = typeof value === "string" ? JSON.parse(value) : value;
+            if (Array.isArray(newArr)) {
+              const merged = [...existingArr, ...newArr];
+              // Deduplicate FAQs by question text
+              if (key === "faq_list") {
+                const seen = new Set<string>();
+                const unique = merged.filter((item: any) => {
+                  const q = (item.q || "").toLowerCase().trim();
+                  if (seen.has(q)) return false;
+                  seen.add(q);
+                  return true;
+                });
+                newSettings[key] = JSON.stringify(unique);
+              } else if (key === "never_say_list") {
+                newSettings[key] = JSON.stringify([...new Set(merged.map((s: string) => s.toLowerCase().trim()))]);
+              } else {
+                newSettings[key] = JSON.stringify(merged);
+              }
+            } else {
+              newSettings[key] = String(value);
+            }
+          } catch {
+            newSettings[key] = String(value);
+          }
+        } else {
           newSettings[key] = String(value);
         }
       }
