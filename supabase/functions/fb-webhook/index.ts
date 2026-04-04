@@ -575,9 +575,30 @@ async function generateAiReply(
   if (userId) productQuery = productQuery.eq("user_id", userId);
   const { data: products } = await productQuery;
 
-  const productCatalog = products?.map((p: any) =>
-    `- ${p.name}${p.name_bn ? ` (${p.name_bn})` : ""}: ৳${p.price}${p.color ? ` | Color: ${p.color}` : ""}${p.size ? ` | Size: ${p.size}` : ""}${p.material ? ` | Material: ${p.material}` : ""}${p.description ? ` — ${p.description}` : ""}${p.category ? ` [${p.category}]` : ""}${p.keywords?.length ? ` [${p.keywords.join(", ")}]` : ""}`
-  ).join("\n") || "No products available.";
+  // Group products by category for the AI
+  const productsByCategory: Record<string, any[]> = {};
+  products?.forEach((p: any) => {
+    const cat = p.category || "Other";
+    if (!productsByCategory[cat]) productsByCategory[cat] = [];
+    productsByCategory[cat].push(p);
+  });
+
+  const productCatalog = Object.entries(productsByCategory).map(([category, items]) => {
+    const itemList = items.map((p: any) =>
+      `  - ${p.name}${p.name_bn ? ` (${p.name_bn})` : ""}: ৳${p.price}${p.color ? ` | Color: ${p.color}` : ""}${p.size ? ` | Size: ${p.size}` : ""}${p.material ? ` | Material: ${p.material}` : ""}${p.description ? ` — ${p.description}` : ""}${p.keywords?.length ? ` [${p.keywords.join(", ")}]` : ""}`
+    ).join("\n");
+    return `📁 ${category} (${items.length} items):\n${itemList}`;
+  }).join("\n\n") || "No products available.";
+
+  // Build category summary for smart questioning
+  const categorySummary = Object.entries(productsByCategory).map(([cat, items]) => {
+    const colors = [...new Set(items.map((p: any) => p.color).filter(Boolean))];
+    const sizes = [...new Set(items.map((p: any) => p.size).filter(Boolean))];
+    const priceRange = items.length > 1
+      ? `৳${Math.min(...items.map((p: any) => p.price))} - ৳${Math.max(...items.map((p: any) => p.price))}`
+      : `৳${items[0].price}`;
+    return `- ${cat}: ${items.length} variants${colors.length ? `, Colors: ${colors.join(", ")}` : ""}${sizes.length ? `, Sizes: ${sizes.join(", ")}` : ""}, Price: ${priceRange}`;
+  }).join("\n");
 
   const chatHistory = (recentMessages || []).reverse().map((m: any) => ({
     role: m.direction === "incoming" ? "user" as const : "assistant" as const,
