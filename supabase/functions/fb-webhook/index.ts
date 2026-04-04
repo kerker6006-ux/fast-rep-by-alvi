@@ -600,9 +600,9 @@ async function generateAiReply(
     const contentParts: any[] = [];
 
     // Add instruction text
-    const imageAnalysisPrompt = messageText
-      ? `Customer said: "${messageText}" and sent an image. Compare it visually with our product images below. If the customer's image matches any product (same type + similar color/design), tell the name and price. If no match, say "এটা আমাদের কালেকশনে নেই।" Keep reply 1-2 sentences max.`
-      : `Customer sent this image. Compare it visually with our product images below. If it matches any product, tell the name and price. If no match, say "এটা আমাদের কালেকশনে নেই।" Keep reply 1-2 sentences max.`;
+      const imageAnalysisPrompt = messageText
+        ? `Customer said: "${messageText}" and sent an image. Compare it visually with our product images below. If the customer's image matches any product (same type + similar color/design), tell the name and price. If no exact match, suggest the closest similar product from our catalog with its price. Keep reply 1-2 sentences max.`
+        : `Customer sent this image. Compare it visually with our product images below. If it matches any product, tell the name and price. If no exact match, suggest the closest similar product from our catalog with its price. Keep reply 1-2 sentences max.`;
 
     contentParts.push({ type: "text", text: imageAnalysisPrompt });
 
@@ -724,7 +724,8 @@ ${settings.image_instructions || `IMAGE HANDLING:
 - When customer sends an image, you will receive both their image AND our product images.
 - VISUALLY compare: same item type (t-shirt/hijab/sharee etc) AND similar color/design = match.
 - Match found → say product name + price in 1 sentence.
-- No match → "এটা আমাদের কালেকশনে নেই।" That's it. Don't elaborate.
+- No exact match → suggest the closest similar product we have. Say something like "এটার মতো আমাদের [product name] আছে, দাম ৳X" or ask what they're looking for.
+- NEVER say "এটা আমাদের কালেকশনে নেই" or "not in our collection." Always try to help.
 - Be precise about item types. Don't confuse t-shirt with hijab.`}
 
 ${settings.order_instructions || `ORDER COLLECTION — VERY IMPORTANT:
