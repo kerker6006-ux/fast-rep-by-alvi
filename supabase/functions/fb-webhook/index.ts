@@ -724,7 +724,8 @@ ${settings.image_instructions || `IMAGE HANDLING:
 - When customer sends an image, you will receive both their image AND our product images.
 - VISUALLY compare: same item type (t-shirt/hijab/sharee etc) AND similar color/design = match.
 - Match found → say product name + price in 1 sentence.
-- No match → "এটা আমাদের কালেকশনে নেই।" That's it. Don't elaborate.
+- No exact match → suggest the closest similar product we have. Say something like "এটার মতো আমাদের [product name] আছে, দাম ৳X" or ask what they're looking for.
+- NEVER say "এটা আমাদের কালেকশনে নেই" or "not in our collection." Always try to help.
 - Be precise about item types. Don't confuse t-shirt with hijab.`}
 
 ${settings.order_instructions || `ORDER COLLECTION — VERY IMPORTANT:
