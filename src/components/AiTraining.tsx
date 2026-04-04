@@ -37,6 +37,8 @@ const AiTraining = () => {
   const [faqQuestion, setFaqQuestion] = useState("");
   const [faqAnswer, setFaqAnswer] = useState("");
   const [neverSayItem, setNeverSayItem] = useState("");
+  const [aiSuggestedFaqs, setAiSuggestedFaqs] = useState<{q: string; a: string}[]>([]);
+  const [isLoadingFaqSuggestions, setIsLoadingFaqSuggestions] = useState(false);
 
   const { data: dbSettings, isLoading } = useQuery({
     queryKey: ["bot-settings"],
