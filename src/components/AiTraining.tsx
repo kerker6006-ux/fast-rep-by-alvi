@@ -16,13 +16,19 @@ import {
   Sparkles, Settings2, Loader2, CheckCircle, RotateCcw, Wand2,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  buildSettingsMap,
+  mergeGeneratedSettings,
+  parseSettingsJson,
+  type SettingsMap,
+} from "@/lib/ai-training-settings";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
 const AiTraining = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const [settings, setSettings] = useState<Record<string, string>>({});
+  const [settings, setSettings] = useState<SettingsMap>({});
   const [hasChanges, setHasChanges] = useState(false);
 
   // Chat state
@@ -41,41 +47,61 @@ const AiTraining = () => {
   const [isLoadingFaqSuggestions, setIsLoadingFaqSuggestions] = useState(false);
 
   const { data: dbSettings, isLoading } = useQuery({
-    queryKey: ["bot-settings"],
+    queryKey: ["bot-settings", user?.id],
+    enabled: !!user?.id,
     queryFn: async () => {
-      const { data, error } = await supabase.from("bot_settings").select("*");
+      if (!user?.id) return [];
+
+      const { data, error } = await supabase
+        .from("bot_settings")
+        .select("*")
+        .eq("user_id", user.id);
+
       if (error) throw error;
-      return data;
+      return data ?? [];
     },
   });
 
   useEffect(() => {
-    if (dbSettings) {
-      const map: Record<string, string> = {};
-      dbSettings.forEach((s) => { map[s.setting_key] = s.setting_value; });
-      setSettings(map);
-    }
-  }, [dbSettings]);
+    if (!dbSettings || hasChanges) return;
+    setSettings(buildSettingsMap(dbSettings));
+  }, [dbSettings, hasChanges]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
 
+  const upsertSettings = async (nextSettings: SettingsMap) => {
+    if (!user?.id) throw new Error("Please log in again.");
+
+    const payload = Object.entries(nextSettings).map(([setting_key, setting_value]) => ({
+      setting_key,
+      setting_value,
+      user_id: user.id,
+    }));
+
+    if (payload.length === 0) return;
+
+    const { error } = await supabase
+      .from("bot_settings")
+      .upsert(payload as any, { onConflict: "user_id,setting_key" } as any);
+
+    if (error) throw error;
+  };
+
+  const persistSettings = async (
+    nextSettings: SettingsMap,
+    successMessage = "Settings saved! Bot will use these immediately.",
+  ) => {
+    await upsertSettings(nextSettings);
+    await queryClient.invalidateQueries({ queryKey: ["bot-settings", user?.id] });
+    setHasChanges(false);
+    toast.success(successMessage);
+  };
+
   const saveMutation = useMutation({
-    mutationFn: async () => {
-      for (const [key, value] of Object.entries(settings)) {
-        const { error } = await supabase
-          .from("bot_settings")
-          .upsert({ setting_key: key, setting_value: value, user_id: user?.id } as any, { onConflict: "user_id,setting_key" } as any);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["bot-settings"] });
-      setHasChanges(false);
-      toast.success("Settings saved! Bot will use these immediately.");
-    },
-    onError: (e) => toast.error(e.message),
+    mutationFn: async (nextSettings: SettingsMap = settings) => persistSettings(nextSettings),
+    onError: (e: any) => toast.error(e.message || "Failed to save settings"),
   });
 
   const update = (key: string, value: string) => {
@@ -83,13 +109,8 @@ const AiTraining = () => {
     setHasChanges(true);
   };
 
-  const parseJSON = (str: string | undefined, fallback: any) => {
-    if (!str) return fallback;
-    try { return JSON.parse(str); } catch { return fallback; }
-  };
-
-  const faqList = parseJSON(settings.faq_list, []);
-  const neverSayList = parseJSON(settings.never_say_list, []);
+  const faqList = parseSettingsJson<{ q: string; a: string }[]>(settings.faq_list, []);
+  const neverSayList = parseSettingsJson<string[]>(settings.never_say_list, []);
 
   // ---- Chat Functions ----
 
@@ -153,46 +174,17 @@ const AiTraining = () => {
       if (error) throw error;
       if (data.error) throw new Error(data.error);
 
-      const generated = data.settings;
-      const newSettings = { ...settings };
-      const arrayKeys = ["faq_list", "never_say_list", "reply_examples"];
-      for (const [key, value] of Object.entries(generated)) {
-        if (!value || !String(value).trim()) continue;
-        if (arrayKeys.includes(key)) {
-          // Merge arrays instead of replacing
-          try {
-            const existingArr = parseJSON(settings[key], []);
-            const newArr = typeof value === "string" ? JSON.parse(value) : value;
-            if (Array.isArray(newArr)) {
-              const merged = [...existingArr, ...newArr];
-              // Deduplicate FAQs by question text
-              if (key === "faq_list") {
-                const seen = new Set<string>();
-                const unique = merged.filter((item: any) => {
-                  const q = (item.q || "").toLowerCase().trim();
-                  if (seen.has(q)) return false;
-                  seen.add(q);
-                  return true;
-                });
-                newSettings[key] = JSON.stringify(unique);
-              } else if (key === "never_say_list") {
-                newSettings[key] = JSON.stringify([...new Set(merged.map((s: string) => s.toLowerCase().trim()))]);
-              } else {
-                newSettings[key] = JSON.stringify(merged);
-              }
-            } else {
-              newSettings[key] = String(value);
-            }
-          } catch {
-            newSettings[key] = String(value);
-          }
-        } else {
-          newSettings[key] = String(value);
-        }
+      const generated = (data.settings ?? {}) as Record<string, unknown>;
+      const newSettings = mergeGeneratedSettings(settings, generated);
+
+      if (JSON.stringify(newSettings) === JSON.stringify(settings)) {
+        toast.info("No new changes found yet. Keep chatting and be a bit more specific.");
+        return;
       }
+
       setSettings(newSettings);
       setHasChanges(true);
-      toast.success("Settings generated from training! Review them in the Manual tab, then hit Save.");
+      await persistSettings(newSettings, "Wizard changes merged into Manual and saved.");
     } catch (e: any) {
       toast.error(e.message || "Failed to generate settings");
     } finally {
@@ -208,7 +200,7 @@ const AiTraining = () => {
   // ---- Manual helpers ----
   const addFaq = () => {
     if (!faqQuestion.trim() || !faqAnswer.trim()) return;
-    const existing = parseJSON(settings.faq_list, []);
+    const existing = parseSettingsJson<{ q: string; a: string }[]>(settings.faq_list, []);
     existing.push({ q: faqQuestion, a: faqAnswer });
     update("faq_list", JSON.stringify(existing));
     setFaqQuestion("");
@@ -216,21 +208,21 @@ const AiTraining = () => {
   };
 
   const removeFaq = (i: number) => {
-    const existing = parseJSON(settings.faq_list, []);
+    const existing = parseSettingsJson<{ q: string; a: string }[]>(settings.faq_list, []);
     existing.splice(i, 1);
     update("faq_list", JSON.stringify(existing));
   };
 
   const addNeverSay = () => {
     if (!neverSayItem.trim()) return;
-    const existing = parseJSON(settings.never_say_list, []);
+    const existing = parseSettingsJson<string[]>(settings.never_say_list, []);
     existing.push(neverSayItem.trim());
     update("never_say_list", JSON.stringify(existing));
     setNeverSayItem("");
   };
 
   const removeNeverSay = (i: number) => {
-    const existing = parseJSON(settings.never_say_list, []);
+    const existing = parseSettingsJson<string[]>(settings.never_say_list, []);
     existing.splice(i, 1);
     update("never_say_list", JSON.stringify(existing));
   };
@@ -265,7 +257,7 @@ const AiTraining = () => {
 
       if (error) throw error;
       if (data?.faqs) {
-        const existingFaqs = parseJSON(settings.faq_list, []);
+        const existingFaqs = parseSettingsJson<{ q: string; a: string }[]>(settings.faq_list, []);
         const filtered = data.faqs.filter((s: any) => !existingFaqs.some((f: any) => f.q === s.q));
         setAiSuggestedFaqs(filtered);
         if (filtered.length === 0) toast.info("No new suggestions — you've covered the common questions!");
@@ -273,7 +265,7 @@ const AiTraining = () => {
         // Try to parse from reply
         try {
           const parsed = JSON.parse(data.reply);
-          const existingFaqs = parseJSON(settings.faq_list, []);
+          const existingFaqs = parseSettingsJson<{ q: string; a: string }[]>(settings.faq_list, []);
           const filtered = (Array.isArray(parsed) ? parsed : []).filter((s: any) => !existingFaqs.some((f: any) => f.q === s.q));
           setAiSuggestedFaqs(filtered);
         } catch {
@@ -309,7 +301,7 @@ const AiTraining = () => {
           <p className="text-sm text-muted-foreground">Train your bot with AI or configure manually.</p>
         </div>
         {hasChanges && (
-          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} size="sm" className="gap-1.5">
+          <Button onClick={() => saveMutation.mutate(settings)} disabled={saveMutation.isPending} size="sm" className="gap-1.5">
             <Save className="h-3.5 w-3.5" />
             {saveMutation.isPending ? "Saving..." : "Save"}
           </Button>
@@ -360,7 +352,7 @@ const AiTraining = () => {
                     variant="outline"
                     size="sm"
                     onClick={generateAndApplySettings}
-                    disabled={isGenerating || chatMessages.length < 4}
+                    disabled={isGenerating || saveMutation.isPending || chatMessages.length < 4}
                     className="h-7 text-xs gap-1"
                   >
                     {isGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />}
@@ -428,7 +420,7 @@ const AiTraining = () => {
                   </Button>
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-1.5 text-center">
-                  Answer the questions → Click "Apply Settings" when done → Save
+                  Answer the questions → Click "Apply Settings" when done — it merges and saves automatically
                 </p>
               </div>
             </Card>
@@ -563,7 +555,7 @@ const AiTraining = () => {
                       <button
                         key={`ai-${i}`}
                         onClick={() => {
-                          const existing = parseJSON(settings.faq_list, []);
+                          const existing = parseSettingsJson<{ q: string; a: string }[]>(settings.faq_list, []);
                           existing.push({ q: s.q, a: s.a });
                           update("faq_list", JSON.stringify(existing));
                           setAiSuggestedFaqs(prev => prev.filter((_, idx) => idx !== i));
@@ -609,7 +601,7 @@ const AiTraining = () => {
                       <button
                         key={i}
                         onClick={() => {
-                          const existing = parseJSON(settings.faq_list, []);
+                          const existing = parseSettingsJson<{ q: string; a: string }[]>(settings.faq_list, []);
                           existing.push({ q: s.q, a: s.a });
                           update("faq_list", JSON.stringify(existing));
                           toast.success("Added!");
@@ -687,7 +679,7 @@ const AiTraining = () => {
 
           {/* Save */}
           {hasChanges && (
-            <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="w-full gap-2">
+            <Button onClick={() => saveMutation.mutate(settings)} disabled={saveMutation.isPending} className="w-full gap-2">
               <Save className="h-4 w-4" />
               {saveMutation.isPending ? "Saving..." : "Save All Changes"}
             </Button>
