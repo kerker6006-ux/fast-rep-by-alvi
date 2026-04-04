@@ -565,9 +565,10 @@ async function generateAiReply(
   messageText: string | null, imageUrl: string | null,
   settings: Record<string, string>, userId: string | null
 ): Promise<string> {
+  // Fetch FULL conversation history (up to 50 messages) so AI remembers context
   const { data: recentMessages } = await supabase
     .from("messages").select("direction, content, image_url")
-    .eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(20);
+    .eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(50);
 
   let productQuery = supabase
     .from("products").select("name, name_bn, description, description_bn, price, category, keywords, image_url, color, size, material")
