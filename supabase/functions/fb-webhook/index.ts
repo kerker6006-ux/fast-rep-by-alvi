@@ -600,9 +600,9 @@ async function generateAiReply(
     const contentParts: any[] = [];
 
     // Add instruction text
-    const imageAnalysisPrompt = messageText
-      ? `Customer said: "${messageText}" and sent an image. Compare it visually with our product images below. If the customer's image matches any product (same type + similar color/design), tell the name and price. If no match, say "এটা আমাদের কালেকশনে নেই।" Keep reply 1-2 sentences max.`
-      : `Customer sent this image. Compare it visually with our product images below. If it matches any product, tell the name and price. If no match, say "এটা আমাদের কালেকশনে নেই।" Keep reply 1-2 sentences max.`;
+      const imageAnalysisPrompt = messageText
+        ? `Customer said: "${messageText}" and sent an image. Compare it visually with our product images below. If the customer's image matches any product (same type + similar color/design), tell the name and price. If no exact match, suggest the closest similar product from our catalog with its price. Keep reply 1-2 sentences max.`
+        : `Customer sent this image. Compare it visually with our product images below. If it matches any product, tell the name and price. If no exact match, suggest the closest similar product from our catalog with its price. Keep reply 1-2 sentences max.`;
 
     contentParts.push({ type: "text", text: imageAnalysisPrompt });
 
