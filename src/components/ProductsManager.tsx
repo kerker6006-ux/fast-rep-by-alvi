@@ -371,9 +371,9 @@ const ProductsManager = () => {
                 <Input value={form.keywords} onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))} placeholder="hijab, scarf, হিজাব" />
               </div>
 
-              {/* Image */}
+              {/* Main Product Image */}
               <div className="space-y-2">
-                <Label>Product Image</Label>
+                <Label>Main Product Image</Label>
                 <div className="flex items-center gap-4">
                   {(editingProduct?.image_url || imageFile) && (
                     <img src={imageFile ? URL.createObjectURL(imageFile) : editingProduct?.image_url || ""} alt="Preview" className="h-20 w-20 rounded-xl object-cover border-2 border-border shadow-sm" />
@@ -382,6 +382,45 @@ const ProductsManager = () => {
                     <Input type="file" accept="image/*" onChange={e => setImageFile(e.target.files?.[0] || null)} />
                   </div>
                 </div>
+              </div>
+
+              {/* Color Variants */}
+              <div className="space-y-3 p-4 rounded-xl border-2 border-dashed border-primary/20 bg-accent/30">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    🎨 Color Variants
+                    <span className="text-xs font-normal text-muted-foreground">Add different colors with their own photos</span>
+                  </Label>
+                  <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setVariants(v => [...v, {color: "", file: null, image_url: ""}])}>
+                    <Plus className="h-3 w-3" /> Add Color
+                  </Button>
+                </div>
+                {variants.length > 0 && (
+                  <div className="grid gap-3">
+                    {variants.map((v, i) => (
+                      <div key={i} className="flex items-center gap-3 bg-background rounded-lg p-3 border border-border/50">
+                        {(v.image_url || v.file) && (
+                          <img src={v.file ? URL.createObjectURL(v.file) : v.image_url} alt={v.color} className="h-14 w-14 rounded-lg object-cover border border-border" />
+                        )}
+                        {!v.image_url && !v.file && (
+                          <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center border border-border">
+                            <ImageIcon className="h-5 w-5 text-muted-foreground/40" />
+                          </div>
+                        )}
+                        <div className="flex-1 space-y-1.5">
+                          <Input value={v.color} onChange={e => setVariants(vs => vs.map((vv, ii) => ii === i ? {...vv, color: e.target.value} : vv))} placeholder="Color name (e.g. Maroon, কালো)" className="h-8 text-sm" />
+                          <Input type="file" accept="image/*" className="h-8 text-xs" onChange={e => setVariants(vs => vs.map((vv, ii) => ii === i ? {...vv, file: e.target.files?.[0] || null} : vv))} />
+                        </div>
+                        <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-destructive shrink-0" onClick={() => setVariants(vs => vs.filter((_, ii) => ii !== i))}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {variants.length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-2">No color variants yet. Click "Add Color" to add different color options with separate images.</p>
+                )}
               </div>
 
               {/* Active toggle + save */}
