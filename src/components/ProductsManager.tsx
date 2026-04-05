@@ -14,6 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Pencil, Trash2, ImageIcon, FolderOpen, Search, Package, Sparkles, Loader2, Eye, EyeOff, Grid3X3, LayoutList } from "lucide-react";
 import { toast } from "sonner";
 
+type ProductVariant = { color: string; image_url: string };
+
 type Product = {
   id: string;
   name: string;
@@ -29,6 +31,7 @@ type Product = {
   size: string | null;
   material: string | null;
   created_at: string;
+  variants: ProductVariant[] | null;
 };
 
 const ProductsManager = () => {
@@ -45,6 +48,7 @@ const ProductsManager = () => {
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiGeneratingBn, setAiGeneratingBn] = useState(false);
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
+  const [variants, setVariants] = useState<{color: string; file: File | null; image_url: string}[]>([]);
   const [form, setForm] = useState({
     name: "", name_bn: "", description: "", description_bn: "",
     price: "", category: "", keywords: "", color: "", size: "", material: "", is_active: true,
@@ -55,7 +59,7 @@ const ProductsManager = () => {
     queryFn: async () => {
       const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false });
       if (error) throw error;
-      return data as Product[];
+      return data as unknown as Product[];
     },
   });
 
@@ -155,6 +159,19 @@ const ProductsManager = () => {
     mutationFn: async () => {
       let image_url = editingProduct?.image_url || null;
       if (imageFile) image_url = await uploadImage(imageFile);
+
+      // Upload variant images
+      const finalVariants: ProductVariant[] = [];
+      for (const v of variants) {
+        if (!v.color.trim()) continue;
+        let variantUrl = v.image_url;
+        if (v.file) variantUrl = await uploadImage(v.file);
+        if (variantUrl) finalVariants.push({ color: v.color.trim(), image_url: variantUrl });
+      }
+
+      // Combine all colors for the color field (for bot search compatibility)
+      const allColors = [form.color, ...finalVariants.map(v => v.color)].filter(Boolean).join(", ");
+
       const payload = {
         name: form.name,
         name_bn: form.name_bn || null,
@@ -165,10 +182,11 @@ const ProductsManager = () => {
         category: form.category || null,
         is_active: form.is_active,
         keywords: form.keywords ? form.keywords.split(",").map(k => k.trim()) : null,
-        color: form.color || null,
+        color: allColors || null,
         size: form.size || null,
         material: form.material || null,
         user_id: user?.id,
+        variants: finalVariants,
       };
       if (editingProduct) {
         const { error } = await supabase.from("products").update(payload).eq("id", editingProduct.id);
@@ -204,6 +222,7 @@ const ProductsManager = () => {
     setIsOpen(false);
     setShowNewCategory(false);
     setNewCategory("");
+    setVariants([]);
   };
 
   const openEdit = (p: Product) => {
@@ -213,6 +232,7 @@ const ProductsManager = () => {
       description_bn: p.description_bn || "", price: String(p.price), category: p.category || "",
       keywords: p.keywords?.join(", ") || "", color: p.color || "", size: p.size || "", material: p.material || "", is_active: p.is_active,
     });
+    setVariants((p.variants || []).map(v => ({ color: v.color, file: null, image_url: v.image_url })));
     setIsOpen(true);
   };
 
@@ -351,9 +371,9 @@ const ProductsManager = () => {
                 <Input value={form.keywords} onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))} placeholder="hijab, scarf, হিজাব" />
               </div>
 
-              {/* Image */}
+              {/* Main Product Image */}
               <div className="space-y-2">
-                <Label>Product Image</Label>
+                <Label>Main Product Image</Label>
                 <div className="flex items-center gap-4">
                   {(editingProduct?.image_url || imageFile) && (
                     <img src={imageFile ? URL.createObjectURL(imageFile) : editingProduct?.image_url || ""} alt="Preview" className="h-20 w-20 rounded-xl object-cover border-2 border-border shadow-sm" />
@@ -362,6 +382,45 @@ const ProductsManager = () => {
                     <Input type="file" accept="image/*" onChange={e => setImageFile(e.target.files?.[0] || null)} />
                   </div>
                 </div>
+              </div>
+
+              {/* Color Variants */}
+              <div className="space-y-3 p-4 rounded-xl border-2 border-dashed border-primary/20 bg-accent/30">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    🎨 Color Variants
+                    <span className="text-xs font-normal text-muted-foreground">Add different colors with their own photos</span>
+                  </Label>
+                  <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setVariants(v => [...v, {color: "", file: null, image_url: ""}])}>
+                    <Plus className="h-3 w-3" /> Add Color
+                  </Button>
+                </div>
+                {variants.length > 0 && (
+                  <div className="grid gap-3">
+                    {variants.map((v, i) => (
+                      <div key={i} className="flex items-center gap-3 bg-background rounded-lg p-3 border border-border/50">
+                        {(v.image_url || v.file) && (
+                          <img src={v.file ? URL.createObjectURL(v.file) : v.image_url} alt={v.color} className="h-14 w-14 rounded-lg object-cover border border-border" />
+                        )}
+                        {!v.image_url && !v.file && (
+                          <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center border border-border">
+                            <ImageIcon className="h-5 w-5 text-muted-foreground/40" />
+                          </div>
+                        )}
+                        <div className="flex-1 space-y-1.5">
+                          <Input value={v.color} onChange={e => setVariants(vs => vs.map((vv, ii) => ii === i ? {...vv, color: e.target.value} : vv))} placeholder="Color name (e.g. Maroon, কালো)" className="h-8 text-sm" />
+                          <Input type="file" accept="image/*" className="h-8 text-xs" onChange={e => setVariants(vs => vs.map((vv, ii) => ii === i ? {...vv, file: e.target.files?.[0] || null} : vv))} />
+                        </div>
+                        <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-destructive shrink-0" onClick={() => setVariants(vs => vs.filter((_, ii) => ii !== i))}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {variants.length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-2">No color variants yet. Click "Add Color" to add different color options with separate images.</p>
+                )}
               </div>
 
               {/* Active toggle + save */}
@@ -443,6 +502,20 @@ const ProductsManager = () => {
               <div className="space-y-4">
                 {previewProduct.image_url && (
                   <img src={previewProduct.image_url} alt={previewProduct.name} className="w-full aspect-square object-cover rounded-xl" />
+                )}
+                {/* Variant images */}
+                {previewProduct.variants && previewProduct.variants.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground">🎨 Color Variants</p>
+                    <div className="flex gap-2 flex-wrap">
+                      {previewProduct.variants.map((v, i) => (
+                        <div key={i} className="text-center">
+                          <img src={v.image_url} alt={v.color} className="h-16 w-16 rounded-lg object-cover border-2 border-border shadow-sm" />
+                          <p className="text-[10px] mt-1 text-muted-foreground">{v.color}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
                 <div className="flex items-center justify-between">
                   <span className="text-2xl font-bold text-primary">৳{previewProduct.price}</span>
@@ -537,7 +610,14 @@ const ProductsManager = () => {
                         </div>
                         {p.description && <p className="text-[11px] text-muted-foreground line-clamp-2">{p.description}</p>}
                         <div className="flex flex-wrap gap-1 pt-0.5">
-                          {p.color && <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">🎨 {p.color}</Badge>}
+                          {p.variants && p.variants.length > 0 ? (
+                            <div className="flex -space-x-1.5">
+                              {p.variants.slice(0, 4).map((v, vi) => (
+                                <img key={vi} src={v.image_url} alt={v.color} title={v.color} className="h-5 w-5 rounded-full object-cover border border-background" />
+                              ))}
+                              {p.variants.length > 4 && <span className="text-[9px] text-muted-foreground ml-1.5">+{p.variants.length - 4}</span>}
+                            </div>
+                          ) : p.color ? <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">🎨 {p.color}</Badge> : null}
                           {p.size && <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">📐 {p.size}</Badge>}
                           {p.material && <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">🧵 {p.material}</Badge>}
                         </div>

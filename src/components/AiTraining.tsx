@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   Brain, Save, Plus, X, MessageCircle, Send, Bot, User,
-  Sparkles, Settings2, Loader2, CheckCircle, RotateCcw, Wand2,
+  Sparkles, Settings2, Loader2, CheckCircle, RotateCcw, Wand2, Pencil,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -45,6 +45,8 @@ const AiTraining = () => {
   const [neverSayItem, setNeverSayItem] = useState("");
   const [aiSuggestedFaqs, setAiSuggestedFaqs] = useState<{q: string; a: string}[]>([]);
   const [isLoadingFaqSuggestions, setIsLoadingFaqSuggestions] = useState(false);
+  const [editingSuggestionIdx, setEditingSuggestionIdx] = useState<number | null>(null);
+  const [editingSuggestion, setEditingSuggestion] = useState<{q: string; a: string}>({q: "", a: ""});
 
   const { data: dbSettings, isLoading } = useQuery({
     queryKey: ["bot-settings", user?.id],
@@ -549,28 +551,47 @@ const AiTraining = () => {
                     {isLoadingFaqSuggestions ? "Analyzing..." : "Suggest from Chats"}
                   </Button>
                 </div>
-                {aiSuggestedFaqs.length > 0 && (
+              {aiSuggestedFaqs.length > 0 && (
                   <div className="grid gap-1.5">
                     {aiSuggestedFaqs.map((s, i) => (
-                      <button
-                        key={`ai-${i}`}
-                        onClick={() => {
-                          const existing = parseSettingsJson<{ q: string; a: string }[]>(settings.faq_list, []);
-                          existing.push({ q: s.q, a: s.a });
-                          update("faq_list", JSON.stringify(existing));
-                          setAiSuggestedFaqs(prev => prev.filter((_, idx) => idx !== i));
-                          toast.success("Added!");
-                        }}
-                        className="flex items-center gap-2 text-left bg-primary/5 hover:bg-primary/10 border border-primary/10 hover:border-primary/20 rounded-lg p-2 transition-all group"
-                      >
-                        <div className="h-6 w-6 rounded-full bg-primary/15 flex items-center justify-center shrink-0 group-hover:bg-primary/25 transition-colors">
-                          <Plus className="h-3 w-3 text-primary" />
+                      editingSuggestionIdx === i ? (
+                        <div key={`ai-edit-${i}`} className="bg-primary/5 border border-primary/20 rounded-lg p-3 space-y-2">
+                          <Input value={editingSuggestion.q} onChange={e => setEditingSuggestion(p => ({...p, q: e.target.value}))} placeholder="Question..." className="h-8 text-sm" />
+                          <Input value={editingSuggestion.a} onChange={e => setEditingSuggestion(p => ({...p, a: e.target.value}))} placeholder="Answer..." className="h-8 text-sm" />
+                          <div className="flex gap-2">
+                            <Button size="sm" className="h-7 text-xs gap-1" onClick={() => {
+                              const existing = parseSettingsJson<{ q: string; a: string }[]>(settings.faq_list, []);
+                              existing.push({ q: editingSuggestion.q, a: editingSuggestion.a });
+                              update("faq_list", JSON.stringify(existing));
+                              setAiSuggestedFaqs(prev => prev.filter((_, idx) => idx !== i));
+                              setEditingSuggestionIdx(null);
+                              toast.success("Added!");
+                            }} disabled={!editingSuggestion.q.trim() || !editingSuggestion.a.trim()}>
+                              <Plus className="h-3 w-3" /> Add
+                            </Button>
+                            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingSuggestionIdx(null)}>Cancel</Button>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium">{s.q}</p>
-                          <p className="text-[10px] text-muted-foreground">{s.a}</p>
+                      ) : (
+                        <div key={`ai-${i}`} className="flex items-center gap-2 text-left bg-primary/5 hover:bg-primary/10 border border-primary/10 hover:border-primary/20 rounded-lg p-2 transition-all group">
+                          <button onClick={() => {
+                            const existing = parseSettingsJson<{ q: string; a: string }[]>(settings.faq_list, []);
+                            existing.push({ q: s.q, a: s.a });
+                            update("faq_list", JSON.stringify(existing));
+                            setAiSuggestedFaqs(prev => prev.filter((_, idx) => idx !== i));
+                            toast.success("Added!");
+                          }} className="h-6 w-6 rounded-full bg-primary/15 flex items-center justify-center shrink-0 group-hover:bg-primary/25 transition-colors">
+                            <Plus className="h-3 w-3 text-primary" />
+                          </button>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium">{s.q}</p>
+                            <p className="text-[10px] text-muted-foreground">{s.a}</p>
+                          </div>
+                          <button onClick={() => { setEditingSuggestionIdx(i); setEditingSuggestion({q: s.q, a: s.a}); }} className="h-6 w-6 rounded-full bg-muted flex items-center justify-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" title="Edit before adding">
+                            <Pencil className="h-3 w-3 text-muted-foreground" />
+                          </button>
                         </div>
-                      </button>
+                      )
                     ))}
                   </div>
                 )}
