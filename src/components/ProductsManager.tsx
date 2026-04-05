@@ -475,7 +475,7 @@ const ProductsManager = () => {
       </div>
 
       {/* AI Product Wizard */}
-      <ProductAiWizard
+      {aiWizardEnabled && <ProductAiWizard
         open={wizardOpen}
         onOpenChange={setWizardOpen}
         existingProducts={products?.map(p => p.name) || []}
