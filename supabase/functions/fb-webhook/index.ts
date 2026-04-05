@@ -265,15 +265,16 @@ async function handleMessagingEvent(
         supabase, lovableApiKey, conversationId, messageText, imageUrl, settings, userId
       );
 
-      // Detect if AI reply mentions a specific product — send its image first
-      let productQuery = supabase.from("products").select("name, name_bn, price, image_url, color, keywords").eq("is_active", true).not("image_url", "is", null);
+      // Detect if AI reply mentions a specific product — send its image first (with variant color support)
+      let productQuery = supabase.from("products").select("name, name_bn, price, image_url, color, keywords, variants").eq("is_active", true);
       if (userId) productQuery = productQuery.eq("user_id", userId);
       const { data: allProducts } = await productQuery;
       
-      const mentionedProduct = findMentionedProduct(allProducts || [], replyText, messageText);
-      if (mentionedProduct?.image_url) {
-        await sendFbImage(pageAccessToken, senderId, mentionedProduct.image_url);
-        await saveOutgoingMessage(supabase, conversationId, `[${mentionedProduct.name}]`, mentionedProduct.image_url, userId);
+      const { product: mentionedProduct, variantImage } = findMentionedProductWithVariant(allProducts || [], replyText, messageText);
+      const imageToSend = variantImage || mentionedProduct?.image_url;
+      if (imageToSend) {
+        await sendFbImage(pageAccessToken, senderId, imageToSend);
+        await saveOutgoingMessage(supabase, conversationId, `[${mentionedProduct.name}]`, imageToSend, userId);
       }
 
       await sendFbMessage(pageAccessToken, senderId, replyText);
