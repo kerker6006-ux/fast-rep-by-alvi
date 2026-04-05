@@ -51,6 +51,7 @@ const ProductsManager = () => {
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
   const [variants, setVariants] = useState<{color: string; file: File | null; image_url: string}[]>([]);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [aiWizardEnabled, setAiWizardEnabled] = useState(true);
   const [form, setForm] = useState({
     name: "", name_bn: "", description: "", description_bn: "",
     price: "", category: "", keywords: "", color: "", size: "", material: "", is_active: true,
@@ -269,10 +270,17 @@ const ProductsManager = () => {
             Manage your products with AI-powered descriptions
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" className="gap-2 shadow-lg border-primary/30 text-primary hover:bg-primary/10" onClick={() => setWizardOpen(true)}>
-            <Bot className="h-4 w-4" /> AI Wizard
-          </Button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 border rounded-lg px-3 py-1.5 bg-muted/50">
+            <Bot className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium">AI Wizard</span>
+            <Switch checked={aiWizardEnabled} onCheckedChange={setAiWizardEnabled} />
+          </div>
+          {aiWizardEnabled && (
+            <Button variant="outline" className="gap-2 shadow-lg border-primary/30 text-primary hover:bg-primary/10" onClick={() => setWizardOpen(true)}>
+              <Sparkles className="h-4 w-4" /> Open AI Wizard
+            </Button>
+          )}
           <Dialog open={isOpen} onOpenChange={(v) => { if (!v) resetForm(); setIsOpen(v); }}>
           <DialogTrigger asChild>
             <Button className="gap-2 shadow-lg bg-primary hover:bg-primary/90"><Plus className="h-4 w-4" /> Add Product</Button>
@@ -467,7 +475,7 @@ const ProductsManager = () => {
       </div>
 
       {/* AI Product Wizard */}
-      <ProductAiWizard
+      {aiWizardEnabled && <ProductAiWizard
         open={wizardOpen}
         onOpenChange={setWizardOpen}
         existingProducts={products?.map(p => p.name) || []}
@@ -492,7 +500,7 @@ const ProductsManager = () => {
             toast.info(`Variant "${data.variant.color}" ready — find "${data.variant.product_name}" and add it.`);
           }
         }}
-      />
+      />}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
