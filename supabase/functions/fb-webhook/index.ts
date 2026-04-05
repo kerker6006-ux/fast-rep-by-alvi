@@ -623,12 +623,15 @@ async function generateAiReply(
 
   // Build category summary for smart questioning
   const categorySummary = Object.entries(productsByCategory).map(([cat, items]) => {
-    const colors = [...new Set(items.map((p: any) => p.color).filter(Boolean))];
+    const allColors = [...new Set(items.flatMap((p: any) => {
+      const variantColors = (p.variants || []).map((v: any) => v.color).filter(Boolean);
+      return [p.color, ...variantColors].filter(Boolean);
+    }))];
     const sizes = [...new Set(items.map((p: any) => p.size).filter(Boolean))];
     const priceRange = items.length > 1
       ? `৳${Math.min(...items.map((p: any) => p.price))} - ৳${Math.max(...items.map((p: any) => p.price))}`
       : `৳${items[0].price}`;
-    return `- ${cat}: ${items.length} variants${colors.length ? `, Colors: ${colors.join(", ")}` : ""}${sizes.length ? `, Sizes: ${sizes.join(", ")}` : ""}, Price: ${priceRange}`;
+    return `- ${cat}: ${items.length} variants${allColors.length ? `, Colors: ${allColors.join(", ")}` : ""}${sizes.length ? `, Sizes: ${sizes.join(", ")}` : ""}, Price: ${priceRange}`;
   }).join("\n");
 
   const chatHistory = (recentMessages || []).reverse().map((m: any) => ({
