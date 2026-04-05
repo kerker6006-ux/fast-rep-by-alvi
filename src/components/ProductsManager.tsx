@@ -222,6 +222,7 @@ const ProductsManager = () => {
     setIsOpen(false);
     setShowNewCategory(false);
     setNewCategory("");
+    setVariants([]);
   };
 
   const openEdit = (p: Product) => {
@@ -231,6 +232,7 @@ const ProductsManager = () => {
       description_bn: p.description_bn || "", price: String(p.price), category: p.category || "",
       keywords: p.keywords?.join(", ") || "", color: p.color || "", size: p.size || "", material: p.material || "", is_active: p.is_active,
     });
+    setVariants((p.variants || []).map(v => ({ color: v.color, file: null, image_url: v.image_url })));
     setIsOpen(true);
   };
 
