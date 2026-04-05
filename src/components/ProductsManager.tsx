@@ -503,6 +503,20 @@ const ProductsManager = () => {
                 {previewProduct.image_url && (
                   <img src={previewProduct.image_url} alt={previewProduct.name} className="w-full aspect-square object-cover rounded-xl" />
                 )}
+                {/* Variant images */}
+                {previewProduct.variants && previewProduct.variants.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground">🎨 Color Variants</p>
+                    <div className="flex gap-2 flex-wrap">
+                      {previewProduct.variants.map((v, i) => (
+                        <div key={i} className="text-center">
+                          <img src={v.image_url} alt={v.color} className="h-16 w-16 rounded-lg object-cover border-2 border-border shadow-sm" />
+                          <p className="text-[10px] mt-1 text-muted-foreground">{v.color}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <span className="text-2xl font-bold text-primary">৳{previewProduct.price}</span>
                   <Badge variant={previewProduct.is_active ? "default" : "destructive"}>{previewProduct.is_active ? "Active" : "Inactive"}</Badge>
