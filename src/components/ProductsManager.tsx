@@ -11,8 +11,9 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, ImageIcon, FolderOpen, Search, Package, Sparkles, Loader2, Eye, EyeOff, Grid3X3, LayoutList } from "lucide-react";
+import { Plus, Pencil, Trash2, ImageIcon, FolderOpen, Search, Package, Sparkles, Loader2, Eye, EyeOff, Grid3X3, LayoutList, Bot } from "lucide-react";
 import { toast } from "sonner";
+import ProductAiWizard from "@/components/ProductAiWizard";
 
 type ProductVariant = { color: string; image_url: string };
 
