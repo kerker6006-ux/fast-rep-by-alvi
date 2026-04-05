@@ -463,7 +463,36 @@ const ProductsManager = () => {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
+
+      {/* AI Product Wizard */}
+      <ProductAiWizard
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        existingProducts={products?.map(p => p.name) || []}
+        onProductReady={(data, imageUrls) => {
+          if (data.action === "create_product" && data.product) {
+            const p = data.product;
+            setForm({
+              name: p.name || "", name_bn: p.name_bn || "", description: p.description || "",
+              description_bn: p.description_bn || "", price: String(p.price || 0), category: p.category || "",
+              keywords: p.keywords || "", color: p.color || "", size: p.size || "", material: p.material || "",
+              is_active: p.is_active !== false,
+            });
+            // Set first session image as main image if no variants
+            if (p.detected_colors && p.detected_colors.length > 1 && imageUrls.length > 0) {
+              setVariants(p.detected_colors.map((c, i) => ({
+                color: c, file: null, image_url: imageUrls[i] || ""
+              })));
+            }
+            setIsOpen(true);
+            toast.success("Product details filled by AI! Review and save.");
+          } else if (data.action === "add_variant" && data.variant) {
+            toast.info(`Variant "${data.variant.color}" ready — find "${data.variant.product_name}" and add it.`);
+          }
+        }}
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
