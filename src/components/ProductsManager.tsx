@@ -159,6 +159,19 @@ const ProductsManager = () => {
     mutationFn: async () => {
       let image_url = editingProduct?.image_url || null;
       if (imageFile) image_url = await uploadImage(imageFile);
+
+      // Upload variant images
+      const finalVariants: ProductVariant[] = [];
+      for (const v of variants) {
+        if (!v.color.trim()) continue;
+        let variantUrl = v.image_url;
+        if (v.file) variantUrl = await uploadImage(v.file);
+        if (variantUrl) finalVariants.push({ color: v.color.trim(), image_url: variantUrl });
+      }
+
+      // Combine all colors for the color field (for bot search compatibility)
+      const allColors = [form.color, ...finalVariants.map(v => v.color)].filter(Boolean).join(", ");
+
       const payload = {
         name: form.name,
         name_bn: form.name_bn || null,
@@ -169,10 +182,11 @@ const ProductsManager = () => {
         category: form.category || null,
         is_active: form.is_active,
         keywords: form.keywords ? form.keywords.split(",").map(k => k.trim()) : null,
-        color: form.color || null,
+        color: allColors || null,
         size: form.size || null,
         material: form.material || null,
         user_id: user?.id,
+        variants: finalVariants,
       };
       if (editingProduct) {
         const { error } = await supabase.from("products").update(payload).eq("id", editingProduct.id);
