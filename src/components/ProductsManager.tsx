@@ -500,7 +500,7 @@ const ProductsManager = () => {
             toast.info(`Variant "${data.variant.color}" ready — find "${data.variant.product_name}" and add it.`);
           }
         }}
-      />
+      />}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
