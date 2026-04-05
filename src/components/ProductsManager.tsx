@@ -51,6 +51,7 @@ const ProductsManager = () => {
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
   const [variants, setVariants] = useState<{color: string; file: File | null; image_url: string}[]>([]);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [aiWizardEnabled, setAiWizardEnabled] = useState(true);
   const [form, setForm] = useState({
     name: "", name_bn: "", description: "", description_bn: "",
     price: "", category: "", keywords: "", color: "", size: "", material: "", is_active: true,
