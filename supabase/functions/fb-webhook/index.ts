@@ -599,7 +599,7 @@ async function generateAiReply(
     .eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(50);
 
   let productQuery = supabase
-    .from("products").select("name, name_bn, description, description_bn, price, category, keywords, image_url, color, size, material")
+    .from("products").select("name, name_bn, description, description_bn, price, category, keywords, image_url, color, size, material, variants")
     .eq("is_active", true);
   if (userId) productQuery = productQuery.eq("user_id", userId);
   const { data: products } = await productQuery;
