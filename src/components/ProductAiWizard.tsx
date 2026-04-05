@@ -294,6 +294,35 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
           </div>
         )}
 
+        {/* Staged Images Preview */}
+        {stagedPreviews.length > 0 && (
+          <div className="mx-4 mb-2 p-2 rounded-xl border border-primary/20 bg-muted/50 shrink-0">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-medium text-muted-foreground">{stagedPreviews.length} image{stagedPreviews.length > 1 ? 's' : ''} ready</span>
+              <div className="flex gap-1.5">
+                <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => fileInputRef.current?.click()}>+ More</Button>
+                <Button size="sm" className="h-6 text-xs px-3 gap-1" onClick={sendStagedImages} disabled={uploadingImage}>
+                  {uploadingImage ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                  Send All
+                </Button>
+              </div>
+            </div>
+            <div className="flex gap-1.5 flex-wrap">
+              {stagedPreviews.map((preview, i) => (
+                <div key={i} className="relative group">
+                  <img src={preview} alt={`Staged ${i+1}`} className="h-16 w-16 rounded-lg object-cover border border-border" />
+                  <button
+                    onClick={() => removeStagedFile(i)}
+                    className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Input Area */}
         <div className="p-3 border-t border-border shrink-0">
           <div className="flex gap-2">
@@ -303,7 +332,7 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
               accept="image/*"
               multiple
               className="hidden"
-              onChange={handleImageUpload}
+              onChange={handleFilesSelected}
             />
             <Button
               type="button"
