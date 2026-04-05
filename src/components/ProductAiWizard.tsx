@@ -221,10 +221,11 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
                       ? "bg-primary text-primary-foreground rounded-br-md"
                       : "bg-muted rounded-bl-md"
                   }`}>
-                    <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:mb-1 [&>p:last-child]:mb-0"><ReactMarkdown>
-                      {msg.content.replace(/```json[\s\S]*?```/g, "✅ *Product data ready — check below!*")}
-                    </ReactMarkdown>
-                  </div>
+                    <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:mb-1 [&>p:last-child]:mb-0">
+                      <ReactMarkdown>
+                        {msg.content.replace(/```json[\s\S]*?```/g, "✅ *Product data ready — check below!*")}
+                      </ReactMarkdown>
+                    </div>
                 </div>
               </div>
             ))}
