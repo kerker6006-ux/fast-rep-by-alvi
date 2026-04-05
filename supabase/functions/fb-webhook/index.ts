@@ -265,15 +265,16 @@ async function handleMessagingEvent(
         supabase, lovableApiKey, conversationId, messageText, imageUrl, settings, userId
       );
 
-      // Detect if AI reply mentions a specific product — send its image first
-      let productQuery = supabase.from("products").select("name, name_bn, price, image_url, color, keywords").eq("is_active", true).not("image_url", "is", null);
+      // Detect if AI reply mentions a specific product — send its image first (with variant color support)
+      let productQuery = supabase.from("products").select("name, name_bn, price, image_url, color, keywords, variants").eq("is_active", true);
       if (userId) productQuery = productQuery.eq("user_id", userId);
       const { data: allProducts } = await productQuery;
       
-      const mentionedProduct = findMentionedProduct(allProducts || [], replyText, messageText);
-      if (mentionedProduct?.image_url) {
-        await sendFbImage(pageAccessToken, senderId, mentionedProduct.image_url);
-        await saveOutgoingMessage(supabase, conversationId, `[${mentionedProduct.name}]`, mentionedProduct.image_url, userId);
+      const { product: mentionedProduct, variantImage } = findMentionedProductWithVariant(allProducts || [], replyText, messageText);
+      const imageToSend = variantImage || mentionedProduct?.image_url;
+      if (imageToSend) {
+        await sendFbImage(pageAccessToken, senderId, imageToSend);
+        await saveOutgoingMessage(supabase, conversationId, `[${mentionedProduct.name}]`, imageToSend, userId);
       }
 
       await sendFbMessage(pageAccessToken, senderId, replyText);
@@ -397,9 +398,8 @@ async function findBestProductForImageRequest(
 ) {
   let query = supabase
     .from("products")
-    .select("name, name_bn, price, image_url, keywords, color")
-    .eq("is_active", true)
-    .not("image_url", "is", null);
+    .select("name, name_bn, price, image_url, keywords, color, variants")
+    .eq("is_active", true);
   if (userId) query = query.eq("user_id", userId);
   const { data: products } = await query;
 
@@ -419,6 +419,7 @@ async function findBestProductForImageRequest(
 
   let best: any = null;
   let bestScore = 0;
+  let bestVariantImage: string | null = null;
 
   for (const product of products) {
     const terms = [
@@ -436,23 +437,39 @@ async function findBestProductForImageRequest(
       if (context.includes(term)) score += term.length >= 4 ? 2 : 1;
     }
 
+    // Check variant colors for better matching
+    let variantImg: string | null = null;
+    const variants = (product.variants || []) as {color: string; image_url: string}[];
+    for (const v of variants) {
+      if (v.color && context.includes(v.color.toLowerCase())) {
+        score += 3;
+        variantImg = v.image_url;
+      }
+    }
+
     if (score > bestScore) {
       best = product;
       bestScore = score;
+      bestVariantImage = variantImg;
     }
   }
 
-  if (best) return best;
+  if (best) {
+    // If a specific variant color was matched, use that image
+    if (bestVariantImage) best = { ...best, image_url: bestVariantImage };
+    return best;
+  }
   if (products.length === 1) return products[0];
   return null;
 }
 
-function findMentionedProduct(products: any[], aiReply: string, customerMsg: string | null): any | null {
-  if (!products?.length) return null;
+function findMentionedProductWithVariant(products: any[], aiReply: string, customerMsg: string | null): { product: any; variantImage: string | null } {
+  if (!products?.length) return { product: null, variantImage: null };
   const combined = `${aiReply} ${customerMsg || ""}`.toLowerCase();
   
   let best: any = null;
   let bestScore = 0;
+  let bestVariantImage: string | null = null;
 
   for (const p of products) {
     const terms = [
@@ -467,13 +484,24 @@ function findMentionedProduct(products: any[], aiReply: string, customerMsg: str
     // Boost if price is mentioned in the reply
     if (score > 0 && aiReply.includes(String(p.price))) score += 2;
 
+    // Check variant colors — if customer asked for a specific color, match it
+    let variantImg: string | null = null;
+    const variants = (p.variants || []) as {color: string; image_url: string}[];
+    for (const v of variants) {
+      if (v.color && combined.includes(v.color.toLowerCase())) {
+        score += 4; // Strong boost for exact color match
+        variantImg = v.image_url;
+      }
+    }
+
     if (score > bestScore) {
       best = p;
       bestScore = score;
+      bestVariantImage = variantImg;
     }
   }
 
-  return bestScore >= 2 ? best : null;
+  return bestScore >= 2 ? { product: best, variantImage: bestVariantImage } : { product: null, variantImage: null };
 }
 
 async function sendFbMessage(pageAccessToken: string, recipientId: string, text: string) {
@@ -571,7 +599,7 @@ async function generateAiReply(
     .eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(50);
 
   let productQuery = supabase
-    .from("products").select("name, name_bn, description, description_bn, price, category, keywords, image_url, color, size, material")
+    .from("products").select("name, name_bn, description, description_bn, price, category, keywords, image_url, color, size, material, variants")
     .eq("is_active", true);
   if (userId) productQuery = productQuery.eq("user_id", userId);
   const { data: products } = await productQuery;
@@ -585,20 +613,25 @@ async function generateAiReply(
   });
 
   const productCatalog = Object.entries(productsByCategory).map(([category, items]) => {
-    const itemList = items.map((p: any) =>
-      `  - ${p.name}${p.name_bn ? ` (${p.name_bn})` : ""}: ৳${p.price}${p.color ? ` | Color: ${p.color}` : ""}${p.size ? ` | Size: ${p.size}` : ""}${p.material ? ` | Material: ${p.material}` : ""}${p.description ? ` — ${p.description}` : ""}${p.keywords?.length ? ` [${p.keywords.join(", ")}]` : ""}`
-    ).join("\n");
+    const itemList = items.map((p: any) => {
+      const variantColors = (p.variants || []).map((v: any) => v.color).filter(Boolean);
+      const allColors = [p.color, ...variantColors].filter(Boolean).join(", ");
+      return `  - ${p.name}${p.name_bn ? ` (${p.name_bn})` : ""}: ৳${p.price}${allColors ? ` | Colors available: ${allColors}` : ""}${p.size ? ` | Size: ${p.size}` : ""}${p.material ? ` | Material: ${p.material}` : ""}${p.description ? ` — ${p.description}` : ""}${p.keywords?.length ? ` [${p.keywords.join(", ")}]` : ""}`;
+    }).join("\n");
     return `📁 ${category} (${items.length} items):\n${itemList}`;
   }).join("\n\n") || "No products available.";
 
   // Build category summary for smart questioning
   const categorySummary = Object.entries(productsByCategory).map(([cat, items]) => {
-    const colors = [...new Set(items.map((p: any) => p.color).filter(Boolean))];
+    const allColors = [...new Set(items.flatMap((p: any) => {
+      const variantColors = (p.variants || []).map((v: any) => v.color).filter(Boolean);
+      return [p.color, ...variantColors].filter(Boolean);
+    }))];
     const sizes = [...new Set(items.map((p: any) => p.size).filter(Boolean))];
     const priceRange = items.length > 1
       ? `৳${Math.min(...items.map((p: any) => p.price))} - ৳${Math.max(...items.map((p: any) => p.price))}`
       : `৳${items[0].price}`;
-    return `- ${cat}: ${items.length} variants${colors.length ? `, Colors: ${colors.join(", ")}` : ""}${sizes.length ? `, Sizes: ${sizes.join(", ")}` : ""}, Price: ${priceRange}`;
+    return `- ${cat}: ${items.length} variants${allColors.length ? `, Colors: ${allColors.join(", ")}` : ""}${sizes.length ? `, Sizes: ${sizes.join(", ")}` : ""}, Price: ${priceRange}`;
   }).join("\n");
 
   const chatHistory = (recentMessages || []).reverse().map((m: any) => ({
