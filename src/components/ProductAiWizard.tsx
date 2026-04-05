@@ -50,6 +50,8 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
   const [uploadingImage, setUploadingImage] = useState(false);
   const [sessionImages, setSessionImages] = useState<string[]>([]);
   const [pendingData, setPendingData] = useState<ExtractedProduct | null>(null);
+  const [stagedFiles, setStagedFiles] = useState<File[]>([]);
+  const [stagedPreviews, setStagedPreviews] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -63,7 +65,7 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
     if (open && messages.length === 0) {
       setMessages([{
         role: "assistant",
-        content: "👋 Hi! I'm your Product AI Assistant!\n\n📸 **Upload a product image** and I'll analyze it — detect color, material, type — everything!\n\nOr just tell me about the product and I'll help you set it up perfectly. কি product add করতে চাও?"
+        content: "👋 Hi! I'm your Product AI Assistant!\n\n📸 **Upload product images** (multiple at once!) and I'll analyze them — detect color, material, type — everything!\n\nOr just tell me about the product and I'll help you set it up perfectly. কি product add করতে চাও?"
       }]);
     }
   }, [open]);
@@ -77,34 +79,48 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
     return data.publicUrl;
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
+    const newFiles = Array.from(files);
+    setStagedFiles(prev => [...prev, ...newFiles]);
+    const previews = newFiles.map(f => URL.createObjectURL(f));
+    setStagedPreviews(prev => [...prev, ...previews]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
+  const removeStagedFile = (index: number) => {
+    URL.revokeObjectURL(stagedPreviews[index]);
+    setStagedFiles(prev => prev.filter((_, i) => i !== index));
+    setStagedPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const sendStagedImages = async () => {
+    if (stagedFiles.length === 0) return;
     setUploadingImage(true);
     try {
       const urls: string[] = [];
-      for (const file of Array.from(files)) {
+      for (const file of stagedFiles) {
         const url = await uploadImage(file);
         urls.push(url);
       }
       setSessionImages(prev => [...prev, ...urls]);
+      // Clear staged
+      stagedPreviews.forEach(p => URL.revokeObjectURL(p));
+      setStagedFiles([]);
+      setStagedPreviews([]);
 
-      // Add user message with images
       const userMsg: WizardMessage = {
         role: "user",
-        content: "I uploaded a product image, please analyze it.",
+        content: `I uploaded ${urls.length} product image${urls.length > 1 ? 's' : ''}, please analyze ${urls.length > 1 ? 'them all' : 'it'}.`,
         image_urls: urls,
       };
       setMessages(prev => [...prev, userMsg]);
-
-      // Send to AI
       await sendToAi([...messages, userMsg]);
     } catch (err: any) {
-      toast.error("Failed to upload image: " + err.message);
+      toast.error("Failed to upload images: " + err.message);
     } finally {
       setUploadingImage(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -181,6 +197,9 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
     setSessionImages([]);
     setPendingData(null);
     setInput("");
+    stagedPreviews.forEach(p => URL.revokeObjectURL(p));
+    setStagedFiles([]);
+    setStagedPreviews([]);
   };
 
   return (
@@ -278,6 +297,35 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
           </div>
         )}
 
+        {/* Staged Images Preview */}
+        {stagedPreviews.length > 0 && (
+          <div className="mx-4 mb-2 p-2 rounded-xl border border-primary/20 bg-muted/50 shrink-0">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-medium text-muted-foreground">{stagedPreviews.length} image{stagedPreviews.length > 1 ? 's' : ''} ready</span>
+              <div className="flex gap-1.5">
+                <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => fileInputRef.current?.click()}>+ More</Button>
+                <Button size="sm" className="h-6 text-xs px-3 gap-1" onClick={sendStagedImages} disabled={uploadingImage}>
+                  {uploadingImage ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                  Send All
+                </Button>
+              </div>
+            </div>
+            <div className="flex gap-1.5 flex-wrap">
+              {stagedPreviews.map((preview, i) => (
+                <div key={i} className="relative group">
+                  <img src={preview} alt={`Staged ${i+1}`} className="h-16 w-16 rounded-lg object-cover border border-border" />
+                  <button
+                    onClick={() => removeStagedFile(i)}
+                    className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Input Area */}
         <div className="p-3 border-t border-border shrink-0">
           <div className="flex gap-2">
@@ -287,7 +335,7 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
               accept="image/*"
               multiple
               className="hidden"
-              onChange={handleImageUpload}
+              onChange={handleFilesSelected}
             />
             <Button
               type="button"
