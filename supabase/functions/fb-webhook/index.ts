@@ -398,9 +398,8 @@ async function findBestProductForImageRequest(
 ) {
   let query = supabase
     .from("products")
-    .select("name, name_bn, price, image_url, keywords, color")
-    .eq("is_active", true)
-    .not("image_url", "is", null);
+    .select("name, name_bn, price, image_url, keywords, color, variants")
+    .eq("is_active", true);
   if (userId) query = query.eq("user_id", userId);
   const { data: products } = await query;
 
@@ -420,6 +419,7 @@ async function findBestProductForImageRequest(
 
   let best: any = null;
   let bestScore = 0;
+  let bestVariantImage: string | null = null;
 
   for (const product of products) {
     const terms = [
@@ -437,13 +437,28 @@ async function findBestProductForImageRequest(
       if (context.includes(term)) score += term.length >= 4 ? 2 : 1;
     }
 
+    // Check variant colors for better matching
+    let variantImg: string | null = null;
+    const variants = (product.variants || []) as {color: string; image_url: string}[];
+    for (const v of variants) {
+      if (v.color && context.includes(v.color.toLowerCase())) {
+        score += 3;
+        variantImg = v.image_url;
+      }
+    }
+
     if (score > bestScore) {
       best = product;
       bestScore = score;
+      bestVariantImage = variantImg;
     }
   }
 
-  if (best) return best;
+  if (best) {
+    // If a specific variant color was matched, use that image
+    if (bestVariantImage) best = { ...best, image_url: bestVariantImage };
+    return best;
+  }
   if (products.length === 1) return products[0];
   return null;
 }
