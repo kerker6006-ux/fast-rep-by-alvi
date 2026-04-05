@@ -428,6 +428,15 @@ async function findBestProductForImageRequest(
     ...(recentMessages || []).map((m: any) => m.content || ""),
   ].join(" ").toLowerCase();
 
+  // Detect customer's requested color using alias map
+  let requestedColor: string | null = null;
+  for (const [canonical, aliases] of Object.entries(COLOR_ALIASES)) {
+    if (aliases.some(a => context.includes(a))) {
+      requestedColor = canonical;
+      break;
+    }
+  }
+
   let best: any = null;
   let bestScore = 0;
   let bestVariantImage: string | null = null;
@@ -448,13 +457,24 @@ async function findBestProductForImageRequest(
       if (context.includes(term)) score += term.length >= 4 ? 2 : 1;
     }
 
-    // Check variant colors for better matching
+    // Check variant colors with normalized matching
     let variantImg: string | null = null;
     const variants = (product.variants || []) as {color: string; image_url: string}[];
-    for (const v of variants) {
-      if (v.color && context.includes(v.color.toLowerCase())) {
-        score += 3;
-        variantImg = v.image_url;
+
+    if (requestedColor && variants.length > 0) {
+      for (const v of variants) {
+        if (normalizeColorName(v.color) === requestedColor) {
+          score += 5;
+          variantImg = v.image_url;
+          break;
+        }
+      }
+    } else {
+      for (const v of variants) {
+        if (v.color && context.includes(v.color.toLowerCase())) {
+          score += 3;
+          variantImg = v.image_url;
+        }
       }
     }
 
@@ -466,7 +486,6 @@ async function findBestProductForImageRequest(
   }
 
   if (best) {
-    // If a specific variant color was matched, use that image
     if (bestVariantImage) best = { ...best, image_url: bestVariantImage };
     return best;
   }
