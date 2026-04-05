@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { Save, Globe, MessageCircle, Info } from "lucide-react";
@@ -52,9 +53,21 @@ const BotSettings = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Bot Settings</h2>
-        <p className="text-muted-foreground">Customize how your AI bot responds to customers.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Bot Settings</h2>
+          <p className="text-muted-foreground">Customize how your AI bot responds to customers.</p>
+        </div>
+        <div className="flex items-center gap-3 border rounded-xl px-4 py-3 bg-muted/50">
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold">{settings.bot_enabled !== "false" ? "Bot is ON" : "Bot is OFF"}</span>
+            <span className="text-xs text-muted-foreground">{settings.bot_enabled !== "false" ? "Replying to customers" : "Not replying"}</span>
+          </div>
+          <Switch
+            checked={settings.bot_enabled !== "false"}
+            onCheckedChange={(v) => update("bot_enabled", v ? "true" : "false")}
+          />
+        </div>
       </div>
 
       <div className="grid gap-6">

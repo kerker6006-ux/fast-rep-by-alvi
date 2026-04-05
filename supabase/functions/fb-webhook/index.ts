@@ -102,6 +102,12 @@ serve(async (req) => {
         // Load user-specific settings
         const settings = await loadSettings(supabase, userId);
 
+        // Check if bot is disabled
+        if (settings.bot_enabled === "false") {
+          console.log("Bot is disabled for user:", userId);
+          continue;
+        }
+
         // Handle messaging events (DMs)
         for (const event of entry.messaging || []) {
           await handleMessagingEvent(supabase, event, pageId, PAGE_ACCESS_TOKEN, LOVABLE_API_KEY, settings, userId);
