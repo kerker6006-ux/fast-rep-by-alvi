@@ -269,8 +269,19 @@ async function handleMessagingEvent(
       let productQuery = supabase.from("products").select("name, name_bn, price, image_url, color, keywords, variants").eq("is_active", true);
       if (userId) productQuery = productQuery.eq("user_id", userId);
       const { data: allProducts } = await productQuery;
-      
-      const { product: mentionedProduct, variantImage } = findMentionedProductWithVariant(allProducts || [], replyText, messageText);
+
+      // Fetch recent conversation to detect color from full context
+      const { data: recentMsgsForColor } = await supabase
+        .from("messages").select("content, direction")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: false }).limit(15);
+      const conversationContext = (recentMsgsForColor || [])
+        .filter((m: any) => m.direction === "incoming")
+        .map((m: any) => m.content || "").join(" ");
+
+      const { product: mentionedProduct, variantImage } = findMentionedProductWithVariant(
+        allProducts || [], replyText, messageText, conversationContext
+      );
       const imageToSend = variantImage || mentionedProduct?.image_url;
       if (imageToSend) {
         await sendFbImage(pageAccessToken, senderId, imageToSend);
@@ -417,6 +428,15 @@ async function findBestProductForImageRequest(
     ...(recentMessages || []).map((m: any) => m.content || ""),
   ].join(" ").toLowerCase();
 
+  // Detect customer's requested color using alias map
+  let requestedColor: string | null = null;
+  for (const [canonical, aliases] of Object.entries(COLOR_ALIASES)) {
+    if (aliases.some(a => context.includes(a))) {
+      requestedColor = canonical;
+      break;
+    }
+  }
+
   let best: any = null;
   let bestScore = 0;
   let bestVariantImage: string | null = null;
@@ -437,13 +457,24 @@ async function findBestProductForImageRequest(
       if (context.includes(term)) score += term.length >= 4 ? 2 : 1;
     }
 
-    // Check variant colors for better matching
+    // Check variant colors with normalized matching
     let variantImg: string | null = null;
     const variants = (product.variants || []) as {color: string; image_url: string}[];
-    for (const v of variants) {
-      if (v.color && context.includes(v.color.toLowerCase())) {
-        score += 3;
-        variantImg = v.image_url;
+
+    if (requestedColor && variants.length > 0) {
+      for (const v of variants) {
+        if (normalizeColorName(v.color) === requestedColor) {
+          score += 5;
+          variantImg = v.image_url;
+          break;
+        }
+      }
+    } else {
+      for (const v of variants) {
+        if (v.color && context.includes(v.color.toLowerCase())) {
+          score += 3;
+          variantImg = v.image_url;
+        }
       }
     }
 
@@ -455,7 +486,6 @@ async function findBestProductForImageRequest(
   }
 
   if (best) {
-    // If a specific variant color was matched, use that image
     if (bestVariantImage) best = { ...best, image_url: bestVariantImage };
     return best;
   }
@@ -463,10 +493,62 @@ async function findBestProductForImageRequest(
   return null;
 }
 
-function findMentionedProductWithVariant(products: any[], aiReply: string, customerMsg: string | null): { product: any; variantImage: string | null } {
+// Color alias map for common Bangla/English/Banglish color names
+const COLOR_ALIASES: Record<string, string[]> = {
+  "cream": ["cream", "ক্রিম", "krim", "off white", "অফ হোয়াইট"],
+  "pink": ["pink", "পিংক", "গোলাপি", "golapi"],
+  "maroon": ["maroon", "মেরুন", "merun"],
+  "black": ["black", "কালো", "kalo"],
+  "white": ["white", "সাদা", "shada", "sada"],
+  "red": ["red", "লাল", "lal"],
+  "blue": ["blue", "নীল", "nil"],
+  "green": ["green", "সবুজ", "sobuj", "shobuj"],
+  "grey": ["grey", "gray", "ধূসর", "গ্রে"],
+  "navy": ["navy", "নেভি", "nevy"],
+  "beige": ["beige", "বেইজ"],
+  "brown": ["brown", "বাদামী", "badami"],
+  "purple": ["purple", "বেগুনি", "beguni"],
+  "orange": ["orange", "কমলা", "komla"],
+  "yellow": ["yellow", "হলুদ", "holud"],
+  "magenta": ["magenta", "ম্যাজেন্টা"],
+  "peach": ["peach", "পিচ"],
+  "coral": ["coral", "কোরাল"],
+  "olive": ["olive", "অলিভ"],
+  "teal": ["teal", "টিল"],
+  "sky blue": ["sky blue", "আকাশী", "akashi"],
+  "dusty pink": ["dusty pink", "ডাস্টি পিংক"],
+  "wine": ["wine", "ওয়াইন"],
+  "rust": ["rust", "রাস্ট"],
+};
+
+function normalizeColorName(color: string): string {
+  const lower = color.toLowerCase().trim();
+  for (const [canonical, aliases] of Object.entries(COLOR_ALIASES)) {
+    if (aliases.some(a => lower.includes(a) || a.includes(lower))) return canonical;
+  }
+  return lower;
+}
+
+function findMentionedProductWithVariant(
+  products: any[], aiReply: string, customerMsg: string | null, conversationContext?: string
+): { product: any; variantImage: string | null } {
   if (!products?.length) return { product: null, variantImage: null };
-  const combined = `${aiReply} ${customerMsg || ""}`.toLowerCase();
-  
+
+  // CRITICAL: Use customer messages (current + history) for color detection, NOT the AI reply
+  // AI reply may mention other colors, but customer's words determine which image to send
+  const customerText = `${customerMsg || ""} ${conversationContext || ""}`.toLowerCase();
+  const aiText = aiReply.toLowerCase();
+  const combinedForProduct = `${aiText} ${customerText}`; // for product name matching only
+
+  // Step 1: Detect which color the CUSTOMER is asking about (from their messages only)
+  let requestedColor: string | null = null;
+  for (const [canonical, aliases] of Object.entries(COLOR_ALIASES)) {
+    if (aliases.some(a => customerText.includes(a))) {
+      requestedColor = canonical;
+      break;
+    }
+  }
+
   let best: any = null;
   let bestScore = 0;
   let bestVariantImage: string | null = null;
@@ -479,18 +561,31 @@ function findMentionedProductWithVariant(products: any[], aiReply: string, custo
 
     let score = 0;
     for (const term of terms) {
-      if (combined.includes(term)) score += term.length >= 4 ? 3 : 1;
+      if (combinedForProduct.includes(term)) score += term.length >= 4 ? 3 : 1;
     }
-    // Boost if price is mentioned in the reply
-    if (score > 0 && aiReply.includes(String(p.price))) score += 2;
+    if (score > 0 && aiText.includes(String(p.price))) score += 2;
 
-    // Check variant colors — if customer asked for a specific color, match it
+    // Check variant colors — match against CUSTOMER's requested color specifically
     let variantImg: string | null = null;
     const variants = (p.variants || []) as {color: string; image_url: string}[];
-    for (const v of variants) {
-      if (v.color && combined.includes(v.color.toLowerCase())) {
-        score += 4; // Strong boost for exact color match
-        variantImg = v.image_url;
+
+    if (requestedColor && variants.length > 0) {
+      // Find the variant whose color normalizes to the customer's requested color
+      for (const v of variants) {
+        const variantNorm = normalizeColorName(v.color);
+        if (variantNorm === requestedColor) {
+          score += 6; // Very strong boost for exact customer-requested color match
+          variantImg = v.image_url;
+          break; // Take the first exact match
+        }
+      }
+    } else {
+      // Fallback: check if any variant color appears in customer text literally
+      for (const v of variants) {
+        if (v.color && customerText.includes(v.color.toLowerCase())) {
+          score += 4;
+          variantImg = v.image_url;
+        }
       }
     }
 
@@ -614,9 +709,13 @@ async function generateAiReply(
 
   const productCatalog = Object.entries(productsByCategory).map(([category, items]) => {
     const itemList = items.map((p: any) => {
-      const variantColors = (p.variants || []).map((v: any) => v.color).filter(Boolean);
-      const allColors = [p.color, ...variantColors].filter(Boolean).join(", ");
-      return `  - ${p.name}${p.name_bn ? ` (${p.name_bn})` : ""}: ৳${p.price}${allColors ? ` | Colors available: ${allColors}` : ""}${p.size ? ` | Size: ${p.size}` : ""}${p.material ? ` | Material: ${p.material}` : ""}${p.description ? ` — ${p.description}` : ""}${p.keywords?.length ? ` [${p.keywords.join(", ")}]` : ""}`;
+      const variants = (p.variants || []) as {color: string; image_url: string}[];
+      const variantColors = variants.map((v: any) => v.color).filter(Boolean);
+      const allColors = [p.color, ...variantColors].filter(Boolean);
+      const colorSection = allColors.length
+        ? ` | Colors: ${allColors.join(", ")} (each color has its own separate image — send the EXACT color image the customer asks for)`
+        : "";
+      return `  - ${p.name}${p.name_bn ? ` (${p.name_bn})` : ""}: ৳${p.price}${colorSection}${p.size ? ` | Size: ${p.size}` : ""}${p.material ? ` | Material: ${p.material}` : ""}${p.description ? ` — ${p.description}` : ""}${p.keywords?.length ? ` [${p.keywords.join(", ")}]` : ""}`;
     }).join("\n");
     return `📁 ${category} (${items.length} items):\n${itemList}`;
   }).join("\n\n") || "No products available.";

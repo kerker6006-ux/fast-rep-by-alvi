@@ -385,41 +385,61 @@ const ProductsManager = () => {
               </div>
 
               {/* Color Variants */}
-              <div className="space-y-3 p-4 rounded-xl border-2 border-dashed border-primary/20 bg-accent/30">
+              <div className="space-y-3 p-4 rounded-xl border-2 border-primary/30 bg-gradient-to-br from-accent/40 to-primary/5">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-semibold flex items-center gap-2">
                     🎨 Color Variants
-                    <span className="text-xs font-normal text-muted-foreground">Add different colors with their own photos</span>
+                    <span className="text-xs font-normal text-muted-foreground">(Bot sends the exact color image customer asks for)</span>
                   </Label>
-                  <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setVariants(v => [...v, {color: "", file: null, image_url: ""}])}>
+                  <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10" onClick={() => setVariants(v => [...v, {color: "", file: null, image_url: ""}])}>
                     <Plus className="h-3 w-3" /> Add Color
                   </Button>
                 </div>
                 {variants.length > 0 && (
-                  <div className="grid gap-3">
-                    {variants.map((v, i) => (
-                      <div key={i} className="flex items-center gap-3 bg-background rounded-lg p-3 border border-border/50">
-                        {(v.image_url || v.file) && (
-                          <img src={v.file ? URL.createObjectURL(v.file) : v.image_url} alt={v.color} className="h-14 w-14 rounded-lg object-cover border border-border" />
-                        )}
-                        {!v.image_url && !v.file && (
-                          <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center border border-border">
-                            <ImageIcon className="h-5 w-5 text-muted-foreground/40" />
+                  <div className="space-y-2">
+                    <p className="text-[11px] text-primary/70 bg-primary/5 px-3 py-1.5 rounded-lg border border-primary/10">
+                      ⚠️ <strong>Important:</strong> Write color name clearly (e.g. "Cream", "Pink", "কালো"). The bot matches this name to send the correct image.
+                    </p>
+                    <div className="grid gap-3">
+                      {variants.map((v, i) => (
+                        <div key={i} className="flex items-center gap-3 bg-background rounded-xl p-3 border border-border shadow-sm">
+                          <div className="relative">
+                            {(v.image_url || v.file) ? (
+                              <img src={v.file ? URL.createObjectURL(v.file) : v.image_url} alt={v.color} className="h-16 w-16 rounded-lg object-cover border-2 border-primary/20 shadow-sm" />
+                            ) : (
+                              <div className="h-16 w-16 rounded-lg bg-muted flex items-center justify-center border-2 border-dashed border-border">
+                                <ImageIcon className="h-5 w-5 text-muted-foreground/40" />
+                              </div>
+                            )}
+                            {v.color && (
+                              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[9px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full whitespace-nowrap shadow-sm">
+                                {v.color}
+                              </span>
+                            )}
                           </div>
-                        )}
-                        <div className="flex-1 space-y-1.5">
-                          <Input value={v.color} onChange={e => setVariants(vs => vs.map((vv, ii) => ii === i ? {...vv, color: e.target.value} : vv))} placeholder="Color name (e.g. Maroon, কালো)" className="h-8 text-sm" />
-                          <Input type="file" accept="image/*" className="h-8 text-xs" onChange={e => setVariants(vs => vs.map((vv, ii) => ii === i ? {...vv, file: e.target.files?.[0] || null} : vv))} />
+                          <div className="flex-1 space-y-2">
+                            <div className="space-y-1">
+                              <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Color Name (Bot reads this)</Label>
+                              <Input value={v.color} onChange={e => setVariants(vs => vs.map((vv, ii) => ii === i ? {...vv, color: e.target.value} : vv))} placeholder="e.g. Cream, Pink, মেরুন, কালো" className="h-8 text-sm font-medium border-primary/20 focus:border-primary" />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Photo for this color</Label>
+                              <Input type="file" accept="image/*" className="h-8 text-xs" onChange={e => setVariants(vs => vs.map((vv, ii) => ii === i ? {...vv, file: e.target.files?.[0] || null} : vv))} />
+                            </div>
+                          </div>
+                          <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-destructive shrink-0 hover:bg-destructive/10" onClick={() => setVariants(vs => vs.filter((_, ii) => ii !== i))}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
-                        <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-destructive shrink-0" onClick={() => setVariants(vs => vs.filter((_, ii) => ii !== i))}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 )}
                 {variants.length === 0 && (
-                  <p className="text-xs text-muted-foreground text-center py-2">No color variants yet. Click "Add Color" to add different color options with separate images.</p>
+                  <div className="text-center py-4 space-y-2">
+                    <p className="text-xs text-muted-foreground">No color variants yet.</p>
+                    <p className="text-[11px] text-muted-foreground/70">Example: Add "Cream" with cream hijab photo, "Pink" with pink hijab photo — bot sends the right one!</p>
+                  </div>
                 )}
               </div>
 
