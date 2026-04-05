@@ -226,6 +226,7 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
                         {msg.content.replace(/```json[\s\S]*?```/g, "✅ *Product data ready — check below!*")}
                       </ReactMarkdown>
                     </div>
+                  </div>
                 </div>
               </div>
             ))}
