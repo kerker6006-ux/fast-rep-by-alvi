@@ -613,9 +613,11 @@ async function generateAiReply(
   });
 
   const productCatalog = Object.entries(productsByCategory).map(([category, items]) => {
-    const itemList = items.map((p: any) =>
-      `  - ${p.name}${p.name_bn ? ` (${p.name_bn})` : ""}: ৳${p.price}${p.color ? ` | Color: ${p.color}` : ""}${p.size ? ` | Size: ${p.size}` : ""}${p.material ? ` | Material: ${p.material}` : ""}${p.description ? ` — ${p.description}` : ""}${p.keywords?.length ? ` [${p.keywords.join(", ")}]` : ""}`
-    ).join("\n");
+    const itemList = items.map((p: any) => {
+      const variantColors = (p.variants || []).map((v: any) => v.color).filter(Boolean);
+      const allColors = [p.color, ...variantColors].filter(Boolean).join(", ");
+      return `  - ${p.name}${p.name_bn ? ` (${p.name_bn})` : ""}: ৳${p.price}${allColors ? ` | Colors available: ${allColors}` : ""}${p.size ? ` | Size: ${p.size}` : ""}${p.material ? ` | Material: ${p.material}` : ""}${p.description ? ` — ${p.description}` : ""}${p.keywords?.length ? ` [${p.keywords.join(", ")}]` : ""}`;
+    }).join("\n");
     return `📁 ${category} (${items.length} items):\n${itemList}`;
   }).join("\n\n") || "No products available.";
 
