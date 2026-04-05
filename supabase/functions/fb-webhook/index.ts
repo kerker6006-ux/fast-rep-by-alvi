@@ -463,12 +463,13 @@ async function findBestProductForImageRequest(
   return null;
 }
 
-function findMentionedProduct(products: any[], aiReply: string, customerMsg: string | null): any | null {
-  if (!products?.length) return null;
+function findMentionedProductWithVariant(products: any[], aiReply: string, customerMsg: string | null): { product: any; variantImage: string | null } {
+  if (!products?.length) return { product: null, variantImage: null };
   const combined = `${aiReply} ${customerMsg || ""}`.toLowerCase();
   
   let best: any = null;
   let bestScore = 0;
+  let bestVariantImage: string | null = null;
 
   for (const p of products) {
     const terms = [
@@ -483,13 +484,24 @@ function findMentionedProduct(products: any[], aiReply: string, customerMsg: str
     // Boost if price is mentioned in the reply
     if (score > 0 && aiReply.includes(String(p.price))) score += 2;
 
+    // Check variant colors — if customer asked for a specific color, match it
+    let variantImg: string | null = null;
+    const variants = (p.variants || []) as {color: string; image_url: string}[];
+    for (const v of variants) {
+      if (v.color && combined.includes(v.color.toLowerCase())) {
+        score += 4; // Strong boost for exact color match
+        variantImg = v.image_url;
+      }
+    }
+
     if (score > bestScore) {
       best = p;
       bestScore = score;
+      bestVariantImage = variantImg;
     }
   }
 
-  return bestScore >= 2 ? best : null;
+  return bestScore >= 2 ? { product: best, variantImage: bestVariantImage } : { product: null, variantImage: null };
 }
 
 async function sendFbMessage(pageAccessToken: string, recipientId: string, text: string) {
