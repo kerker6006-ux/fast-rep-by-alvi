@@ -11,8 +11,9 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, ImageIcon, FolderOpen, Search, Package, Sparkles, Loader2, Eye, EyeOff, Grid3X3, LayoutList } from "lucide-react";
+import { Plus, Pencil, Trash2, ImageIcon, FolderOpen, Search, Package, Sparkles, Loader2, Eye, EyeOff, Grid3X3, LayoutList, Bot } from "lucide-react";
 import { toast } from "sonner";
+import ProductAiWizard from "@/components/ProductAiWizard";
 
 type ProductVariant = { color: string; image_url: string };
 
@@ -49,6 +50,7 @@ const ProductsManager = () => {
   const [aiGeneratingBn, setAiGeneratingBn] = useState(false);
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
   const [variants, setVariants] = useState<{color: string; file: File | null; image_url: string}[]>([]);
+  const [wizardOpen, setWizardOpen] = useState(false);
   const [form, setForm] = useState({
     name: "", name_bn: "", description: "", description_bn: "",
     price: "", category: "", keywords: "", color: "", size: "", material: "", is_active: true,
@@ -267,7 +269,11 @@ const ProductsManager = () => {
             Manage your products with AI-powered descriptions
           </p>
         </div>
-        <Dialog open={isOpen} onOpenChange={(v) => { if (!v) resetForm(); setIsOpen(v); }}>
+        <div className="flex gap-2">
+          <Button variant="outline" className="gap-2 shadow-lg border-primary/30 text-primary hover:bg-primary/10" onClick={() => setWizardOpen(true)}>
+            <Bot className="h-4 w-4" /> AI Wizard
+          </Button>
+          <Dialog open={isOpen} onOpenChange={(v) => { if (!v) resetForm(); setIsOpen(v); }}>
           <DialogTrigger asChild>
             <Button className="gap-2 shadow-lg bg-primary hover:bg-primary/90"><Plus className="h-4 w-4" /> Add Product</Button>
           </DialogTrigger>
@@ -457,7 +463,36 @@ const ProductsManager = () => {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
+
+      {/* AI Product Wizard */}
+      <ProductAiWizard
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        existingProducts={products?.map(p => p.name) || []}
+        onProductReady={(data, imageUrls) => {
+          if (data.action === "create_product" && data.product) {
+            const p = data.product;
+            setForm({
+              name: p.name || "", name_bn: p.name_bn || "", description: p.description || "",
+              description_bn: p.description_bn || "", price: String(p.price || 0), category: p.category || "",
+              keywords: p.keywords || "", color: p.color || "", size: p.size || "", material: p.material || "",
+              is_active: p.is_active !== false,
+            });
+            // Set first session image as main image if no variants
+            if (p.detected_colors && p.detected_colors.length > 1 && imageUrls.length > 0) {
+              setVariants(p.detected_colors.map((c, i) => ({
+                color: c, file: null, image_url: imageUrls[i] || ""
+              })));
+            }
+            setIsOpen(true);
+            toast.success("Product details filled by AI! Review and save.");
+          } else if (data.action === "add_variant" && data.variant) {
+            toast.info(`Variant "${data.variant.color}" ready — find "${data.variant.product_name}" and add it.`);
+          }
+        }}
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
