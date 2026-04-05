@@ -50,6 +50,8 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
   const [uploadingImage, setUploadingImage] = useState(false);
   const [sessionImages, setSessionImages] = useState<string[]>([]);
   const [pendingData, setPendingData] = useState<ExtractedProduct | null>(null);
+  const [stagedFiles, setStagedFiles] = useState<File[]>([]);
+  const [stagedPreviews, setStagedPreviews] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -63,7 +65,7 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
     if (open && messages.length === 0) {
       setMessages([{
         role: "assistant",
-        content: "👋 Hi! I'm your Product AI Assistant!\n\n📸 **Upload a product image** and I'll analyze it — detect color, material, type — everything!\n\nOr just tell me about the product and I'll help you set it up perfectly. কি product add করতে চাও?"
+        content: "👋 Hi! I'm your Product AI Assistant!\n\n📸 **Upload product images** (multiple at once!) and I'll analyze them — detect color, material, type — everything!\n\nOr just tell me about the product and I'll help you set it up perfectly. কি product add করতে চাও?"
       }]);
     }
   }, [open]);
@@ -77,34 +79,48 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
     return data.publicUrl;
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
+    const newFiles = Array.from(files);
+    setStagedFiles(prev => [...prev, ...newFiles]);
+    const previews = newFiles.map(f => URL.createObjectURL(f));
+    setStagedPreviews(prev => [...prev, ...previews]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
+  const removeStagedFile = (index: number) => {
+    URL.revokeObjectURL(stagedPreviews[index]);
+    setStagedFiles(prev => prev.filter((_, i) => i !== index));
+    setStagedPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const sendStagedImages = async () => {
+    if (stagedFiles.length === 0) return;
     setUploadingImage(true);
     try {
       const urls: string[] = [];
-      for (const file of Array.from(files)) {
+      for (const file of stagedFiles) {
         const url = await uploadImage(file);
         urls.push(url);
       }
       setSessionImages(prev => [...prev, ...urls]);
+      // Clear staged
+      stagedPreviews.forEach(p => URL.revokeObjectURL(p));
+      setStagedFiles([]);
+      setStagedPreviews([]);
 
-      // Add user message with images
       const userMsg: WizardMessage = {
         role: "user",
-        content: "I uploaded a product image, please analyze it.",
+        content: `I uploaded ${urls.length} product image${urls.length > 1 ? 's' : ''}, please analyze ${urls.length > 1 ? 'them all' : 'it'}.`,
         image_urls: urls,
       };
       setMessages(prev => [...prev, userMsg]);
-
-      // Send to AI
       await sendToAi([...messages, userMsg]);
     } catch (err: any) {
-      toast.error("Failed to upload image: " + err.message);
+      toast.error("Failed to upload images: " + err.message);
     } finally {
       setUploadingImage(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
