@@ -197,6 +197,9 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
     setSessionImages([]);
     setPendingData(null);
     setInput("");
+    stagedPreviews.forEach(p => URL.revokeObjectURL(p));
+    setStagedFiles([]);
+    setStagedPreviews([]);
   };
 
   return (
