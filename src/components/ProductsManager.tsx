@@ -14,6 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Pencil, Trash2, ImageIcon, FolderOpen, Search, Package, Sparkles, Loader2, Eye, EyeOff, Grid3X3, LayoutList } from "lucide-react";
 import { toast } from "sonner";
 
+type ProductVariant = { color: string; image_url: string };
+
 type Product = {
   id: string;
   name: string;
@@ -29,6 +31,7 @@ type Product = {
   size: string | null;
   material: string | null;
   created_at: string;
+  variants: ProductVariant[] | null;
 };
 
 const ProductsManager = () => {
@@ -45,6 +48,7 @@ const ProductsManager = () => {
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiGeneratingBn, setAiGeneratingBn] = useState(false);
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
+  const [variants, setVariants] = useState<{color: string; file: File | null; image_url: string}[]>([]);
   const [form, setForm] = useState({
     name: "", name_bn: "", description: "", description_bn: "",
     price: "", category: "", keywords: "", color: "", size: "", material: "", is_active: true,
