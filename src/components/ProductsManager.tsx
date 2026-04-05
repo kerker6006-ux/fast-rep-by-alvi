@@ -610,7 +610,14 @@ const ProductsManager = () => {
                         </div>
                         {p.description && <p className="text-[11px] text-muted-foreground line-clamp-2">{p.description}</p>}
                         <div className="flex flex-wrap gap-1 pt-0.5">
-                          {p.color && <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">🎨 {p.color}</Badge>}
+                          {p.variants && p.variants.length > 0 ? (
+                            <div className="flex -space-x-1.5">
+                              {p.variants.slice(0, 4).map((v, vi) => (
+                                <img key={vi} src={v.image_url} alt={v.color} title={v.color} className="h-5 w-5 rounded-full object-cover border border-background" />
+                              ))}
+                              {p.variants.length > 4 && <span className="text-[9px] text-muted-foreground ml-1.5">+{p.variants.length - 4}</span>}
+                            </div>
+                          ) : p.color ? <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">🎨 {p.color}</Badge> : null}
                           {p.size && <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">📐 {p.size}</Badge>}
                           {p.material && <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">🧵 {p.material}</Badge>}
                         </div>
