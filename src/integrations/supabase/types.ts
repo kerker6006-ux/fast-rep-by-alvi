@@ -359,6 +359,7 @@ export type Database = {
           size: string | null
           updated_at: string
           user_id: string | null
+          variants: Json | null
         }
         Insert: {
           category?: string | null
@@ -377,6 +378,7 @@ export type Database = {
           size?: string | null
           updated_at?: string
           user_id?: string | null
+          variants?: Json | null
         }
         Update: {
           category?: string | null
@@ -395,6 +397,7 @@ export type Database = {
           size?: string | null
           updated_at?: string
           user_id?: string | null
+          variants?: Json | null
         }
         Relationships: []
       }
