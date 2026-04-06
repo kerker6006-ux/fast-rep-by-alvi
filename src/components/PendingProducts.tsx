@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Check, X, Package, ImageIcon, Pencil } from "lucide-react";
+import { Check, X, Package, ImageIcon, Pencil, Globe } from "lucide-react";
 import { useState } from "react";
+import FbPostsBrowser from "./FbPostsBrowser";
 
 const PendingProducts = () => {
   const queryClient = useQueryClient();
@@ -96,31 +98,23 @@ const PendingProducts = () => {
     });
   };
 
-  if (isLoading) {
-    return <div className="space-y-3">{[1,2].map(i => <div key={i} className="h-32 bg-muted animate-pulse rounded-lg" />)}</div>;
-  }
-
-  if (!pending?.length) {
-    return (
-      <Card className="p-8 text-center">
-        <Package className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-        <h3 className="font-semibold">No pending products</h3>
-        <p className="text-sm text-muted-foreground mt-1">When you post a photo on your Facebook Page, it will appear here for review.</p>
-      </Card>
-    );
-  }
-
-  return (
+  const pendingContent = isLoading ? (
+    <div className="space-y-3">{[1,2].map(i => <div key={i} className="h-32 bg-muted animate-pulse rounded-lg" />)}</div>
+  ) : !pending?.length ? (
+    <Card className="p-8 text-center">
+      <Package className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+      <h3 className="font-semibold">No pending products</h3>
+      <p className="text-sm text-muted-foreground mt-1">When you post a photo on your Facebook Page, it will appear here for review.</p>
+    </Card>
+  ) : (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <Badge variant="secondary" className="text-xs">{pending.length} pending</Badge>
       </div>
-
       {pending.map((item: any) => (
         <Card key={item.id} className="overflow-hidden">
           <CardContent className="p-4">
             <div className="flex gap-4">
-              {/* Image */}
               <div className="w-24 h-24 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden">
                 {item.image_url ? (
                   <img src={item.image_url} alt="" className="w-full h-full object-cover" />
@@ -128,59 +122,32 @@ const PendingProducts = () => {
                   <ImageIcon className="h-8 w-8 text-muted-foreground" />
                 )}
               </div>
-
-              {/* Details */}
               <div className="flex-1 min-w-0 space-y-2">
                 {editingId === item.id ? (
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <Label className="text-xs">Name</Label>
-                      <Input
-                        value={editForm.ai_name || ""}
-                        onChange={e => setEditForm(f => ({ ...f, ai_name: e.target.value }))}
-                        className="h-8 text-sm"
-                      />
+                      <Input value={editForm.ai_name || ""} onChange={e => setEditForm(f => ({ ...f, ai_name: e.target.value }))} className="h-8 text-sm" />
                     </div>
                     <div>
                       <Label className="text-xs">Name (বাংলা)</Label>
-                      <Input
-                        value={editForm.ai_name_bn || ""}
-                        onChange={e => setEditForm(f => ({ ...f, ai_name_bn: e.target.value }))}
-                        className="h-8 text-sm"
-                      />
+                      <Input value={editForm.ai_name_bn || ""} onChange={e => setEditForm(f => ({ ...f, ai_name_bn: e.target.value }))} className="h-8 text-sm" />
                     </div>
                     <div>
                       <Label className="text-xs">Category</Label>
-                      <Input
-                        value={editForm.ai_category || ""}
-                        onChange={e => setEditForm(f => ({ ...f, ai_category: e.target.value }))}
-                        className="h-8 text-sm"
-                      />
+                      <Input value={editForm.ai_category || ""} onChange={e => setEditForm(f => ({ ...f, ai_category: e.target.value }))} className="h-8 text-sm" />
                     </div>
                     <div>
                       <Label className="text-xs">Color</Label>
-                      <Input
-                        value={editForm.ai_color || ""}
-                        onChange={e => setEditForm(f => ({ ...f, ai_color: e.target.value }))}
-                        className="h-8 text-sm"
-                      />
+                      <Input value={editForm.ai_color || ""} onChange={e => setEditForm(f => ({ ...f, ai_color: e.target.value }))} className="h-8 text-sm" />
                     </div>
                     <div>
                       <Label className="text-xs">Price (৳)</Label>
-                      <Input
-                        type="number"
-                        value={editForm.ai_price || 0}
-                        onChange={e => setEditForm(f => ({ ...f, ai_price: Number(e.target.value) }))}
-                        className="h-8 text-sm"
-                      />
+                      <Input type="number" value={editForm.ai_price || 0} onChange={e => setEditForm(f => ({ ...f, ai_price: Number(e.target.value) }))} className="h-8 text-sm" />
                     </div>
                     <div>
                       <Label className="text-xs">Material</Label>
-                      <Input
-                        value={editForm.ai_material || ""}
-                        onChange={e => setEditForm(f => ({ ...f, ai_material: e.target.value }))}
-                        className="h-8 text-sm"
-                      />
+                      <Input value={editForm.ai_material || ""} onChange={e => setEditForm(f => ({ ...f, ai_material: e.target.value }))} className="h-8 text-sm" />
                     </div>
                   </div>
                 ) : (
@@ -195,38 +162,22 @@ const PendingProducts = () => {
                       {item.ai_material && <Badge variant="outline" className="text-[10px]">{item.ai_material}</Badge>}
                       <Badge variant="secondary" className="text-[10px]">৳{item.ai_price || 0}</Badge>
                     </div>
-                    {item.post_caption && (
-                      <p className="text-xs text-muted-foreground line-clamp-2">📝 {item.post_caption}</p>
-                    )}
-                    {item.ai_description && (
-                      <p className="text-xs text-muted-foreground line-clamp-1">{item.ai_description}</p>
-                    )}
+                    {item.post_caption && <p className="text-xs text-muted-foreground line-clamp-2">📝 {item.post_caption}</p>}
+                    {item.ai_description && <p className="text-xs text-muted-foreground line-clamp-1">{item.ai_description}</p>}
                   </>
                 )}
               </div>
-
-              {/* Actions */}
               <div className="flex flex-col gap-2 shrink-0">
                 {editingId === item.id ? (
                   <>
-                    <Button size="sm" onClick={() => saveEdit(item)} className="gap-1">
-                      <Check className="h-3 w-3" /> Save & Add
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
-                      Cancel
-                    </Button>
+                    <Button size="sm" onClick={() => saveEdit(item)} className="gap-1"><Check className="h-3 w-3" /> Save & Add</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>Cancel</Button>
                   </>
                 ) : (
                   <>
-                    <Button size="sm" onClick={() => approveMutation.mutate(item)} disabled={approveMutation.isPending} className="gap-1">
-                      <Check className="h-3 w-3" /> Approve
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => startEdit(item)} className="gap-1">
-                      <Pencil className="h-3 w-3" /> Edit
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => rejectMutation.mutate(item.id)} className="gap-1 text-destructive">
-                      <X className="h-3 w-3" /> Reject
-                    </Button>
+                    <Button size="sm" onClick={() => approveMutation.mutate(item)} disabled={approveMutation.isPending} className="gap-1"><Check className="h-3 w-3" /> Approve</Button>
+                    <Button size="sm" variant="outline" onClick={() => startEdit(item)} className="gap-1"><Pencil className="h-3 w-3" /> Edit</Button>
+                    <Button size="sm" variant="ghost" onClick={() => rejectMutation.mutate(item.id)} className="gap-1 text-destructive"><X className="h-3 w-3" /> Reject</Button>
                   </>
                 )}
               </div>
@@ -235,6 +186,28 @@ const PendingProducts = () => {
         </Card>
       ))}
     </div>
+  );
+
+  return (
+    <Tabs defaultValue="pending" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="pending" className="gap-1.5">
+          <Package className="h-4 w-4" /> Pending Review
+          {pending?.length ? <Badge variant="secondary" className="ml-1 text-[10px] h-5 px-1.5">{pending.length}</Badge> : null}
+        </TabsTrigger>
+        <TabsTrigger value="fb-posts" className="gap-1.5">
+          <Globe className="h-4 w-4" /> FB Page Posts
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="pending">
+        {pendingContent}
+      </TabsContent>
+
+      <TabsContent value="fb-posts">
+        <FbPostsBrowser />
+      </TabsContent>
+    </Tabs>
   );
 };
 
