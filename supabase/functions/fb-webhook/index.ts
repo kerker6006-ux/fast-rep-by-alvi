@@ -113,10 +113,15 @@ serve(async (req) => {
           await handleMessagingEvent(supabase, event, pageId, PAGE_ACCESS_TOKEN, LOVABLE_API_KEY, settings, userId);
         }
 
-        // Handle feed/comment events
+        // Handle feed/comment events & page post auto-import
         for (const change of entry.changes || []) {
-          if (change.field === "feed" && change.value?.item === "comment") {
-            await handleCommentEvent(supabase, change.value, PAGE_ACCESS_TOKEN, settings);
+          if (change.field === "feed") {
+            if (change.value?.item === "comment") {
+              await handleCommentEvent(supabase, change.value, PAGE_ACCESS_TOKEN, settings, userId, LOVABLE_API_KEY);
+            } else if (change.value?.item === "photo" || change.value?.item === "status") {
+              // Auto-import product from page post
+              await handlePagePostEvent(supabase, change.value, userId, LOVABLE_API_KEY, pageId);
+            }
           }
         }
       }
@@ -147,7 +152,8 @@ async function loadSettings(supabase: any, userId: string | null): Promise<Recor
 // ---- Comment Handler ----
 
 async function handleCommentEvent(
-  supabase: any, value: any, pageAccessToken: string, settings: Record<string, string>
+  supabase: any, value: any, pageAccessToken: string, settings: Record<string, string>,
+  userId: string | null, lovableApiKey: string | undefined
 ) {
   if (settings.comment_auto_reply !== "true") return;
   if (value.from?.id === value.post_id?.split("_")[0]) return;
@@ -158,9 +164,49 @@ async function handleCommentEvent(
   const commentText = value.message || "";
   const isBangla = /[\u0980-\u09FF]/.test(commentText);
 
-  const replyText = isBangla
-    ? (settings.comment_reply_text || "ধন্যবাদ! বিস্তারিত জানতে আমাদের পেজে ইনবক্স করুন 📩")
-    : (settings.comment_reply_text_en || "Thanks! Please inbox us for details 📩");
+  let replyText: string;
+
+  // Use AI for smart comment replies if available
+  if (lovableApiKey && settings.comment_ai_reply === "true") {
+    try {
+      // Load products for context
+      let productQuery = supabase.from("products").select("name, name_bn, price, category").eq("is_active", true);
+      if (userId) productQuery = productQuery.eq("user_id", userId);
+      const { data: products } = await productQuery;
+
+      const productList = (products || []).map((p: any) => `${p.name}: ৳${p.price}`).join(", ");
+      const lang = isBangla ? "Bangla" : "English";
+
+      const aiRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${lovableApiKey}` },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-lite",
+          messages: [{
+            role: "system",
+            content: `You are a Facebook page comment reply bot. Reply in ${lang}. Be short (1 sentence max). If they ask about a product, mention the price. Always encourage them to inbox for details. Products: ${productList}. ${settings.manual_instructions || ""}`
+          }, {
+            role: "user",
+            content: `Comment: "${commentText}"`
+          }],
+          max_tokens: 100,
+        }),
+      });
+      const aiData = await aiRes.json();
+      replyText = aiData.choices?.[0]?.message?.content?.trim() || "";
+    } catch (e) {
+      console.error("AI comment reply error:", e);
+      replyText = "";
+    }
+  } else {
+    replyText = "";
+  }
+
+  if (!replyText) {
+    replyText = isBangla
+      ? (settings.comment_reply_text || "ধন্যবাদ! বিস্তারিত জানতে আমাদের পেজে ইনবক্স করুন 📩")
+      : (settings.comment_reply_text_en || "Thanks! Please inbox us for details 📩");
+  }
 
   try {
     const res = await fetch(
@@ -178,6 +224,91 @@ async function handleCommentEvent(
   } catch (e) {
     console.error("Comment reply failed:", e);
   }
+}
+
+// ---- Page Post Auto-Import Handler ----
+
+async function handlePagePostEvent(
+  supabase: any, value: any, userId: string | null, lovableApiKey: string | undefined, pageId: string
+) {
+  if (!userId) return;
+
+  // Only process posts from the page itself (not visitors)
+  const posterId = value.from?.id;
+  if (posterId !== pageId) return;
+
+  const postId = value.post_id;
+  if (!postId) return;
+
+  // Check if already imported
+  const { data: existing } = await supabase
+    .from("pending_products")
+    .select("id")
+    .eq("fb_post_id", postId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (existing) return;
+
+  // Check for image
+  const photos = value.photos || [];
+  const imageUrl = photos[0] || value.link || null;
+  if (!imageUrl) return;
+
+  const caption = value.message || "";
+
+  // Use AI to analyze the post
+  let aiData: any = {};
+  if (lovableApiKey) {
+    try {
+      const aiRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${lovableApiKey}` },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-lite",
+          messages: [{
+            role: "system",
+            content: `You are a product analyzer. Given a Facebook page post with an image and caption, extract product details. Return ONLY valid JSON with these fields: name, name_bn (Bangla name), description, description_bn, category, color, price (number, 0 if unknown), material, keywords (array of strings). If caption is in Bangla, prioritize Bangla names. Be accurate.`
+          }, {
+            role: "user",
+            content: [
+              { type: "text", text: `Post caption: "${caption}"\nAnalyze this product image and extract details:` },
+              { type: "image_url", image_url: { url: imageUrl } }
+            ]
+          }],
+          max_tokens: 500,
+        }),
+      });
+      const result = await aiRes.json();
+      const content = result.choices?.[0]?.message?.content || "";
+      // Extract JSON from response
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        aiData = JSON.parse(jsonMatch[0]);
+      }
+    } catch (e) {
+      console.error("AI product analysis error:", e);
+    }
+  }
+
+  // Insert pending product
+  await supabase.from("pending_products").insert({
+    user_id: userId,
+    fb_post_id: postId,
+    image_url: imageUrl,
+    post_caption: caption,
+    ai_name: aiData.name || caption.slice(0, 50) || "Unnamed Product",
+    ai_name_bn: aiData.name_bn || null,
+    ai_description: aiData.description || null,
+    ai_description_bn: aiData.description_bn || null,
+    ai_category: aiData.category || null,
+    ai_color: aiData.color || null,
+    ai_price: aiData.price || 0,
+    ai_material: aiData.material || null,
+    ai_keywords: aiData.keywords || [],
+    status: "pending",
+  });
+
+  console.log("Auto-imported pending product from post:", postId);
 }
 
 // ---- Messaging Handler ----
