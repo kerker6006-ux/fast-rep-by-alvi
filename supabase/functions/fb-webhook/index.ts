@@ -120,7 +120,7 @@ serve(async (req) => {
               await handleCommentEvent(supabase, change.value, PAGE_ACCESS_TOKEN, settings, userId, LOVABLE_API_KEY);
             } else if (change.value?.item === "photo" || change.value?.item === "status") {
               // Auto-import product from page post
-              await handlePagePostEvent(supabase, change.value, userId, LOVABLE_API_KEY, pageId);
+              await handlePagePostEvent(supabase, change.value, userId, LOVABLE_API_KEY, pageId, settings);
             }
           }
         }
@@ -229,9 +229,10 @@ async function handleCommentEvent(
 // ---- Page Post Auto-Import Handler ----
 
 async function handlePagePostEvent(
-  supabase: any, value: any, userId: string | null, lovableApiKey: string | undefined, pageId: string
+  supabase: any, value: any, userId: string | null, lovableApiKey: string | undefined, pageId: string, settings: Record<string, string>
 ) {
   if (!userId) return;
+  if (settings.auto_import_products === "false") return;
 
   // Only process posts from the page itself (not visitors)
   const posterId = value.from?.id;
