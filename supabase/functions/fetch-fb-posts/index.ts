@@ -48,7 +48,13 @@ Deno.serve(async (req) => {
     if (!fbRes.ok) {
       const errBody = await fbRes.text();
       console.error("FB API error:", errBody);
-      throw new Error("Failed to fetch Facebook posts");
+      try {
+        const fbErr = JSON.parse(errBody);
+        const msg = fbErr?.error?.message || "Failed to fetch Facebook posts";
+        throw new Error(msg);
+      } catch (parseErr) {
+        throw new Error("Failed to fetch Facebook posts");
+      }
     }
 
     const fbData = await fbRes.json();
