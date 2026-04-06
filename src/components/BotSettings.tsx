@@ -154,6 +154,7 @@ const BotSettings = () => {
               />
             </div>
           </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
