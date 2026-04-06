@@ -129,6 +129,34 @@ const BotSettings = () => {
 
         <Card>
           <CardHeader>
+            <CardTitle className="flex items-center gap-2"><MessageCircle className="h-5 w-5" /> Comment & Feed Settings</CardTitle>
+            <CardDescription>Control how the bot handles comments and page posts.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>AI-Powered Comment Replies</Label>
+                <p className="text-xs text-muted-foreground">Use AI to reply to comments intelligently instead of static text</p>
+              </div>
+              <Switch
+                checked={settings.comment_ai_reply === "true"}
+                onCheckedChange={(v) => update("comment_ai_reply", v ? "true" : "false")}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Auto-Import Products from Page Posts</Label>
+                <p className="text-xs text-muted-foreground">When you post a photo on your page, AI analyzes it and creates a pending product</p>
+              </div>
+              <Switch
+                checked={settings.auto_import_products !== "false"}
+                onCheckedChange={(v) => update("auto_import_products", v ? "true" : "false")}
+              />
+            </div>
+          </CardContent>
+
+        <Card>
+          <CardHeader>
             <CardTitle>🔗 Facebook Connection</CardTitle>
             <CardDescription>Use these values when setting up your Facebook Webhook.</CardDescription>
           </CardHeader>
