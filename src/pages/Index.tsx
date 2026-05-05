@@ -15,6 +15,7 @@ import AiUsageDashboard from "@/components/AiUsageDashboard";
 import CreditDashboard from "@/components/CreditDashboard";
 import PendingProducts from "@/components/PendingProducts";
 import WebsiteImport from "@/components/WebsiteImport";
+import ProductSuggestions from "@/components/ProductSuggestions";
 
 const tabs: Record<string, React.ComponentType> = {
   analytics: AnalyticsDashboard,
@@ -23,6 +24,7 @@ const tabs: Record<string, React.ComponentType> = {
   "ai-training": AiTraining,
   products: ProductsManager,
   "pending-products": PendingProducts,
+  suggestions: ProductSuggestions,
   "website-import": WebsiteImport,
   orders: OrdersManager,
   complaints: ComplaintsManager,
