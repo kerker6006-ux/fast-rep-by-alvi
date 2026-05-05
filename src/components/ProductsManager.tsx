@@ -241,6 +241,7 @@ const ProductsManager = () => {
       keywords: p.keywords?.join(", ") || "", color: p.color || "", size: p.size || "", material: p.material || "", is_active: p.is_active,
     });
     setVariants((p.variants || []).map(v => ({ color: v.color, file: null, image_url: v.image_url })));
+    setSizeVariants(((p as any).size_variants || []) as SizeVariant[]);
     setIsOpen(true);
   };
 
