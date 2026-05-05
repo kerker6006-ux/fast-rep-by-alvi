@@ -230,6 +230,7 @@ const ProductsManager = () => {
     setShowNewCategory(false);
     setNewCategory("");
     setVariants([]);
+    setSizeVariants([]);
   };
 
   const openEdit = (p: Product) => {
