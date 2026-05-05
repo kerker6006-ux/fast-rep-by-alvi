@@ -12,7 +12,7 @@ import { Globe, Trash2, Loader2, ExternalLink } from "lucide-react";
 
 const WebsiteImport = () => {
   const queryClient = useQueryClient();
-  const [url, setUrl] = useState("https://korean-skincare-bd.lovable.app/");
+  const [url, setUrl] = useState("");
   const [maxPages, setMaxPages] = useState(50);
   const [importProducts, setImportProducts] = useState(true);
 
