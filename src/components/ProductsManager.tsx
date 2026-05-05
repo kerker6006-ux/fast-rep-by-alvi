@@ -193,7 +193,8 @@ const ProductsManager = () => {
         material: form.material || null,
         user_id: user?.id,
         variants: finalVariants,
-      };
+        size_variants: sizeVariants.filter(s => s.size.trim()).map(s => ({ size: s.size.trim(), price: Number(s.price) || 0 })),
+      } as any;
       if (editingProduct) {
         const { error } = await supabase.from("products").update(payload).eq("id", editingProduct.id);
         if (error) throw error;
