@@ -837,6 +837,21 @@ async function generateAiReply(
   if (userId) productQuery = productQuery.eq("user_id", userId);
   const { data: products } = await productQuery;
 
+  // Fetch website knowledge base (if any)
+  let websiteKnowledge = "";
+  if (userId) {
+    const { data: kb } = await supabase
+      .from("website_knowledge")
+      .select("title, page_url, summary, content")
+      .eq("user_id", userId)
+      .limit(30);
+    if (kb?.length) {
+      websiteKnowledge = kb.map((k: any) =>
+        `• ${k.title || k.page_url}\n  URL: ${k.page_url}\n  ${(k.summary || k.content || "").slice(0, 400)}`
+      ).join("\n\n");
+    }
+  }
+
   // Group products by category for the AI
   const productsByCategory: Record<string, any[]> = {};
   products?.forEach((p: any) => {
