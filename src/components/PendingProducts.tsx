@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Check, X, Package, ImageIcon, Pencil, Globe } from "lucide-react";
+import { Check, X, Package, ImageIcon, Pencil, Globe, Sparkles } from "lucide-react";
 import { useState } from "react";
 import FbPostsBrowser from "./FbPostsBrowser";
+import FbPageAiAnalyzer from "./FbPageAiAnalyzer";
 
 const PendingProducts = () => {
   const queryClient = useQueryClient();
