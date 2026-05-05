@@ -165,7 +165,8 @@ const WebsiteImport = () => {
                   ))}
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
