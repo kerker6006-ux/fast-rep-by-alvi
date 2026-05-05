@@ -910,7 +910,11 @@ async function generateAiReply(
       const colorSection = allColors.length
         ? ` | Colors: ${allColors.join(", ")} (each color has its own separate image — send the EXACT color image the customer asks for)`
         : "";
-      return `  - ${p.name}${p.name_bn ? ` (${p.name_bn})` : ""}: ৳${p.price}${colorSection}${p.size ? ` | Size: ${p.size}` : ""}${p.material ? ` | Material: ${p.material}` : ""}${p.description ? ` — ${p.description}` : ""}${p.keywords?.length ? ` [${p.keywords.join(", ")}]` : ""}`;
+      const sizeVars = (p.size_variants || []) as {size: string; price: number}[];
+      const sizeSection = sizeVars.length
+        ? ` | Size options: ${sizeVars.map(s => `${s.size}=৳${s.price}`).join(", ")}`
+        : "";
+      return `  - ${p.name}${p.name_bn ? ` (${p.name_bn})` : ""}: ৳${p.price}${sizeSection}${colorSection}${p.size ? ` | Size: ${p.size}` : ""}${p.material ? ` | Material: ${p.material}` : ""}${p.description ? ` — ${p.description}` : ""}${p.keywords?.length ? ` [${p.keywords.join(", ")}]` : ""}`;
     }).join("\n");
     return `📁 ${category} (${items.length} items):\n${itemList}`;
   }).join("\n\n") || "No products available.";
