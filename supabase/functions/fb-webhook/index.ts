@@ -403,6 +403,36 @@ async function handleMessagingEvent(
         supabase, lovableApiKey, conversationId, messageText, imageUrl, settings, userId
       );
 
+      // Product suggestion handoff — bot detected an unknown product request
+      const suggestMatch = replyText && replyText.match(/SUGGEST_PRODUCT:\s*(.+?)(?:\n|$)/i);
+      if (suggestMatch) {
+        const requested = suggestMatch[1].trim().slice(0, 200);
+        if (requested && userId) {
+          const { data: convo } = await supabase.from("conversations")
+            .select("customer_name, sender_name").eq("id", conversationId).maybeSingle();
+          const { data: existing } = await supabase.from("product_suggestions")
+            .select("id, request_count").eq("user_id", userId)
+            .ilike("requested_product", requested).maybeSingle();
+          if (existing) {
+            await supabase.from("product_suggestions")
+              .update({ request_count: (existing.request_count || 1) + 1, updated_at: new Date().toISOString() })
+              .eq("id", existing.id);
+          } else {
+            await supabase.from("product_suggestions").insert({
+              user_id: userId, conversation_id: conversationId,
+              customer_name: (convo as any)?.sender_name || null,
+              requested_product: requested,
+              message_snippet: (messageText || "").slice(0, 300),
+            });
+          }
+        }
+        await supabase.from("conversations")
+          .update({ needs_human: true, followup_reason: `Customer asked for: ${requested}`, updated_at: new Date().toISOString() })
+          .eq("id", conversationId);
+        console.log("Logged product suggestion:", requested);
+        return;
+      }
+
       // Human handoff sentinel — bot is unsure, mark conversation and stay silent
       if (replyText && replyText.trim().toUpperCase().includes("NEEDS_HUMAN")) {
         const reason = imageUrl
