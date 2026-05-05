@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import ProductAiWizard from "@/components/ProductAiWizard";
 
 type ProductVariant = { color: string; image_url: string };
+type SizeVariant = { size: string; price: number };
 
 type Product = {
   id: string;
@@ -33,6 +34,7 @@ type Product = {
   material: string | null;
   created_at: string;
   variants: ProductVariant[] | null;
+  size_variants?: SizeVariant[] | null;
 };
 
 const ProductsManager = () => {
