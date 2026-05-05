@@ -1024,6 +1024,8 @@ ${productCatalog}
 CATEGORY SUMMARY:
 ${categorySummary}
 
+${websiteKnowledge ? `WEBSITE KNOWLEDGE BASE (use this info to answer general questions about the business, policies, products, FAQs):\n${websiteKnowledge}\n` : ""}
+
 #############################
 # SMART PRODUCT QUESTIONING
 #############################
