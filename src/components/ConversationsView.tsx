@@ -84,10 +84,18 @@ const ConversationsView = () => {
                         <User className="h-4 w-4 text-primary" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-sm truncate">
+                        <p className="font-medium text-sm truncate flex items-center gap-2">
                           {c.sender_name || `Customer ${c.fb_sender_id.slice(-6)}`}
+                          {(c as any).needs_human && (
+                            <span className="text-[10px] font-semibold bg-destructive text-destructive-foreground px-1.5 py-0.5 rounded">
+                              REPLY ME
+                            </span>
+                          )}
                         </p>
                         <p className="text-xs text-muted-foreground truncate">{c.last_message || "No messages"}</p>
+                        {(c as any).followup_reason && (
+                          <p className="text-xs text-destructive truncate mt-0.5">⚠ {(c as any).followup_reason}</p>
+                        )}
                         {c.last_message_at && (
                           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                             <Clock className="h-3 w-3" />
