@@ -12,7 +12,7 @@ import { Globe, Trash2, Loader2, ExternalLink } from "lucide-react";
 
 const WebsiteImport = () => {
   const queryClient = useQueryClient();
-  const [url, setUrl] = useState("https://korean-skincare-bd.lovable.app/");
+  const [url, setUrl] = useState("");
   const [maxPages, setMaxPages] = useState(50);
   const [importProducts, setImportProducts] = useState(true);
 
@@ -68,7 +68,7 @@ const WebsiteImport = () => {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Website Knowledge Import</h2>
         <p className="text-muted-foreground">
-          Scrape any website and feed its content + products into your bot.
+          Import any number of websites. The bot will use all imported content + products to answer customers.
         </p>
       </div>
 
