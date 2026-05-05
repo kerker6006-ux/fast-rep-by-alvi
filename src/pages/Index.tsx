@@ -14,6 +14,7 @@ import FbPageConnection from "@/components/FbPageConnection";
 import AiUsageDashboard from "@/components/AiUsageDashboard";
 import CreditDashboard from "@/components/CreditDashboard";
 import PendingProducts from "@/components/PendingProducts";
+import WebsiteImport from "@/components/WebsiteImport";
 
 const tabs: Record<string, React.ComponentType> = {
   analytics: AnalyticsDashboard,
@@ -22,6 +23,7 @@ const tabs: Record<string, React.ComponentType> = {
   "ai-training": AiTraining,
   products: ProductsManager,
   "pending-products": PendingProducts,
+  "website-import": WebsiteImport,
   orders: OrdersManager,
   complaints: ComplaintsManager,
   conversations: ConversationsView,
