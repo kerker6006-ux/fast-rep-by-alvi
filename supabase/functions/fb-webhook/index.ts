@@ -403,6 +403,36 @@ async function handleMessagingEvent(
         supabase, lovableApiKey, conversationId, messageText, imageUrl, settings, userId
       );
 
+      // Product suggestion handoff — bot detected an unknown product request
+      const suggestMatch = replyText && replyText.match(/SUGGEST_PRODUCT:\s*(.+?)(?:\n|$)/i);
+      if (suggestMatch) {
+        const requested = suggestMatch[1].trim().slice(0, 200);
+        if (requested && userId) {
+          const { data: convo } = await supabase.from("conversations")
+            .select("customer_name, sender_name").eq("id", conversationId).maybeSingle();
+          const { data: existing } = await supabase.from("product_suggestions")
+            .select("id, request_count").eq("user_id", userId)
+            .ilike("requested_product", requested).maybeSingle();
+          if (existing) {
+            await supabase.from("product_suggestions")
+              .update({ request_count: (existing.request_count || 1) + 1, updated_at: new Date().toISOString() })
+              .eq("id", existing.id);
+          } else {
+            await supabase.from("product_suggestions").insert({
+              user_id: userId, conversation_id: conversationId,
+              customer_name: (convo as any)?.sender_name || null,
+              requested_product: requested,
+              message_snippet: (messageText || "").slice(0, 300),
+            });
+          }
+        }
+        await supabase.from("conversations")
+          .update({ needs_human: true, followup_reason: `Customer asked for: ${requested}`, updated_at: new Date().toISOString() })
+          .eq("id", conversationId);
+        console.log("Logged product suggestion:", requested);
+        return;
+      }
+
       // Human handoff sentinel — bot is unsure, mark conversation and stay silent
       if (replyText && replyText.trim().toUpperCase().includes("NEEDS_HUMAN")) {
         const reason = imageUrl
@@ -1076,9 +1106,12 @@ ${settings.payment_methods ? `Payment: ${settings.payment_methods}` : ""}
 #############################
 - ALWAYS mention products are "100% original" / "১০০% আসল" when talking about a product.
 - Business focus: SKINCARE only.
-- HUMAN HANDOFF — VERY IMPORTANT: If the customer's message OR image is unclear, OR they ask about a product/brand/ingredient that is NOT in the PRODUCT CATALOG or WEBSITE KNOWLEDGE above, OR you are not confident in the answer, OR they send a photo you cannot identify → DO NOT GUESS, DO NOT MAKE UP INFO, DO NOT REPLY WITH GENERIC TEXT. Instead, output EXACTLY this single token and nothing else:
+- HUMAN HANDOFF — VERY IMPORTANT: If the customer's message OR image is unclear, OR you are not confident in the answer, OR they send a photo you cannot identify → DO NOT GUESS, DO NOT MAKE UP INFO. Output EXACTLY this single token and nothing else:
   NEEDS_HUMAN
-  This will silently mark the conversation for the shop owner to reply manually. Do NOT send any other words along with NEEDS_HUMAN.
+- PRODUCT SUGGESTION HANDOFF: If the customer clearly asks for a SPECIFIC product/brand by NAME that is NOT in our PRODUCT CATALOG (e.g. "do you have X cream?", "X ক্রিম আছে?"), output EXACTLY this single line and nothing else:
+  SUGGEST_PRODUCT: <exact product name they asked for>
+  Example: SUGGEST_PRODUCT: La Roche Posay Effaclar Duo
+  This silently logs the requested product so the shop owner can stock it. Do NOT send any other words.
 - Only reply normally when you are CONFIDENT the answer is correct based on the catalog/knowledge above.
 
 FINAL RULES:

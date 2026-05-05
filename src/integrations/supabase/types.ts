@@ -407,6 +407,45 @@ export type Database = {
         }
         Relationships: []
       }
+      product_suggestions: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          customer_name: string | null
+          id: string
+          message_snippet: string | null
+          request_count: number
+          requested_product: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          customer_name?: string | null
+          id?: string
+          message_snippet?: string | null
+          request_count?: number
+          requested_product: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          customer_name?: string | null
+          id?: string
+          message_snippet?: string | null
+          request_count?: number
+          requested_product?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           category: string | null

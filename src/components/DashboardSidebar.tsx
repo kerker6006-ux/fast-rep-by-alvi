@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import {
   BarChart3, Package, ShoppingCart, MessageSquare,
-  Zap, Clock, Settings, Bot, Brain, ChevronLeft, ChevronRight, LogOut, Globe, ShieldCheck, Activity, Coins, AlertTriangle, Inbox
+  Zap, Clock, Settings, Bot, Brain, ChevronLeft, ChevronRight, LogOut, Globe, ShieldCheck, Activity, Coins, AlertTriangle, Inbox, Lightbulb
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,6 +21,7 @@ const navItems: NavItem[] = [
   { id: "ai-training", label: "AI Training", icon: Brain },
   { id: "products", label: "Products", icon: Package },
   { id: "pending-products", label: "Auto-Import", icon: Inbox },
+  { id: "suggestions", label: "Suggestions", icon: Lightbulb },
   { id: "website-import", label: "Website Import", icon: Globe },
   { id: "orders", label: "Orders", icon: ShoppingCart },
   { id: "complaints", label: "Complaints", icon: AlertTriangle },
