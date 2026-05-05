@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import ProductAiWizard from "@/components/ProductAiWizard";
 
 type ProductVariant = { color: string; image_url: string };
+type SizeVariant = { size: string; price: number };
 
 type Product = {
   id: string;
@@ -33,6 +34,7 @@ type Product = {
   material: string | null;
   created_at: string;
   variants: ProductVariant[] | null;
+  size_variants?: SizeVariant[] | null;
 };
 
 const ProductsManager = () => {
@@ -50,6 +52,7 @@ const ProductsManager = () => {
   const [aiGeneratingBn, setAiGeneratingBn] = useState(false);
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
   const [variants, setVariants] = useState<{color: string; file: File | null; image_url: string}[]>([]);
+  const [sizeVariants, setSizeVariants] = useState<SizeVariant[]>([]);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [aiWizardEnabled, setAiWizardEnabled] = useState(true);
   const [form, setForm] = useState({
@@ -190,7 +193,8 @@ const ProductsManager = () => {
         material: form.material || null,
         user_id: user?.id,
         variants: finalVariants,
-      };
+        size_variants: sizeVariants.filter(s => s.size.trim()).map(s => ({ size: s.size.trim(), price: Number(s.price) || 0 })),
+      } as any;
       if (editingProduct) {
         const { error } = await supabase.from("products").update(payload).eq("id", editingProduct.id);
         if (error) throw error;
@@ -226,6 +230,7 @@ const ProductsManager = () => {
     setShowNewCategory(false);
     setNewCategory("");
     setVariants([]);
+    setSizeVariants([]);
   };
 
   const openEdit = (p: Product) => {
@@ -236,6 +241,7 @@ const ProductsManager = () => {
       keywords: p.keywords?.join(", ") || "", color: p.color || "", size: p.size || "", material: p.material || "", is_active: p.is_active,
     });
     setVariants((p.variants || []).map(v => ({ color: v.color, file: null, image_url: v.image_url })));
+    setSizeVariants(((p as any).size_variants || []) as SizeVariant[]);
     setIsOpen(true);
   };
 
@@ -457,6 +463,34 @@ const ProductsManager = () => {
                 )}
               </div>
 
+              {/* Size / ML Variants */}
+              <div className="space-y-3 p-4 rounded-xl border-2 border-primary/30 bg-gradient-to-br from-accent/40 to-primary/5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    📏 Size / ML Variants
+                    <span className="text-xs font-normal text-muted-foreground">(e.g. 50ml = 100৳, 100ml = 200৳)</span>
+                  </Label>
+                  <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10" onClick={() => setSizeVariants(s => [...s, { size: "", price: 0 }])}>
+                    <Plus className="h-3 w-3" /> Add Size
+                  </Button>
+                </div>
+                {sizeVariants.length > 0 ? (
+                  <div className="grid gap-2">
+                    {sizeVariants.map((s, i) => (
+                      <div key={i} className="flex items-center gap-2 bg-background rounded-lg p-2 border">
+                        <Input value={s.size} placeholder="50ml / 100ml / 250g" className="h-9 flex-1" onChange={e => setSizeVariants(arr => arr.map((it, ii) => ii === i ? { ...it, size: e.target.value } : it))} />
+                        <Input type="number" value={s.price || ""} placeholder="Price ৳" className="h-9 w-32" onChange={e => setSizeVariants(arr => arr.map((it, ii) => ii === i ? { ...it, price: parseFloat(e.target.value) || 0 } : it))} />
+                        <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => setSizeVariants(arr => arr.filter((_, ii) => ii !== i))}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center py-2">No size options yet. Add e.g. "50ml" → 100৳, "100ml" → 200৳</p>
+                )}
+              </div>
+
               {/* Active toggle + save */}
               <div className="flex items-center justify-between pt-2">
                 <div className="flex items-center gap-2">
@@ -584,6 +618,16 @@ const ProductsManager = () => {
                   <span className="text-2xl font-bold text-primary">৳{previewProduct.price}</span>
                   <Badge variant={previewProduct.is_active ? "default" : "destructive"}>{previewProduct.is_active ? "Active" : "Inactive"}</Badge>
                 </div>
+                {((previewProduct as any).size_variants?.length > 0) && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-muted-foreground">📏 Size Options</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(previewProduct as any).size_variants.map((s: SizeVariant, i: number) => (
+                        <Badge key={i} variant="secondary">{s.size} — ৳{s.price}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {previewProduct.name_bn && <p className="text-muted-foreground">{previewProduct.name_bn}</p>}
                 {previewProduct.description && <p className="text-sm">{previewProduct.description}</p>}
                 {previewProduct.description_bn && <p className="text-sm text-muted-foreground">{previewProduct.description_bn}</p>}
