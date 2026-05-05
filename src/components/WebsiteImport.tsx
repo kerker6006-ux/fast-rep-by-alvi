@@ -130,17 +130,19 @@ const WebsiteImport = () => {
           </Card>
         ) : (
           <div className="space-y-4">
-            {Object.entries(grouped).map(([src, pages]) => (
+            {Object.entries(grouped).map(([src, pages]) => {
+              const list = pages as any[];
+              return (
               <Card key={src}>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <Globe className="h-4 w-4 text-primary" />
                     {src}
-                    <Badge variant="secondary">{pages.length} pages</Badge>
+                    <Badge variant="secondary">{list.length} pages</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  {pages.map((p) => (
+                  {list.map((p) => (
                     <div key={p.id} className="flex items-start justify-between gap-3 text-sm border-t pt-2 first:border-0 first:pt-0">
                       <div className="min-w-0 flex-1">
                         <div className="font-medium truncate">{p.title || p.page_url}</div>
