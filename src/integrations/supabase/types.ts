@@ -155,9 +155,11 @@ export type Database = {
         Row: {
           created_at: string
           fb_sender_id: string
+          followup_reason: string | null
           id: string
           last_message: string | null
           last_message_at: string | null
+          needs_human: boolean
           sender_name: string | null
           updated_at: string
           user_id: string | null
@@ -165,9 +167,11 @@ export type Database = {
         Insert: {
           created_at?: string
           fb_sender_id: string
+          followup_reason?: string | null
           id?: string
           last_message?: string | null
           last_message_at?: string | null
+          needs_human?: boolean
           sender_name?: string | null
           updated_at?: string
           user_id?: string | null
@@ -175,9 +179,11 @@ export type Database = {
         Update: {
           created_at?: string
           fb_sender_id?: string
+          followup_reason?: string | null
           id?: string
           last_message?: string | null
           last_message_at?: string | null
+          needs_human?: boolean
           sender_name?: string | null
           updated_at?: string
           user_id?: string | null
