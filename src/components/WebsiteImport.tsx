@@ -68,7 +68,7 @@ const WebsiteImport = () => {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Website Knowledge Import</h2>
         <p className="text-muted-foreground">
-          Scrape any website and feed its content + products into your bot.
+          Import any number of websites. The bot will use all imported content + products to answer customers.
         </p>
       </div>
 
