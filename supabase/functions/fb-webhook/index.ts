@@ -403,6 +403,18 @@ async function handleMessagingEvent(
         supabase, lovableApiKey, conversationId, messageText, imageUrl, settings, userId
       );
 
+      // Human handoff sentinel — bot is unsure, mark conversation and stay silent
+      if (replyText && replyText.trim().toUpperCase().includes("NEEDS_HUMAN")) {
+        const reason = imageUrl
+          ? "Customer sent an image the bot could not identify"
+          : `Bot unsure about: "${(messageText || "").slice(0, 200)}"`;
+        await supabase.from("conversations")
+          .update({ needs_human: true, followup_reason: reason, updated_at: new Date().toISOString() })
+          .eq("id", conversationId);
+        console.log("Marked conversation for human follow-up:", conversationId);
+        return;
+      }
+
       // Detect if AI reply mentions a specific product — send its image first (with variant color support)
       let productQuery = supabase.from("products").select("name, name_bn, price, image_url, color, keywords, variants").eq("is_active", true);
       if (userId) productQuery = productQuery.eq("user_id", userId);
