@@ -462,6 +462,7 @@ export type Database = {
           name_bn: string | null
           price: number
           size: string | null
+          size_variants: Json
           updated_at: string
           user_id: string | null
           variants: Json | null
@@ -481,6 +482,7 @@ export type Database = {
           name_bn?: string | null
           price?: number
           size?: string | null
+          size_variants?: Json
           updated_at?: string
           user_id?: string | null
           variants?: Json | null
@@ -500,6 +502,7 @@ export type Database = {
           name_bn?: string | null
           price?: number
           size?: string | null
+          size_variants?: Json
           updated_at?: string
           user_id?: string | null
           variants?: Json | null
