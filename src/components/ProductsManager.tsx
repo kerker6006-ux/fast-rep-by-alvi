@@ -618,6 +618,16 @@ const ProductsManager = () => {
                   <span className="text-2xl font-bold text-primary">৳{previewProduct.price}</span>
                   <Badge variant={previewProduct.is_active ? "default" : "destructive"}>{previewProduct.is_active ? "Active" : "Inactive"}</Badge>
                 </div>
+                {((previewProduct as any).size_variants?.length > 0) && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-muted-foreground">📏 Size Options</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(previewProduct as any).size_variants.map((s: SizeVariant, i: number) => (
+                        <Badge key={i} variant="secondary">{s.size} — ৳{s.price}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {previewProduct.name_bn && <p className="text-muted-foreground">{previewProduct.name_bn}</p>}
                 {previewProduct.description && <p className="text-sm">{previewProduct.description}</p>}
                 {previewProduct.description_bn && <p className="text-sm text-muted-foreground">{previewProduct.description_bn}</p>}
