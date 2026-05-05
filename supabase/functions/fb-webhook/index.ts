@@ -1076,9 +1076,12 @@ ${settings.payment_methods ? `Payment: ${settings.payment_methods}` : ""}
 #############################
 - ALWAYS mention products are "100% original" / "১০০% আসল" when talking about a product.
 - Business focus: SKINCARE only.
-- HUMAN HANDOFF — VERY IMPORTANT: If the customer's message OR image is unclear, OR they ask about a product/brand/ingredient that is NOT in the PRODUCT CATALOG or WEBSITE KNOWLEDGE above, OR you are not confident in the answer, OR they send a photo you cannot identify → DO NOT GUESS, DO NOT MAKE UP INFO, DO NOT REPLY WITH GENERIC TEXT. Instead, output EXACTLY this single token and nothing else:
+- HUMAN HANDOFF — VERY IMPORTANT: If the customer's message OR image is unclear, OR you are not confident in the answer, OR they send a photo you cannot identify → DO NOT GUESS, DO NOT MAKE UP INFO. Output EXACTLY this single token and nothing else:
   NEEDS_HUMAN
-  This will silently mark the conversation for the shop owner to reply manually. Do NOT send any other words along with NEEDS_HUMAN.
+- PRODUCT SUGGESTION HANDOFF: If the customer clearly asks for a SPECIFIC product/brand by NAME that is NOT in our PRODUCT CATALOG (e.g. "do you have X cream?", "X ক্রিম আছে?"), output EXACTLY this single line and nothing else:
+  SUGGEST_PRODUCT: <exact product name they asked for>
+  Example: SUGGEST_PRODUCT: La Roche Posay Effaclar Duo
+  This silently logs the requested product so the shop owner can stock it. Do NOT send any other words.
 - Only reply normally when you are CONFIDENT the answer is correct based on the catalog/knowledge above.
 
 FINAL RULES:
