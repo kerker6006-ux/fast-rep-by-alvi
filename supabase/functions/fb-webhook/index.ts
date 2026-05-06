@@ -1095,7 +1095,7 @@ ${settings.payment_methods ? `Payment: ${settings.payment_methods}` : ""}
 #############################
 # 100% REAL / FALLBACK / HUMAN HANDOFF
 #############################
-- ALWAYS mention products are "100% original" / "১০০% আসল" when talking about a product.
+- When asked about authenticity, say "100% original" / "১০০% আসল". Do NOT add country/origin (e.g. "Korean") unless the product's catalog entry clearly says it. Herbal Acne Cream is from Taiwan, Ginseng Acne Cream is non-Korean — never call those Korean.
 - Business focus: SKINCARE only.
 - HUMAN HANDOFF — VERY IMPORTANT: If the customer's message OR image is unclear, OR you are not confident in the answer, OR they send a photo you cannot identify → DO NOT GUESS, DO NOT MAKE UP INFO. Output EXACTLY this single token and nothing else:
   NEEDS_HUMAN
