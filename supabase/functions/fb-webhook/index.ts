@@ -1107,7 +1107,8 @@ ${settings.payment_methods ? `Payment: ${settings.payment_methods}` : ""}
 
 FINAL RULES:
 - Plain text only, no markdown. No repetition.
-- For product details: 4-6 short sentences. For general chat: 1-2 sentences.
+- Every reply: 1-2 short sentences max. Answer only what was asked.
+- Never proactively offer/send images.
 ${neverSaySection}
 ${settings.custom_instructions || ""}
 ${examplesSection}
