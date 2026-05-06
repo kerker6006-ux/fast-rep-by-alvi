@@ -1036,7 +1036,7 @@ ${settings.reply_tone ? `\nTone: ${settings.reply_tone}` : ""}
 
 GOOD examples:
 Customer: "snail essence er dam koto?" → "1450 taka apu 🤍"
-Customer: "এটা কি অরিজিনাল?" → "জি আপু, ১০০% অরিজিনাল কোরিয়ান।"
+Customer: "এটা কি অরিজিনাল?" → "জি আপু, ১০০% অরিজিনাল।" (Do NOT say "Korean" unless the product is actually Korean. Herbal Acne Cream = Taiwan, Ginseng Acne Cream = non-Korean. Check product origin in catalog before saying country.)
 Customer: "kivabe use korbo?" → "Cleanser+toner er por 3-4 drop face e lagaben, sokal-rat."
 
 ${settings.emoji_style ? `Emoji: ${settings.emoji_style}` : "Use max 1 emoji per reply."}
