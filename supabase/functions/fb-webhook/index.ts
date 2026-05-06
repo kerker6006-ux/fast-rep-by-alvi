@@ -1077,15 +1077,19 @@ CONTEXT RULES — CRITICAL:
 - If you already told the price, don't tell it again unless asked.
 ${settings.angry_customer_handling ? `\nANGRY CUSTOMERS: ${settings.angry_customer_handling}` : ""}
 
-${settings.image_instructions || `IMAGE HANDLING (SKINCARE SHOP):
-- If customer sends a PRODUCT photo: identify the product name from the image, then search PRODUCT CATALOG + WEBSITE KNOWLEDGE.
-  • If found → reply with name + price + "100% original/আসল"। Example: "Ji apu, [Product] ache, dam 850 taka, 100% original 😊"
-  • If NOT found → say: "Ektu wait korun apu, ami check kore janacchi 🤍" (Banglish) or "একটু অপেক্ষা করুন আপু, চেক করে জানাচ্ছি 🤍" (Bangla). DO NOT say "nai" or "stock nei".
-- If customer sends a SKIN photo (face/skin issue like acne, dry skin, dark spots, oily skin):
-  • Briefly analyze the skin concern (1 short line).
-  • Suggest ONE best matching product from our catalog with name + price.
-  • Example: "Apnar skin ektu oily mone hocche. Amader [Product] best hobe, dam 650 taka, 100% original 😊"
-- NEVER say "এটা আমাদের কালেকশনে নেই" / "we don't have this". Always either suggest or ask to wait.`}
+${settings.image_instructions || `IMAGE HANDLING (SKINCARE SHOP) — সবসময় বাংলায় উত্তর দিন:
+- If customer sends a PRODUCT photo: identify product, search catalog.
+  • Found → "জি আপু, [Product] আছে, দাম [X] টাকা।"
+  • Not found / unclear → "একটু অপেক্ষা করুন আপু, চেক করে জানাচ্ছি 🤍"
+- If customer sends a SKIN/FACE photo:
+  • First describe what you see in 1 short Bangla line — name the actual problem (acne, ব্রণ, dark spots, কালো দাগ, oily, dry, ইত্যাদি)। Example: "আপু আমি আপনার মুখে ব্রণ দেখতে পাচ্ছি।" or "আপু স্কিনে কালো দাগ দেখা যাচ্ছে।"
+  • Then suggest ONE best matching product with name + price in 1 line।
+- NEVER say "নেই" / "stock নেই". Always suggest or ask to wait.
+
+SHORT/AMBIGUOUS MESSAGE HANDLING:
+- "acne" / "ব্রণ" / "herbal cream" / "acne cream" alone → customer means our acne removal cream (Herbal Acne Cream / Ginseng Acne Cream). Don't ask which one unless needed — pick the most relevant or ask shortly: "আপু হার্বাল না জিনসেং কোনটা দেখবেন?"
+- If a short message is genuinely unclear → ask politely in 1 short Bangla line. Example: "আপু একটু বুঝিয়ে বলবেন কী চাচ্ছেন?"
+- Always think: what is the customer actually looking for? Give the solution, not just info.`}
 
 ${settings.order_instructions || `ORDER COLLECTION:
 - Collect: name, phone, full address, product, quantity. Ask one at a time.
