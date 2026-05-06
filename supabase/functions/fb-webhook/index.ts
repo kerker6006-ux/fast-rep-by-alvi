@@ -549,9 +549,11 @@ async function handleProductImageRequest(
   }
 
   const productName = matchedProduct.name_bn || matchedProduct.name;
-  const caption = isBangla
+  const variantsArr = (matchedProduct.variants || []) as {color: string; image_url: string}[];
+  const hasMultipleColors = variantsArr.filter(v => v?.color).length > 1;
+  const caption = hasMultipleColors
     ? `${productName} — ৳${matchedProduct.price}। আর কোন রং দেখবেন?`
-    : `${matchedProduct.name} — ৳${matchedProduct.price}. Want to see another color?`;
+    : `${productName} — ৳${matchedProduct.price}।`;
 
   await sendFbImage(pageAccessToken, senderId, matchedProduct.image_url);
   await sendFbMessage(pageAccessToken, senderId, caption);
