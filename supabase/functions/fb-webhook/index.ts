@@ -445,28 +445,8 @@ async function handleMessagingEvent(
         return;
       }
 
-      // Detect if AI reply mentions a specific product — send its image first (with variant color support)
-      let productQuery = supabase.from("products").select("name, name_bn, price, image_url, color, keywords, variants").eq("is_active", true);
-      if (userId) productQuery = productQuery.eq("user_id", userId);
-      const { data: allProducts } = await productQuery;
-
-      // Fetch recent conversation to detect color from full context
-      const { data: recentMsgsForColor } = await supabase
-        .from("messages").select("content, direction")
-        .eq("conversation_id", conversationId)
-        .order("created_at", { ascending: false }).limit(15);
-      const conversationContext = (recentMsgsForColor || [])
-        .filter((m: any) => m.direction === "incoming")
-        .map((m: any) => m.content || "").join(" ");
-
-      const { product: mentionedProduct, variantImage } = findMentionedProductWithVariant(
-        allProducts || [], replyText, messageText, conversationContext
-      );
-      const imageToSend = variantImage || mentionedProduct?.image_url;
-      if (imageToSend) {
-        await sendFbImage(pageAccessToken, senderId, imageToSend);
-        await saveOutgoingMessage(supabase, conversationId, `[${mentionedProduct.name}]`, imageToSend, userId);
-      }
+      // NOTE: Do NOT proactively send product images. Images are only sent when
+      // the customer explicitly asks for a picture (handled by handleProductImageRequest above).
 
       await sendFbMessage(pageAccessToken, senderId, replyText);
       await saveOutgoingMessage(supabase, conversationId, replyText, null, userId);
