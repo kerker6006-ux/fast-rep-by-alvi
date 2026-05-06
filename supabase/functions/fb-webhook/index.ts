@@ -445,28 +445,8 @@ async function handleMessagingEvent(
         return;
       }
 
-      // Detect if AI reply mentions a specific product — send its image first (with variant color support)
-      let productQuery = supabase.from("products").select("name, name_bn, price, image_url, color, keywords, variants").eq("is_active", true);
-      if (userId) productQuery = productQuery.eq("user_id", userId);
-      const { data: allProducts } = await productQuery;
-
-      // Fetch recent conversation to detect color from full context
-      const { data: recentMsgsForColor } = await supabase
-        .from("messages").select("content, direction")
-        .eq("conversation_id", conversationId)
-        .order("created_at", { ascending: false }).limit(15);
-      const conversationContext = (recentMsgsForColor || [])
-        .filter((m: any) => m.direction === "incoming")
-        .map((m: any) => m.content || "").join(" ");
-
-      const { product: mentionedProduct, variantImage } = findMentionedProductWithVariant(
-        allProducts || [], replyText, messageText, conversationContext
-      );
-      const imageToSend = variantImage || mentionedProduct?.image_url;
-      if (imageToSend) {
-        await sendFbImage(pageAccessToken, senderId, imageToSend);
-        await saveOutgoingMessage(supabase, conversationId, `[${mentionedProduct.name}]`, imageToSend, userId);
-      }
+      // NOTE: Do NOT proactively send product images. Images are only sent when
+      // the customer explicitly asks for a picture (handled by handleProductImageRequest above).
 
       await sendFbMessage(pageAccessToken, senderId, replyText);
       await saveOutgoingMessage(supabase, conversationId, replyText, null, userId);
@@ -1042,15 +1022,22 @@ ${settings.business_description ? `\nBusiness: ${settings.business_description}`
 ${settings.reply_tone ? `\nTone: ${settings.reply_tone}` : ""}
 
 #############################
-# REPLY LENGTH
+# REPLY STYLE — KEEP IT SIMPLE & DIRECT
 #############################
-- For general chat / greetings / simple Q&A: 1-2 sentences, direct and short.
-- For PRODUCT details (when customer asks about a specific product, sends a product photo, or sends a skin photo): give a RICH detailed reply — 4-6 short sentences covering: name + brand, key ingredients, skin type it suits, main benefits, how to use, size, price, and "100% original Korean".
-- Be informative but never spam. Plain text only — no markdown/bullets.
-- Do NOT flatter ("বাহ!", "চমৎকার!"). Just give the info.
+- Answer ONLY what the customer asked. Nothing extra.
+- If they ask PRICE → just say the price in 1 short line. Example: "Dam 1450 taka apu 🤍" or "১৪৫০ টাকা আপু 🤍"
+- If they ask "ache ki?" / "stock ache?" → just say yes/no with price. 1 line.
+- If they ask HOW TO USE → just tell how to use, briefly.
+- If they ask INGREDIENTS / BENEFITS → only then mention them, briefly.
+- DO NOT volunteer ingredients, benefits, "100% original", how-to-use, etc. unless they ask.
+- DO NOT dump full product details. Keep every reply 1-2 short sentences.
+- Plain text only — no markdown/bullets. No flattery ("বাহ!", "চমৎকার!").
+- NEVER offer to send a picture. NEVER mention images. Only send a picture if customer explicitly asks ("pic dao", "chobi din", "photo").
 
-GOOD product reply example (Banglish):
-"COSRX Snail Mucin 96 Essence ache apu, dam 1450 taka. Ete 96% snail secretion ache jeta skin repair, hydration r acne scar fade kore. Sob skin type er jonno safe, sensitive skin eo cholbe. Cleanser+toner er por 3-4 drop niye face e lagaben. Size 100ml, 100% original Korean 🤍"
+GOOD examples:
+Customer: "snail essence er dam koto?" → "1450 taka apu 🤍"
+Customer: "এটা কি অরিজিনাল?" → "জি আপু, ১০০% অরিজিনাল কোরিয়ান।"
+Customer: "kivabe use korbo?" → "Cleanser+toner er por 3-4 drop face e lagaben, sokal-rat."
 
 ${settings.emoji_style ? `Emoji: ${settings.emoji_style}` : "Use max 1 emoji per reply."}
 
@@ -1120,7 +1107,8 @@ ${settings.payment_methods ? `Payment: ${settings.payment_methods}` : ""}
 
 FINAL RULES:
 - Plain text only, no markdown. No repetition.
-- For product details: 4-6 short sentences. For general chat: 1-2 sentences.
+- Every reply: 1-2 short sentences max. Answer only what was asked.
+- Never proactively offer/send images.
 ${neverSaySection}
 ${settings.custom_instructions || ""}
 ${examplesSection}
