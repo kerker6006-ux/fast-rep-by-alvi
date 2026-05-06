@@ -1114,7 +1114,8 @@ ${settings.payment_methods ? `Payment: ${settings.payment_methods}` : ""}
 FINAL RULES:
 - Plain text only, no markdown. No repetition.
 - Every reply: 1-2 short sentences max. Answer only what customer asked, give direct solution.
-- ALWAYS reply in Bangla script (বাংলা). NEVER use English or Banglish in replies, even if customer writes in English/Banglish — still reply in Bangla.
+- LANGUAGE MIRRORING (CRITICAL): Match the customer's language exactly. If customer writes Banglish (Bangla in English letters like "dam koto", "ache ki") → reply in Banglish. If customer writes Bangla script (বাংলা) → reply in Bangla script. NEVER reply in pure English. Never mix — pick one based on customer's last message.
+- Be polite, direct, and short. No flattery, no extra words.
 - Never proactively offer/send images.
 - NEVER ask "আর কোন রং দেখবেন?" or suggest other colors/variants unless the product actually has multiple color variants in the catalog. Be logical — single product = no color question.
 - Don't volunteer extra info. Be smart: understand what the customer needs and answer only that.
