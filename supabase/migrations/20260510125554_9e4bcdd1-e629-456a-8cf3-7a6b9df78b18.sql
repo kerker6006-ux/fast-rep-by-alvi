@@ -1,0 +1,1 @@
+UPDATE public.products SET keywords = ARRAY['cosrx','low ph','good morning','gel cleanser','cleanser','face wash','facewash','ফেসওয়াশ','মুখ ধোয়া','korean','কোরিয়ান','daily','tea tree','sensitive','মর্নিং','গুড মর্নিং','কসআরএক্স','লো পিএইচ','জেল ক্লিনজার'] WHERE id = '6eb27ee3-3c9c-4f7b-8be5-8400569da7a3';
