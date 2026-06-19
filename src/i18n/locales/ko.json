@@ -45,7 +45,7 @@
       "searchPlaceholder": "이름이나 사용자 ID로 검색…",
       "unnamed": "이름 없는 사용자", "suspended": "정지됨", "joined": "가입일", "balance": "잔액",
       "addCredits": "크레딧 추가", "removeCredits": "크레딧 차감",
-      "amount": "금액 (৳)", "notePlaceholder": "사유 / 메모 (예: bKash 거래ID)",
+      "amount": "금액 ($)", "notePlaceholder": "사유 / 메모 (예: 거래 참조)",
       "suspend": "정지", "unsuspend": "정지 해제",
       "creditsUpdated": "크레딧이 업데이트되었습니다", "updated": "사용자 업데이트됨", "deleted": "사용자 삭제됨",
       "deleteConfirmTitle": "이 사용자를 영구 삭제하시겠습니까?",
@@ -64,9 +64,9 @@
     },
     "pricing": {
       "title": "가격 및 플랜", "subtitle": "모든 봇 응답에 적용되는 글로벌 요율.",
-      "textCost": "텍스트 응답당 비용 (৳)", "textCostHint": "봇이 텍스트 메시지를 보낼 때 차감됩니다.",
-      "imageCost": "이미지 응답당 비용 (৳)", "imageCostHint": "봇이 상품 이미지를 능동적으로 보낼 때 차감됩니다.",
-      "signupBonus": "가입 보너스 (৳)", "signupBonusHint": "새 사용자에게 자동으로 부여되는 크레딧.",
+      "textCost": "텍스트 응답당 비용 ($)", "textCostHint": "봇이 텍스트 메시지를 보낼 때 차감됩니다.",
+      "imageCost": "이미지 응답당 비용 ($)", "imageCostHint": "봇이 상품 이미지를 능동적으로 보낼 때 차감됩니다.",
+      "signupBonus": "가입 보너스 ($)", "signupBonusHint": "새 사용자에게 자동으로 부여되는 크레딧.",
       "save": "가격 저장", "saved": "가격이 저장되었습니다"
     },
     "fbPages": { "title": "모든 Facebook 페이지", "subtitle": "모든 사용자가 연결한 페이지.", "empty": "아직 연결된 페이지가 없습니다." },
@@ -76,7 +76,7 @@
       "bodyField": "내용", "bodyPlaceholder": "오늘 밤 11시에 시스템을 업그레이드합니다…",
       "send": "공지 전송", "sent": "공지가 전송되었습니다"
     },
-    "analytics": { "title": "심층 분석", "subtitle": "AI 비용 및 사용 패턴.", "topSpenders": "AI 지출 상위 사용자 10명 (৳)" },
+    "analytics": { "title": "심층 분석", "subtitle": "AI 비용 및 사용 패턴.", "topSpenders": "AI 지출 상위 사용자 10명 ($)" },
     "settings": { "title": "관리자 설정", "subtitle": "관리자 계정.", "adminAccount": "관리자 계정" }
   }
 }

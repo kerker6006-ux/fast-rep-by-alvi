@@ -131,7 +131,7 @@ const PendingProducts = () => {
                       <Input value={editForm.ai_name || ""} onChange={e => setEditForm(f => ({ ...f, ai_name: e.target.value }))} className="h-8 text-sm" />
                     </div>
                     <div>
-                      <Label className="text-xs">Name (বাংলা)</Label>
+                      <Label className="text-xs">Name (alternate language)</Label>
                       <Input value={editForm.ai_name_bn || ""} onChange={e => setEditForm(f => ({ ...f, ai_name_bn: e.target.value }))} className="h-8 text-sm" />
                     </div>
                     <div>
@@ -143,7 +143,7 @@ const PendingProducts = () => {
                       <Input value={editForm.ai_color || ""} onChange={e => setEditForm(f => ({ ...f, ai_color: e.target.value }))} className="h-8 text-sm" />
                     </div>
                     <div>
-                      <Label className="text-xs">Price (৳)</Label>
+                      <Label className="text-xs">Price ($)</Label>
                       <Input type="number" value={editForm.ai_price || 0} onChange={e => setEditForm(f => ({ ...f, ai_price: Number(e.target.value) }))} className="h-8 text-sm" />
                     </div>
                     <div>
@@ -161,7 +161,7 @@ const PendingProducts = () => {
                       {item.ai_category && <Badge variant="outline" className="text-[10px]">{item.ai_category}</Badge>}
                       {item.ai_color && <Badge variant="outline" className="text-[10px]">🎨 {item.ai_color}</Badge>}
                       {item.ai_material && <Badge variant="outline" className="text-[10px]">{item.ai_material}</Badge>}
-                      <Badge variant="secondary" className="text-[10px]">৳{item.ai_price || 0}</Badge>
+                      <Badge variant="secondary" className="text-[10px]">${item.ai_price || 0}</Badge>
                     </div>
                     {item.post_caption && <p className="text-xs text-muted-foreground line-clamp-2">📝 {item.post_caption}</p>}
                     {item.ai_description && <p className="text-xs text-muted-foreground line-clamp-1">{item.ai_description}</p>}

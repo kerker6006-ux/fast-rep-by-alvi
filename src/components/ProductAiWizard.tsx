@@ -277,7 +277,7 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
             {pendingData.product && (
               <div className="text-xs space-y-0.5 text-foreground">
                 <p><strong>{pendingData.product.name}</strong> {pendingData.product.name_bn && `(${pendingData.product.name_bn})`}</p>
-                <p>৳{pendingData.product.price} • {pendingData.product.category} • {pendingData.product.color}</p>
+                <p>${pendingData.product.price} • {pendingData.product.category} • {pendingData.product.color}</p>
                 {pendingData.product.material && <p>Material: {pendingData.product.material}</p>}
               </div>
             )}

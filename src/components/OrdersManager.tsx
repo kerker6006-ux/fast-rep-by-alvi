@@ -116,7 +116,7 @@ const OrdersManager = () => {
   const exportCSV = () => {
     const data = filteredOrders || [];
     if (!data.length) { toast.error("No orders to export"); return; }
-    const headers = ["Order ID", "Customer Name", "Phone", "Address", "Status", "Total (৳)", "Items", "Notes", "Date"];
+    const headers = ["Order ID", "Customer Name", "Phone", "Address", "Status", "Total ($)", "Items", "Notes", "Date"];
     const rows = data.map((o: any) => [
       o.id.slice(0, 8),
       o.customer_name || o.conversations?.sender_name || "",
@@ -266,7 +266,7 @@ const OrdersManager = () => {
                       )}
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-sm font-bold">৳{Number(order.total).toLocaleString()}</p>
+                      <p className="text-sm font-bold">${Number(order.total).toLocaleString()}</p>
                       <p className="text-[10px] text-muted-foreground">#{order.id.slice(0, 6)}</p>
                     </div>
                   </div>
@@ -345,12 +345,12 @@ const OrdersManager = () => {
                     {selectedOrder.items.map((item: any, i: number) => (
                       <div key={i} className="flex justify-between text-sm py-1.5 border-b border-border/50 last:border-0">
                         <span>{item.name} <span className="text-muted-foreground">× {item.quantity}</span></span>
-                        <span className="font-medium">৳{(item.price * item.quantity).toLocaleString()}</span>
+                        <span className="font-medium">${(item.price * item.quantity).toLocaleString()}</span>
                       </div>
                     ))}
                     <div className="border-t-2 border-border mt-2 pt-2 flex justify-between font-bold">
                       <span>Total</span>
-                      <span className="text-primary">৳{Number(selectedOrder.total).toLocaleString()}</span>
+                      <span className="text-primary">${Number(selectedOrder.total).toLocaleString()}</span>
                     </div>
                   </div>
                 )}
@@ -397,7 +397,7 @@ const OrdersManager = () => {
                 <Input value={editingOrder.customer_address || ""} onChange={(e) => setEditingOrder({ ...editingOrder, customer_address: e.target.value })} />
               </div>
               <div>
-                <label className="text-sm font-medium">Total (৳)</label>
+                <label className="text-sm font-medium">Total ($)</label>
                 <Input type="number" value={editingOrder.total || 0} onChange={(e) => setEditingOrder({ ...editingOrder, total: Number(e.target.value) })} />
               </div>
               <div>

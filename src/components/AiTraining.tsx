@@ -480,7 +480,7 @@ const AiTraining = () => {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Payment Methods</Label>
-                <Input value={settings.payment_methods || ""} onChange={(e) => update("payment_methods", e.target.value)} placeholder="bKash, Nagad, COD" className="h-8 text-sm" />
+                <Input value={settings.payment_methods || ""} onChange={(e) => update("payment_methods", e.target.value)} placeholder="Cash on Delivery, Card, Bank Transfer…" className="h-8 text-sm" />
               </div>
             </CardContent>
           </Card>
@@ -598,17 +598,11 @@ const AiTraining = () => {
                 </p>
                 <div className="grid gap-1.5">
                   {[
-                    { q: "ডেলিভারি চার্জ কত?", a: settings.delivery_info || "ঢাকায় ৬০ টাকা, ঢাকার বাইরে ১২০ টাকা।" },
-                    { q: "How much is delivery?", a: settings.delivery_info || "60 TK inside Dhaka, 120 TK outside." },
-                    { q: "পেমেন্ট কিভাবে করব?", a: settings.payment_methods || "bKash, Nagad অথবা ক্যাশ অন ডেলিভারি।" },
-                    { q: "How can I pay?", a: settings.payment_methods || "bKash, Nagad, or Cash on Delivery." },
-                    { q: "ডেলিভারি কতদিন লাগে?", a: "ঢাকায় ১-২ দিন, ঢাকার বাইরে ২-৩ দিন।" },
-                    { q: "How long is delivery?", a: "1-2 days in Dhaka, 2-3 days outside." },
-                    { q: "রিটার্ন/এক্সচেঞ্জ পলিসি কী?", a: "পণ্য পাওয়ার ৩ দিনের মধ্যে রিটার্ন/এক্সচেঞ্জ করা যাবে।" },
-                    { q: "Do you have return policy?", a: "Yes, return/exchange within 3 days of receiving the product." },
-                    { q: "অর্ডার কিভাবে করব?", a: "আপনার নাম, ফোন নম্বর এবং ঠিকানা দিন, আমরা অর্ডার কনফার্ম করে দিব।" },
-                    { q: "How to order?", a: "Send your name, phone and address. We'll confirm your order." },
-                    { q: "COD আছে?", a: "জি, ক্যাশ অন ডেলিভারি সুবিধা আছে।" },
+                    { q: "How much is delivery?", a: settings.delivery_info || "Standard delivery rates apply." },
+                    { q: "How can I pay?", a: settings.payment_methods || "Cash on Delivery and other methods accepted." },
+                    { q: "How long is delivery?", a: "Usually 1-3 business days." },
+                    { q: "Do you have a return policy?", a: "Yes, return/exchange within 3 days of receiving the product." },
+                    { q: "How do I order?", a: "Send your name, phone and address. We'll confirm your order." },
                     { q: "Is COD available?", a: "Yes, Cash on Delivery is available." },
                   ]
                     .filter((s) => !faqList.some((f: any) => f.q === s.q))
@@ -680,12 +674,12 @@ const AiTraining = () => {
               {settings.comment_auto_reply === "true" && (
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label className="text-xs">Reply (বাংলা)</Label>
-                    <Input value={settings.comment_reply_text || ""} onChange={(e) => update("comment_reply_text", e.target.value)} placeholder="ইনবক্স করুন 📩" className="h-8 text-sm" />
+                    <Label className="text-xs">Reply (primary)</Label>
+                    <Input value={settings.comment_reply_text_en || ""} onChange={(e) => update("comment_reply_text_en", e.target.value)} placeholder="Please inbox us 📩" className="h-8 text-sm" />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Reply (English)</Label>
-                    <Input value={settings.comment_reply_text_en || ""} onChange={(e) => update("comment_reply_text_en", e.target.value)} placeholder="Please inbox us 📩" className="h-8 text-sm" />
+                    <Label className="text-xs">Reply (alternate language, optional)</Label>
+                    <Input value={settings.comment_reply_text || ""} onChange={(e) => update("comment_reply_text", e.target.value)} placeholder="Alternate language reply…" className="h-8 text-sm" />
                   </div>
                 </div>
               )}

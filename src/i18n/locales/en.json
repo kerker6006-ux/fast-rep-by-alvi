@@ -110,8 +110,8 @@
       "balance": "Balance",
       "addCredits": "Add Credits",
       "removeCredits": "Remove Credits",
-      "amount": "Amount (৳)",
-      "notePlaceholder": "Reason / note (e.g., bKash TrxID)",
+      "amount": "Amount ($)",
+      "notePlaceholder": "Reason / note (e.g., transaction reference)",
       "suspend": "Suspend",
       "unsuspend": "Unsuspend",
       "creditsUpdated": "Credits updated",
@@ -143,11 +143,11 @@
     "pricing": {
       "title": "Pricing & Plans",
       "subtitle": "Global rates applied to every bot reply.",
-      "textCost": "Cost per text reply (৳)",
+      "textCost": "Cost per text reply ($)",
       "textCostHint": "Charged when the bot sends a text-only message.",
-      "imageCost": "Cost per image reply (৳)",
+      "imageCost": "Cost per image reply ($)",
       "imageCostHint": "Charged when the bot proactively sends a product image.",
-      "signupBonus": "Signup bonus (৳)",
+      "signupBonus": "Signup bonus ($)",
       "signupBonusHint": "Credits automatically granted to every new user on signup.",
       "save": "Save pricing",
       "saved": "Pricing saved"
@@ -170,7 +170,7 @@
     "analytics": {
       "title": "Deep Analytics",
       "subtitle": "AI cost & usage patterns.",
-      "topSpenders": "Top 10 Users by AI Spend (৳)"
+      "topSpenders": "Top 10 Users by AI Spend ($)"
     },
     "settings": {
       "title": "Admin Settings",

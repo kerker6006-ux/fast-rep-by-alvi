@@ -47,7 +47,7 @@ const AdminRecharges = () => {
                     <td className="px-4 py-3 font-mono text-xs truncate max-w-[160px]">{tx.user_id}</td>
                     <td className="px-4 py-3"><Badge variant="outline">{tx.type}</Badge></td>
                     <td className={`px-4 py-3 text-right font-semibold ${tx.amount >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                      {tx.amount >= 0 ? "+" : ""}৳{Number(tx.amount).toLocaleString()}
+                      {tx.amount >= 0 ? "+" : ""}${Number(tx.amount).toLocaleString()}
                     </td>
                     <td className="px-4 py-3 text-slate-600 text-xs">{tx.description || "—"}</td>
                   </tr>
