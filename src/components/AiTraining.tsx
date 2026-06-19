@@ -512,8 +512,8 @@ const AiTraining = () => {
           {/* FAQ */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">FAQ</CardTitle>
-              <CardDescription className="text-xs">Add common questions customers ask. Use suggestions below to get started quickly.</CardDescription>
+              <CardTitle className="text-sm">{t("aiTraining.faq")}</CardTitle>
+              <CardDescription className="text-xs">{t("aiTraining.faqDesc")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {faqList.length > 0 && (
@@ -532,10 +532,10 @@ const AiTraining = () => {
                 </div>
               )}
               <div className="space-y-2 border border-dashed rounded-md p-3">
-                <Input value={faqQuestion} onChange={(e) => setFaqQuestion(e.target.value)} placeholder="Customer question..." className="h-8 text-sm" />
-                <Input value={faqAnswer} onChange={(e) => setFaqAnswer(e.target.value)} placeholder="Your answer..." className="h-8 text-sm" />
+                <Input value={faqQuestion} onChange={(e) => setFaqQuestion(e.target.value)} placeholder={t("aiTraining.questionPh")} className="h-8 text-sm" />
+                <Input value={faqAnswer} onChange={(e) => setFaqAnswer(e.target.value)} placeholder={t("aiTraining.answerPh")} className="h-8 text-sm" />
                 <Button size="sm" variant="outline" onClick={addFaq} className="h-7 text-xs gap-1">
-                  <Plus className="h-3 w-3" /> Add
+                  <Plus className="h-3 w-3" /> {t("common.add")}
                 </Button>
               </div>
 
@@ -543,11 +543,11 @@ const AiTraining = () => {
               <div className="space-y-2 pt-2 border-t">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                    <Wand2 className="h-3 w-3" /> AI Suggestions from Real Chats
+                    <Wand2 className="h-3 w-3" /> {t("aiTraining.aiSuggestions")}
                   </p>
                   <Button size="sm" variant="outline" onClick={generateFaqFromChats} disabled={isLoadingFaqSuggestions} className="h-7 text-xs gap-1">
                     {isLoadingFaqSuggestions ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                    {isLoadingFaqSuggestions ? "Analyzing..." : "Suggest from Chats"}
+                    {isLoadingFaqSuggestions ? t("aiTraining.analyzing") : t("aiTraining.suggestFromChats")}
                   </Button>
                 </div>
               {aiSuggestedFaqs.length > 0 && (
@@ -555,8 +555,8 @@ const AiTraining = () => {
                     {aiSuggestedFaqs.map((s, i) => (
                       editingSuggestionIdx === i ? (
                         <div key={`ai-edit-${i}`} className="bg-primary/5 border border-primary/20 rounded-lg p-3 space-y-2">
-                          <Input value={editingSuggestion.q} onChange={e => setEditingSuggestion(p => ({...p, q: e.target.value}))} placeholder="Question..." className="h-8 text-sm" />
-                          <Input value={editingSuggestion.a} onChange={e => setEditingSuggestion(p => ({...p, a: e.target.value}))} placeholder="Answer..." className="h-8 text-sm" />
+                          <Input value={editingSuggestion.q} onChange={e => setEditingSuggestion(p => ({...p, q: e.target.value}))} placeholder={t("aiTraining.questionPh")} className="h-8 text-sm" />
+                          <Input value={editingSuggestion.a} onChange={e => setEditingSuggestion(p => ({...p, a: e.target.value}))} placeholder={t("aiTraining.answerPh")} className="h-8 text-sm" />
                           <div className="flex gap-2">
                             <Button size="sm" className="h-7 text-xs gap-1" onClick={() => {
                               const existing = parseSettingsJson<{ q: string; a: string }[]>(settings.faq_list, []);
@@ -564,11 +564,11 @@ const AiTraining = () => {
                               update("faq_list", JSON.stringify(existing));
                               setAiSuggestedFaqs(prev => prev.filter((_, idx) => idx !== i));
                               setEditingSuggestionIdx(null);
-                              toast.success("Added!");
+                              toast.success(t("aiTraining.addedToast"));
                             }} disabled={!editingSuggestion.q.trim() || !editingSuggestion.a.trim()}>
-                              <Plus className="h-3 w-3" /> Add
+                              <Plus className="h-3 w-3" /> {t("common.add")}
                             </Button>
-                            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingSuggestionIdx(null)}>Cancel</Button>
+                            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingSuggestionIdx(null)}>{t("common.cancel")}</Button>
                           </div>
                         </div>
                       ) : (
@@ -578,7 +578,7 @@ const AiTraining = () => {
                             existing.push({ q: s.q, a: s.a });
                             update("faq_list", JSON.stringify(existing));
                             setAiSuggestedFaqs(prev => prev.filter((_, idx) => idx !== i));
-                            toast.success("Added!");
+                            toast.success(t("aiTraining.addedToast"));
                           }} className="h-6 w-6 rounded-full bg-primary/15 flex items-center justify-center shrink-0 group-hover:bg-primary/25 transition-colors">
                             <Plus className="h-3 w-3 text-primary" />
                           </button>
@@ -586,7 +586,7 @@ const AiTraining = () => {
                             <p className="text-xs font-medium">{s.q}</p>
                             <p className="text-[10px] text-muted-foreground">{s.a}</p>
                           </div>
-                          <button onClick={() => { setEditingSuggestionIdx(i); setEditingSuggestion({q: s.q, a: s.a}); }} className="h-6 w-6 rounded-full bg-muted flex items-center justify-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" title="Edit before adding">
+                          <button onClick={() => { setEditingSuggestionIdx(i); setEditingSuggestion({q: s.q, a: s.a}); }} className="h-6 w-6 rounded-full bg-muted flex items-center justify-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" title={t("common.edit")}>
                             <Pencil className="h-3 w-3 text-muted-foreground" />
                           </button>
                         </div>
@@ -599,16 +599,14 @@ const AiTraining = () => {
               {/* Quick Add — Common Questions */}
               <div className="space-y-2 pt-2 border-t">
                 <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                  <Sparkles className="h-3 w-3" /> Quick Add — Common Questions
+                  <Sparkles className="h-3 w-3" /> {t("aiTraining.quickAdd")}
                 </p>
                 <div className="grid gap-1.5">
                   {[
-                    { q: "How much is delivery?", a: settings.delivery_info || "Standard delivery rates apply." },
-                    { q: "How can I pay?", a: settings.payment_methods || "Cash on Delivery and other methods accepted." },
-                    { q: "How long is delivery?", a: "Usually 1-3 business days." },
-                    { q: "Do you have a return policy?", a: "Yes, return/exchange within 3 days of receiving the product." },
-                    { q: "How do I order?", a: "Send your name, phone and address. We'll confirm your order." },
-                    { q: "Is COD available?", a: "Yes, Cash on Delivery is available." },
+                    { q: t("autoReply.deliveryInfo"), a: settings.delivery_info || t("autoReply.deliveryResp") },
+                    { q: t("autoReply.paymentMethods"), a: settings.payment_methods || t("autoReply.paymentResp") },
+                    { q: t("autoReply.returnPolicy"), a: t("autoReply.returnResp") },
+                    { q: t("autoReply.businessHours"), a: t("autoReply.hoursResp") },
                   ]
                     .filter((s) => !faqList.some((f: any) => f.q === s.q))
                     .map((s, i) => (
@@ -618,7 +616,7 @@ const AiTraining = () => {
                           const existing = parseSettingsJson<{ q: string; a: string }[]>(settings.faq_list, []);
                           existing.push({ q: s.q, a: s.a });
                           update("faq_list", JSON.stringify(existing));
-                          toast.success("Added!");
+                          toast.success(t("aiTraining.addedToast"));
                         }}
                         className="flex items-center gap-2 text-left bg-muted/30 hover:bg-muted/60 border border-transparent hover:border-primary/20 rounded-lg p-2 transition-all group"
                       >
@@ -639,7 +637,7 @@ const AiTraining = () => {
           {/* Never Say */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Never Say</CardTitle>
+              <CardTitle className="text-sm">{t("aiTraining.neverSay")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {neverSayList.length > 0 && (
@@ -655,7 +653,7 @@ const AiTraining = () => {
                 </div>
               )}
               <div className="flex gap-2">
-                <Input value={neverSayItem} onChange={(e) => setNeverSayItem(e.target.value)} placeholder="e.g. Don't mention competitors" className="h-8 text-sm" onKeyDown={(e) => e.key === "Enter" && addNeverSay()} />
+                <Input value={neverSayItem} onChange={(e) => setNeverSayItem(e.target.value)} placeholder={t("aiTraining.neverSayPh")} className="h-8 text-sm" onKeyDown={(e) => e.key === "Enter" && addNeverSay()} />
                 <Button size="sm" variant="outline" onClick={addNeverSay} className="h-8 text-xs shrink-0">
                   <Plus className="h-3 w-3" />
                 </Button>
@@ -666,11 +664,11 @@ const AiTraining = () => {
           {/* Comment Auto-Reply */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Comment Auto-Reply</CardTitle>
+              <CardTitle className="text-sm">{t("aiTraining.commentAutoReply")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-xs">Enable comment replies</Label>
+                <Label className="text-xs">{t("aiTraining.enableCommentReplies")}</Label>
                 <Switch
                   checked={settings.comment_auto_reply === "true"}
                   onCheckedChange={(v) => update("comment_auto_reply", v ? "true" : "false")}
@@ -679,12 +677,12 @@ const AiTraining = () => {
               {settings.comment_auto_reply === "true" && (
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label className="text-xs">Reply (primary)</Label>
-                    <Input value={settings.comment_reply_text_en || ""} onChange={(e) => update("comment_reply_text_en", e.target.value)} placeholder="Please inbox us 📩" className="h-8 text-sm" />
+                    <Label className="text-xs">{t("aiTraining.replyPrimary")}</Label>
+                    <Input value={settings.comment_reply_text_en || ""} onChange={(e) => update("comment_reply_text_en", e.target.value)} placeholder={t("aiTraining.replyPrimaryPh")} className="h-8 text-sm" />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Reply (alternate language, optional)</Label>
-                    <Input value={settings.comment_reply_text || ""} onChange={(e) => update("comment_reply_text", e.target.value)} placeholder="Alternate language reply…" className="h-8 text-sm" />
+                    <Label className="text-xs">{t("aiTraining.replyAlt")}</Label>
+                    <Input value={settings.comment_reply_text || ""} onChange={(e) => update("comment_reply_text", e.target.value)} placeholder={t("aiTraining.replyAltPh")} className="h-8 text-sm" />
                   </div>
                 </div>
               )}
@@ -695,7 +693,7 @@ const AiTraining = () => {
           {hasChanges && (
             <Button onClick={() => saveMutation.mutate(settings)} disabled={saveMutation.isPending} className="w-full gap-2">
               <Save className="h-4 w-4" />
-              {saveMutation.isPending ? "Saving..." : "Save All Changes"}
+              {saveMutation.isPending ? t("aiTraining.saving") : t("aiTraining.saveAll")}
             </Button>
           )}
         </TabsContent>
