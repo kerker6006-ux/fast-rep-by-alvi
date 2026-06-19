@@ -1,60 +1,84 @@
-## Goal
-1. Fix the **Cost Breakdown** numbers shown in AI Usage screen.
-2. Make the **language switcher actually translate every word** on the site — currently English has ~181 lines of translations but Korean / Spanish / Bangla only have ~82 lines, and many components still ship hardcoded English strings. Result: switching to Korean leaves most of the UI in English.
+# Fast Rep → AI Receptionist Platform
 
----
+Extend the existing app. Keep all current Facebook, Gemini, products, orders, conversations, credits, admin, and dashboard code working. Add a business category layer on top.
 
-## Part 1 — Cost Breakdown fix (`src/components/AiUsageDashboard.tsx`)
+## 1. Business categories
 
-Replace the static numbers so they match the real billing rates from `bot_settings` (the same rates Credits page already reads):
+Four fixed categories: `ecommerce`, `dental`, `hvac`, `salon`.
 
-| Row | Before | After |
-|---|---|---|
-| Text message (AI reply) | `~$0.0005 / call` | `$0.003 / message` |
-| Image analysis | `~$0.003 / call` | `$0.015 / image` |
-| Order detection | `~$0.0002 / call` | **Free** (no separate AI call — piggybacks on the reply) |
-| Auto-reply (keyword match) | Free | Free (unchanged) |
+- Add `business_category` enum + column on `profiles` (nullable; null = not yet onboarded).
+- After signup, if `business_category` is null, route the user to an **Onboarding** step that shows 4 large cards (E-commerce / Dental Clinic / HVAC & Home Services / Beauty Salon & Med Spa) with a one-line description each.
+- Add a "Business Category" selector in **Bot Settings** so they can change it later.
+- Sidebar adapts: e-commerce keeps "Products"; the 3 service verticals show "Services" instead. "Orders" becomes "Leads" for non-ecommerce.
 
-Pull `credit_cost_text` / `credit_cost_image` from `bot_settings` so if the admin changes pricing later, this card updates automatically (same pattern `CreditDashboard.tsx` already uses).
+## 2. Services + leads data model
 
----
+New tables (per-user, RLS scoped to `auth.uid()`):
 
-## Part 2 — Full multi-language coverage
+- `services` — `user_id`, `category`, `name`, `description`, `price_text`, `duration_text`, `service_area` (hvac), `faqs jsonb`, `image_url?`, `active`.
+- `leads` — `user_id`, `category`, `name`, `phone`, `address?`, `service_or_product`, `preferred_date?`, `source` (facebook/instagram/manual), `conversation_id?`, `notes`, `status` (new/contacted/booked/closed), `created_at`.
 
-### Audit findings
-- `en.json` has full keys for nav, analytics, admin, auth, etc.
-- `bn.json` / `ko.json` / `es.json` are **less than half the size** — missing whole sections (auth, analytics, common, fb, settings, app).
-- Many components render **hardcoded English** instead of `t("…")` — e.g. CreditDashboard ("Credits & Billing", "Recharge Your Account", "How the AI Bot Works"), AiUsageDashboard ("Cost Breakdown", "AI Usage"), AiTraining ("Welcome Message", "FAQ", "Never Say", "Comment Auto-Reply", "Payment Methods", "Reply Tone", "Delivery Info"), AutoReplyRules ("Auto-Reply Rules", templates, dialog labels), BotSettings, OrdersManager, ProductsManager, ProductAiWizard, PendingProducts, ScheduledMessages, ComplaintsManager, ConversationsView, FbPageConnection, DashboardSidebar (some labels), Auth page, Index page, NotFound, etc.
+Reuse existing `products` table for e-commerce. Reuse existing `conversations`/`messages`.
 
-### Work
+GRANTs + RLS per project standards.
 
-**A. Expand the 3 non-English locales to full parity with `en.json`**
-- Mirror every key from `en.json` into `bn.json`, `ko.json`, `es.json`.
-- Translate **everything** into the target language — no English left, no language mixing (per the existing Core rule).
+## 3. Category-specific setup pages
 
-**B. Add the missing translation keys to `en.json` for everything currently hardcoded**
-New sections to add (key names indicative):
-- `credits.*` — title, balance, costPerMessage, textReply, imageReply, orderDetection, autoReplyKeyword, free, what10cGets, recharge.*, howBotWorks.*, transactionHistory, txTypes.*
-- `aiUsage.*` — title, costBreakdown, todayUsage, last7Days, perCall, etc.
-- `aiTraining.*` — businessProfile, replyTone, deliveryInfo, paymentMethods, welcomeMessage, outOfStockMessage, faq.*, neverSay.*, commentAutoReply.*, suggestions.*, save, etc.
-- `autoReply.*` — title, subtitle, addRule, templates.*, dialog.*, priority, alternateLanguage, etc.
-- `botSettings.*`, `orders.*`, `products.*` (form fields, preview, variants), `pendingProducts.*`, `productWizard.*`, `scheduled.*`, `complaints.*`, `chats.*`, `fbPages.*`, `sidebar.*`, `auth.*` extras, `notFound.*`, `landing.*`.
+One Settings shell, swaps body by category:
 
-**C. Replace hardcoded strings in components with `t("…")` calls**
-Files to refactor:
-- `AiUsageDashboard.tsx`, `CreditDashboard.tsx`, `AiTraining.tsx`, `AutoReplyRules.tsx`, `BotSettings.tsx`, `OrdersManager.tsx`, `ProductsManager.tsx`, `PendingProducts.tsx`, `ProductAiWizard.tsx`, `ProductSuggestions.tsx`, `ScheduledMessages.tsx`, `ComplaintsManager.tsx`, `ConversationsView.tsx`, `FbPageConnection.tsx`, `FbPageAiAnalyzer.tsx`, `FbPostsBrowser.tsx`, `WebsiteImport.tsx`, `AnalyticsDashboard.tsx`, `DashboardSidebar.tsx`, admin pages, `Auth.tsx`, `Index.tsx`, `NotFound.tsx`.
-- Toast messages (`toast.success("…")`) get `t()` too.
-- Inline placeholders, dialog titles, button labels, empty states, badge labels — all of it.
+- **E-commerce** → existing Products manager + new fields surfaced (delivery info, return policy, FAQs stored on `profiles.business_info jsonb`). AI collects: Name, Phone, Product interested in.
+- **Dental** → Services manager with preset templates (Implant, Braces, Whitening, Root Canal, Cleaning, Veneers). Fields: name, description, price range, duration, FAQs. AI collects: Patient Name, Phone, Service, Preferred date.
+- **HVAC** → Services manager with presets (AC Repair/Install, Plumbing, Electrical, Cleaning, Roofing). Fields: name, description, price info, service area. AI collects: Name, Phone, Address, Service, Preferred visit date.
+- **Salon / Med Spa** → Services manager with presets (Hair, Facial, Skin, Botox, Fillers, Laser). Fields: name, description, price, duration. AI collects: Name, Phone, Service, Appointment date.
 
-**D. Keep these as-is (correct behavior)**
-- Currency symbol stays `$` everywhere.
-- Bot persona/AI reply text in `supabase/functions/fb-webhook` keeps its Bangla logic (that's the bot replying to customers, not UI).
-- Language switcher names stay native (`English`, `한국어`, `বাংলা`, `Español`).
+Preset buttons just seed rows the user can edit/delete.
 
-### Verification
-After implementation, switch the UI to Korean and walk the whole app — sidebar, dashboard, credits, AI training (all cards, all suggestions), auto-reply rules + templates, products, orders, settings, admin. Nothing should remain in English. Repeat for Spanish and Bangla.
+## 4. AI knowledge base + lead capture
 
----
+Update `fb-webhook` + `ai-training-chat` prompt builder:
 
-## Scope notes
-This is a large refactor — roughly 20+ component files touched and ~300 new translation keys × 4 languages. No business logic, schema, or edge function changes. UI text only.
+- Load `profiles.business_category`, `profiles.business_info`, and either `products` (ecommerce) or `services` (others) for that user.
+- System prompt switches per category, framing the bot as an **AI Receptionist** whose job is to (a) answer from the knowledge base only — no hallucination, say "let me check with the team" if unknown — and (b) capture the required lead fields for that category.
+- Reuse existing order-extraction pattern to extract lead fields after enough info is gathered, then insert into `leads` (ecommerce still also creates `orders` as today).
+- Auto-reply rules and FAQ matching keep working unchanged.
+
+## 5. Leads UI
+
+New "Leads" page (sidebar item, shown for all categories — ecommerce sees it alongside Orders):
+
+- Table: Name, Phone, Category, Service/Product, Source, Date, Status.
+- Row click → drawer with full conversation transcript + notes + status dropdown.
+- Filters: category, status, source, date.
+- CSV export.
+
+## 6. Marketing / wording pass
+
+Replace "chatbot" / "auto-reply bot" wording with **AI Receptionist** / **AI Lead Conversion Assistant** / **AI Appointment Assistant** across:
+
+- Landing/Index hero + features
+- Auth page tagline
+- Sidebar header
+- Bot Settings intro
+- All 4 locale files (en/ko/es/bn) — keys updated, all 4 languages translated to stay consistent with the strict-i18n rule.
+
+Bot persona internals (short, plain, 1 emoji max) stay as-is.
+
+## 7. Out of scope (not touched)
+
+Billing rates, credits, Stripe, Facebook OAuth, webhook dedupe, admin panel, image generation pipeline, currency symbols.
+
+## Technical notes
+
+- Migration order per project rules: CREATE TABLE → GRANT (authenticated + service_role) → ENABLE RLS → POLICY.
+- Enum: `CREATE TYPE business_category AS ENUM ('ecommerce','dental','hvac','salon');`
+- `profiles.business_info jsonb` holds delivery info, return policy, hours, address, generic FAQs.
+- Edge functions read category once per request and branch prompt + extraction schema.
+- No schema changes to `products`, `orders`, `conversations`, `messages`.
+- i18n: every new string added to all four locale files in the same change.
+
+## Verification
+
+- Create a fresh account → onboarding shows 4 cards → pick Dental → sidebar shows Services + Leads, no Products.
+- Add 2 dental services → connect FB page → simulated inbound asks "how much are braces?" → bot answers from KB → after name+phone+date, a row appears in Leads.
+- Switch category in settings to HVAC → Services list swaps, prior dental services preserved but hidden (filtered by category).
+- Switch UI language to Korean → all new strings localized, no English leakage.
