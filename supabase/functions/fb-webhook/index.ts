@@ -53,7 +53,43 @@ serve(async (req) => {
   // Facebook sends POST with messages
   if (req.method === "POST") {
     try {
-      const body = await req.json();
+      const rawBody = await req.text();
+
+      // ===== Verify X-Hub-Signature-256 against FB_APP_SECRET =====
+      const FB_APP_SECRET = Deno.env.get("FB_APP_SECRET");
+      if (FB_APP_SECRET) {
+        const sigHeader = req.headers.get("x-hub-signature-256") || "";
+        const expectedPrefix = "sha256=";
+        if (!sigHeader.startsWith(expectedPrefix)) {
+          console.warn("Webhook rejected: missing x-hub-signature-256");
+          return new Response("Forbidden", { status: 403, headers: corsHeaders });
+        }
+        const provided = sigHeader.slice(expectedPrefix.length);
+        const key = await crypto.subtle.importKey(
+          "raw",
+          new TextEncoder().encode(FB_APP_SECRET),
+          { name: "HMAC", hash: "SHA-256" },
+          false,
+          ["sign"],
+        );
+        const sigBytes = new Uint8Array(
+          await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(rawBody)),
+        );
+        const computed = Array.from(sigBytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+        // constant-time compare
+        let ok = computed.length === provided.length;
+        for (let i = 0; i < computed.length && i < provided.length; i++) {
+          ok = ok && (computed.charCodeAt(i) === provided.charCodeAt(i));
+        }
+        if (!ok) {
+          console.warn("Webhook rejected: invalid x-hub-signature-256");
+          return new Response("Forbidden", { status: 403, headers: corsHeaders });
+        }
+      } else {
+        console.warn("FB_APP_SECRET not set — webhook signature verification skipped");
+      }
+
+      const body = JSON.parse(rawBody);
       console.log("Received webhook:", JSON.stringify(body).slice(0, 500));
 
       const isInstagram = body.object === "instagram";
