@@ -81,6 +81,16 @@ const AdminUsers = () => {
         .from("profiles")
         .select("id, display_name, created_at, suspended")
         .order("created_at", { ascending: false });
+
+      // Fetch emails via admin edge function
+      let emails: Record<string, string> = {};
+      try {
+        const { data: emailRes } = await supabase.functions.invoke("admin-list-users");
+        emails = emailRes?.emails ?? {};
+      } catch {
+        // non-fatal
+      }
+
       const enriched = await Promise.all((profiles ?? []).map(async (p: any) => {
         const [credits, products, orders, conversations, pages] = await Promise.all([
           supabase.from("user_credits").select("balance").eq("user_id", p.id).maybeSingle(),
@@ -91,6 +101,7 @@ const AdminUsers = () => {
         ]);
         return {
           ...p,
+          email: emails[p.id] ?? null,
           balance: Number(credits.data?.balance ?? 0),
           productCount: products.count ?? 0,
           orderCount: orders.count ?? 0,
