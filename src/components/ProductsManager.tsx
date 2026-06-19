@@ -501,7 +501,7 @@ const ProductsManager = () => {
                 </div>
                 <Button onClick={() => saveMutation.mutate()} disabled={!form.name || saveMutation.isPending} className="px-6 gap-2 shadow-md">
                   {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  {saveMutation.isPending ? "Saving..." : editingProduct ? "Update Product" : "Add Product"}
+                  {saveMutation.isPending ? t("common.saving") : editingProduct ? t("common.update") : t("products.addProduct")}
                 </Button>
               </div>
             </div>
