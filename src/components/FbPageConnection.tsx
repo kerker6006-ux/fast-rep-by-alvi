@@ -254,7 +254,7 @@ const FbPageConnection = () => {
           <div>
             <p className="font-medium mb-1">1. Settings → Basic → App Domains (add all of these)</p>
             <div className="space-y-1.5">
-              {[backendHost, frontendHost, "leadpilot.life"].filter(Boolean).map((d) => (
+              {[backendHost, "leadpilot.life", "www.leadpilot.life"].filter(Boolean).map((d) => (
                 <div key={d} className="flex items-center gap-2 bg-background rounded-md border px-3 py-2 font-mono text-xs">
                   <span className="flex-1 truncate">{d}</span>
                   <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => copyText(d, `dom-${d}`)}>
