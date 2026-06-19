@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBusinessCategory, BusinessCategory } from "@/hooks/useBusinessCategory";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +24,62 @@ import {
   parseSettingsJson,
   type SettingsMap,
 } from "@/lib/ai-training-settings";
+
+type CatField = { key: string; labelKey: string; phKey: string; type?: "text" | "textarea" };
+
+const CATEGORY_FIELDS: Record<BusinessCategory, CatField[]> = {
+  ecommerce: [
+    { key: "delivery_info", labelKey: "aiTraining.deliveryInfo", phKey: "aiTraining.deliveryInfoPh" },
+    { key: "payment_methods", labelKey: "aiTraining.paymentMethods", phKey: "aiTraining.paymentMethodsPh" },
+    { key: "return_policy", labelKey: "aiTraining.returnPolicy", phKey: "aiTraining.returnPolicyPh" },
+  ],
+  dental: [
+    { key: "operating_hours", labelKey: "aiTraining.operatingHours", phKey: "aiTraining.operatingHoursPh" },
+    { key: "business_address", labelKey: "aiTraining.address", phKey: "aiTraining.addressPh" },
+    { key: "insurance_accepted", labelKey: "aiTraining.insurance", phKey: "aiTraining.insurancePh" },
+    { key: "emergency_policy", labelKey: "aiTraining.emergencyPolicy", phKey: "aiTraining.emergencyPolicyPh", type: "textarea" },
+    { key: "cancellation_policy", labelKey: "aiTraining.cancellationPolicy", phKey: "aiTraining.cancellationPolicyPh", type: "textarea" },
+  ],
+  hvac: [
+    { key: "operating_hours", labelKey: "aiTraining.operatingHours", phKey: "aiTraining.operatingHoursPh" },
+    { key: "service_area_zips", labelKey: "aiTraining.serviceArea", phKey: "aiTraining.serviceAreaPh" },
+    { key: "emergency_policy", labelKey: "aiTraining.emergencyAvailability", phKey: "aiTraining.emergencyAvailabilityPh", type: "textarea" },
+    { key: "pricing_policy", labelKey: "aiTraining.pricingPolicy", phKey: "aiTraining.pricingPolicyPh", type: "textarea" },
+  ],
+  salon: [
+    { key: "operating_hours", labelKey: "aiTraining.operatingHours", phKey: "aiTraining.operatingHoursPh" },
+    { key: "business_address", labelKey: "aiTraining.address", phKey: "aiTraining.addressPh" },
+    { key: "cancellation_policy", labelKey: "aiTraining.cancellationPolicy", phKey: "aiTraining.cancellationPolicyPh", type: "textarea" },
+    { key: "deposit_policy", labelKey: "aiTraining.depositPolicy", phKey: "aiTraining.depositPolicyPh", type: "textarea" },
+  ],
+};
+
+const QUICK_ADD_BY_CAT: Record<BusinessCategory, { qKey: string; aKey: string }[]> = {
+  ecommerce: [
+    { qKey: "autoReply.deliveryInfo", aKey: "autoReply.deliveryResp" },
+    { qKey: "autoReply.paymentMethods", aKey: "autoReply.paymentResp" },
+    { qKey: "autoReply.returnPolicy", aKey: "autoReply.returnResp" },
+    { qKey: "autoReply.businessHours", aKey: "autoReply.hoursResp" },
+  ],
+  dental: [
+    { qKey: "aiTraining.qa.dental.hours", aKey: "aiTraining.qa.dental.hoursA" },
+    { qKey: "aiTraining.qa.dental.insurance", aKey: "aiTraining.qa.dental.insuranceA" },
+    { qKey: "aiTraining.qa.dental.emergency", aKey: "aiTraining.qa.dental.emergencyA" },
+    { qKey: "aiTraining.qa.dental.book", aKey: "aiTraining.qa.dental.bookA" },
+  ],
+  hvac: [
+    { qKey: "aiTraining.qa.hvac.area", aKey: "aiTraining.qa.hvac.areaA" },
+    { qKey: "aiTraining.qa.hvac.emergency", aKey: "aiTraining.qa.hvac.emergencyA" },
+    { qKey: "aiTraining.qa.hvac.estimate", aKey: "aiTraining.qa.hvac.estimateA" },
+    { qKey: "aiTraining.qa.hvac.hours", aKey: "aiTraining.qa.hvac.hoursA" },
+  ],
+  salon: [
+    { qKey: "aiTraining.qa.salon.book", aKey: "aiTraining.qa.salon.bookA" },
+    { qKey: "aiTraining.qa.salon.cancel", aKey: "aiTraining.qa.salon.cancelA" },
+    { qKey: "aiTraining.qa.salon.hours", aKey: "aiTraining.qa.salon.hoursA" },
+    { qKey: "aiTraining.qa.salon.deposit", aKey: "aiTraining.qa.salon.depositA" },
+  ],
+};
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
