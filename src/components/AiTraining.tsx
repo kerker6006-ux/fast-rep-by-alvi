@@ -344,10 +344,20 @@ const AiTraining = () => {
     }
   };
 
-  const resetChat = () => {
+  const resetChat = async () => {
     setChatMessages([]);
     setChatStarted(false);
+    if (user?.id) {
+      try {
+        await supabase
+          .from("bot_settings")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("setting_key", "ai_training_chat_history");
+      } catch { /* ignore */ }
+    }
   };
+
 
   // ---- Manual helpers ----
   const addFaq = () => {
