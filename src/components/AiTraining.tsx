@@ -81,6 +81,38 @@ const QUICK_ADD_BY_CAT: Record<BusinessCategory, { qKey: string; aKey: string }[
   ],
 };
 
+// Starter templates per niche — applied only to EMPTY fields (never overwrites edits).
+const PRESET_TEMPLATES: Record<BusinessCategory, SettingsMap> = {
+  ecommerce: {
+    delivery_info: "Inside Dhaka 60৳, outside Dhaka 120৳. Standard delivery 1–3 days.",
+    payment_methods: "Cash on Delivery, bKash, Nagad, Bank Transfer.",
+    return_policy: "7-day return for unused items in original packaging. Buyer pays return shipping.",
+    reply_tone: "Friendly, direct, helpful.",
+  },
+  dental: {
+    operating_hours: "Sun–Thu 10:00am – 8:00pm. Fri closed.",
+    business_address: "123 Main St, City",
+    insurance_accepted: "We accept Delta Dental, MetLife and Cigna. Please share your card at the visit.",
+    emergency_policy: "Same-day slots for acute pain or trauma — please call the front desk.",
+    cancellation_policy: "Free reschedule with 24h notice. Later cancellations may forfeit any deposit.",
+    reply_tone: "Warm, calm, professional.",
+  },
+  hvac: {
+    operating_hours: "Mon–Sat 8:00am – 7:00pm. 24/7 emergency line available.",
+    service_area_zips: "Dallas, TX and 25-mile radius. 75201, 75202, 75203…",
+    emergency_policy: "Same-day visits for no-heat, no-cool, gas smell or active leaks.",
+    pricing_policy: "Free phone estimates. On-site diagnostic $79, credited toward any repair.",
+    reply_tone: "Clear, confident, helpful.",
+  },
+  salon: {
+    operating_hours: "Tue–Sun 10:00am – 8:00pm. Mon closed.",
+    business_address: "123 Beauty Ave, City",
+    cancellation_policy: "24h notice required to reschedule. No-shows forfeit the deposit.",
+    deposit_policy: "20% deposit on color and longer services, refundable up to 48h before the visit.",
+    reply_tone: "Warm, polished, concierge-style.",
+  },
+};
+
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
 const AiTraining = () => {
@@ -175,6 +207,30 @@ const AiTraining = () => {
     setHasChanges(true);
   };
 
+  const loadStarterTemplate = async () => {
+    const preset = PRESET_TEMPLATES[cat];
+    let filled = 0;
+    const next: SettingsMap = { ...settings };
+    for (const [k, v] of Object.entries(preset)) {
+      if (!next[k] || !String(next[k]).trim()) {
+        next[k] = v;
+        filled++;
+      }
+    }
+    if (filled === 0) {
+      toast.info(t("aiTraining.templateAllSet"));
+      return;
+    }
+    setSettings(next);
+    setHasChanges(true);
+    try {
+      await persistSettings(next, t("aiTraining.templateLoaded", { count: filled }));
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save template");
+    }
+  };
+
+
   const faqList = parseSettingsJson<{ q: string; a: string }[]>(settings.faq_list, []);
   const neverSayList = parseSettingsJson<string[]>(settings.never_say_list, []);
 
@@ -188,6 +244,7 @@ const AiTraining = () => {
         body: {
           messages: [{ role: "user", content: "Hi, I want to set up my bot. Help me." }],
           settings,
+          category: cat,
         },
       });
       if (error) throw error;
@@ -214,7 +271,7 @@ const AiTraining = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke("ai-training-chat", {
-        body: { messages: newMessages, settings },
+        body: { messages: newMessages, settings, category: cat },
       });
       if (error) throw error;
       if (data.error) throw new Error(data.error);
@@ -235,7 +292,7 @@ const AiTraining = () => {
     setIsGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke("ai-training-chat", {
-        body: { messages: chatMessages, action: "generate_settings", settings },
+        body: { messages: chatMessages, action: "generate_settings", settings, category: cat },
       });
       if (error) throw error;
       if (data.error) throw new Error(data.error);
@@ -318,8 +375,10 @@ const AiTraining = () => {
           messages: [{ role: "user", content: `Analyze these real customer messages and suggest 8-10 FAQ entries (question + answer pairs). Focus on the MOST COMMON questions customers ask. Return JSON array: [{"q":"question","a":"suggested answer"}]. Customer messages:\n${customerMessages}` }],
           action: "faq_suggestions",
           settings,
+          category: cat,
         },
       });
+
 
       if (error) throw error;
       if (data?.faqs) {
@@ -367,12 +426,18 @@ const AiTraining = () => {
           <p className="text-sm text-muted-foreground">{t(`aiTraining.subtitleByCat.${cat}`)}</p>
 
         </div>
-        {hasChanges && (
-          <Button onClick={() => saveMutation.mutate(settings)} disabled={saveMutation.isPending} size="sm" className="gap-1.5">
-            <Save className="h-3.5 w-3.5" />
-            {saveMutation.isPending ? t("aiTraining.saving") : t("aiTraining.save")}
+        <div className="flex items-center gap-2">
+          <Button onClick={loadStarterTemplate} variant="outline" size="sm" className="gap-1.5">
+            <Sparkles className="h-3.5 w-3.5" />
+            {t("aiTraining.loadTemplate")}
           </Button>
-        )}
+          {hasChanges && (
+            <Button onClick={() => saveMutation.mutate(settings)} disabled={saveMutation.isPending} size="sm" className="gap-1.5">
+              <Save className="h-3.5 w-3.5" />
+              {saveMutation.isPending ? t("aiTraining.saving") : t("aiTraining.save")}
+            </Button>
+          )}
+        </div>
       </div>
 
       <Tabs defaultValue="wizard" className="space-y-4">

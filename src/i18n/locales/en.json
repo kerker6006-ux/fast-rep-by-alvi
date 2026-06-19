@@ -88,7 +88,17 @@
     "language": "Language",
     "services": "Services",
     "leads": "Leads",
-    "appointments": "Appointments"
+    "appointments": "Appointments",
+    "chatsByCat": {
+      "dental": "Patient chats",
+      "hvac": "Customer chats",
+      "salon": "Client chats"
+    },
+    "complaintsByCat": {
+      "dental": "Patient issues",
+      "hvac": "Service issues",
+      "salon": "Client issues"
+    }
   },
   "settings": {
     "language": "Language"
@@ -261,6 +271,9 @@
     "replyPrimaryPh": "Please inbox us 📩",
     "replyAltPh": "Alternate language reply…",
     "saveAll": "Save All Changes",
+    "loadTemplate": "Load starter template",
+    "templateLoaded": "Loaded {{count}} starter fields. You can edit them anytime.",
+    "templateAllSet": "Your knowledge base is already filled — nothing to load.",
     "titleByCat": {
       "ecommerce": "AI Shopkeeper Training",
       "dental": "AI Receptionist Training",
