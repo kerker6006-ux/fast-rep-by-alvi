@@ -45,6 +45,7 @@ interface ProductAiWizardProps {
 }
 
 const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts }: ProductAiWizardProps) => {
+  const { t, i18n } = useTranslation();
   const [messages, setMessages] = useState<WizardMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -66,10 +67,10 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
     if (open && messages.length === 0) {
       setMessages([{
         role: "assistant",
-        content: "👋 Hi! I'm your Product AI Assistant!\n\n📸 **Upload product images** (multiple at once!) and I'll analyze them — detect color, material, type — everything!\n\nOr just tell me about the product and I'll help you set it up perfectly. কি product add করতে চাও?"
+        content: t("products.wGreeting"),
       }]);
     }
-  }, [open]);
+  }, [open, t]);
 
   const uploadImage = async (file: File): Promise<string> => {
     const ext = file.name.split(".").pop();
