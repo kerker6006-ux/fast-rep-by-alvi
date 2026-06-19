@@ -269,13 +269,17 @@ const FbPageConnection = () => {
                     {page.connected_at && <p>Connected: {formatDistanceToNow(new Date(page.connected_at), { addSuffix: true })}</p>}
                   </div>
 
-                  <div className="flex items-center gap-2 pt-2 border-t">
-                    <Button variant="outline" size="sm" className="flex-1" disabled={sync.isPending} onClick={() => sync.mutate(page.id)}>
-                      <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${sync.isPending ? "animate-spin" : ""}`} />
+                  <div className="grid grid-cols-3 gap-2 pt-2 border-t">
+                    <Button variant="outline" size="sm" disabled={sync.isPending} onClick={() => sync.mutate(page.id)}>
+                      <RefreshCw className={`h-3.5 w-3.5 mr-1 ${sync.isPending ? "animate-spin" : ""}`} />
                       Sync
                     </Button>
-                    <Button variant="outline" size="sm" className="flex-1 text-destructive hover:text-destructive" onClick={() => setDisconnectId(page.id)}>
-                      <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                    <Button variant="outline" size="sm" disabled={testConn.isPending} onClick={() => testConn.mutate(page.id)}>
+                      {testConn.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Activity className="h-3.5 w-3.5 mr-1" />}
+                      {t("fb.testConnection")}
+                    </Button>
+                    <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDisconnectId(page.id)}>
+                      <Trash2 className="h-3.5 w-3.5 mr-1" />
                       Disconnect
                     </Button>
                   </div>
