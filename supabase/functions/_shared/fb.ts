@@ -12,6 +12,15 @@ export const SUBSCRIBED_FIELDS = [
   "leadgen",
 ];
 
+// Instagram webhook fields (subscribed on the IG user via {ig-user-id}/subscribed_apps)
+export const IG_SUBSCRIBED_FIELDS = [
+  "messages",
+  "messaging_postbacks",
+  "comments",
+  "mentions",
+  "message_reactions",
+];
+
 export const OAUTH_SCOPES = [
   "pages_show_list",
   "pages_manage_metadata",
@@ -20,6 +29,9 @@ export const OAUTH_SCOPES = [
   "pages_manage_engagement",
   "pages_read_user_content",
   "leads_retrieval",
+  "instagram_basic",
+  "instagram_manage_messages",
+  "instagram_manage_comments",
 ];
 
 const enc = new TextEncoder();
