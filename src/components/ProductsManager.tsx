@@ -531,9 +531,9 @@ const ProductsManager = () => {
               })));
             }
             setIsOpen(true);
-            toast.success("Product details filled by AI! Review and save.");
+            toast.success(t("products.toastFilledByAi"));
           } else if (data.action === "add_variant" && data.variant) {
-            toast.info(`Variant "${data.variant.color}" ready — find "${data.variant.product_name}" and add it.`);
+            toast.info(t("products.toastVariantReady", { color: data.variant.color, product: data.variant.product_name }));
           }
         }}
       />}
