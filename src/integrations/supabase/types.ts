@@ -950,7 +950,66 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      fb_pages_safe: {
+        Row: {
+          connected_at: string | null
+          created_at: string | null
+          disconnected_at: string | null
+          fb_page_id: string | null
+          id: string | null
+          ig_business_account_id: string | null
+          ig_picture_url: string | null
+          ig_subscription_status: string | null
+          ig_username: string | null
+          is_active: boolean | null
+          last_sync_at: string | null
+          page_name: string | null
+          page_picture_url: string | null
+          subscribed_fields: string[] | null
+          subscription_error: string | null
+          subscription_status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          connected_at?: string | null
+          created_at?: string | null
+          disconnected_at?: string | null
+          fb_page_id?: string | null
+          id?: string | null
+          ig_business_account_id?: string | null
+          ig_picture_url?: string | null
+          ig_subscription_status?: string | null
+          ig_username?: string | null
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          page_name?: string | null
+          page_picture_url?: string | null
+          subscribed_fields?: string[] | null
+          subscription_error?: string | null
+          subscription_status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          connected_at?: string | null
+          created_at?: string | null
+          disconnected_at?: string | null
+          fb_page_id?: string | null
+          id?: string | null
+          ig_business_account_id?: string | null
+          ig_picture_url?: string | null
+          ig_subscription_status?: string | null
+          ig_username?: string | null
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          page_name?: string | null
+          page_picture_url?: string | null
+          subscribed_fields?: string[] | null
+          subscription_error?: string | null
+          subscription_status?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
