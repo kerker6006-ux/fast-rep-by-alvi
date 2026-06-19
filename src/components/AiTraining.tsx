@@ -533,22 +533,40 @@ const AiTraining = () => {
                 <Label className="text-xs">{t("botSettings.customInstructionsLabel")}</Label>
                 <Textarea value={settings.custom_instructions || ""} onChange={(e) => update("custom_instructions", e.target.value)} placeholder={t("botSettings.customInstructionsPh")} className="min-h-[80px] text-sm" />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">{t("aiTraining.replyTone")}</Label>
-                  <Input value={settings.reply_tone || ""} onChange={(e) => update("reply_tone", e.target.value)} placeholder={t("aiTraining.replyTonePh")} className="h-8 text-sm" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">{t("aiTraining.deliveryInfo")}</Label>
-                  <Input value={settings.delivery_info || ""} onChange={(e) => update("delivery_info", e.target.value)} placeholder={t("aiTraining.deliveryInfoPh")} className="h-8 text-sm" />
-                </div>
-              </div>
               <div className="space-y-1">
-                <Label className="text-xs">{t("aiTraining.paymentMethods")}</Label>
-                <Input value={settings.payment_methods || ""} onChange={(e) => update("payment_methods", e.target.value)} placeholder={t("aiTraining.paymentMethodsPh")} className="h-8 text-sm" />
+                <Label className="text-xs">{t("aiTraining.replyTone")}</Label>
+                <Input value={settings.reply_tone || ""} onChange={(e) => update("reply_tone", e.target.value)} placeholder={t("aiTraining.replyTonePh")} className="h-8 text-sm" />
               </div>
             </CardContent>
           </Card>
+
+          {/* Category-specific knowledge */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">{t(`aiTraining.kbTitle.${cat}`)}</CardTitle>
+              <CardDescription className="text-xs">{t(`aiTraining.kbDesc.${cat}`)}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {catFields.map((f) => (
+                <div key={f.key} className="space-y-1">
+                  <Label className="text-xs">{t(f.labelKey)}</Label>
+                  {f.type === "textarea" ? (
+                    <Textarea
+                      value={settings[f.key] || ""}
+                      onChange={(e) => update(f.key, e.target.value)}
+                      placeholder={t(f.phKey)}
+                      className="min-h-[60px] text-sm"
+                    />
+                  ) : (
+                    <Input
+                      value={settings[f.key] || ""}
+                      onChange={(e) => update(f.key, e.target.value)}
+                      placeholder={t(f.phKey)}
+                      className="h-8 text-sm"
+                    />
+                  )}
+                </div>
+              ))}
 
           {/* Welcome */}
           <Card>
