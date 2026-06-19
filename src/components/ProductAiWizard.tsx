@@ -131,6 +131,7 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
     try {
       const { data, error } = await supabase.functions.invoke("ai-product-wizard", {
         body: {
+          language: i18n.language,
           messages: allMessages.map(m => ({
             role: m.role,
             content: m.content,
@@ -144,7 +145,7 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
 
       const assistantMsg: WizardMessage = {
         role: "assistant",
-        content: data.reply || "I couldn't process that. Try again?",
+        content: data.reply || t("products.wCantProcess"),
       };
       setMessages(prev => [...prev, assistantMsg]);
 
@@ -153,10 +154,10 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
         setPendingData(data.extracted_data);
       }
     } catch (err: any) {
-      toast.error(err.message || "AI error");
+      toast.error(err.message || t("products.wAiError"));
       setMessages(prev => [...prev, {
         role: "assistant",
-        content: "❌ Sorry, something went wrong. Please try again."
+        content: t("products.wErrorRetry"),
       }]);
     } finally {
       setIsLoading(false);
