@@ -2,3 +2,18 @@ project_id = "urtpathqupraeokaigzz"
 
 [functions.fb-oauth-callback]
 verify_jwt = false
+
+[functions.fb-webhook]
+verify_jwt = false
+
+[functions.send-scheduled]
+verify_jwt = false
+
+[functions.ai-product-wizard]
+verify_jwt = true
+
+[functions.ai-product-details]
+verify_jwt = true
+
+[functions.ai-training-chat]
+verify_jwt = true
