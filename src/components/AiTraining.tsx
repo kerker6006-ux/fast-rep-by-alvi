@@ -489,23 +489,17 @@ const AiTraining = () => {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-1.5">
-                <MessageCircle className="h-3.5 w-3.5" /> Welcome Messages
+                <MessageCircle className="h-3.5 w-3.5" /> Welcome Message
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">বাংলা</Label>
-                  <Input value={settings.welcome_message || ""} onChange={(e) => update("welcome_message", e.target.value)} placeholder="আসসালামু আলাইকুম!" className="h-8 text-sm" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">English</Label>
-                  <Input value={settings.welcome_message_en || ""} onChange={(e) => update("welcome_message_en", e.target.value)} placeholder="Hello!" className="h-8 text-sm" />
-                </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Welcome Message</Label>
+                <Input value={settings.welcome_message || ""} onChange={(e) => update("welcome_message", e.target.value)} placeholder="Type your welcome message…" className="h-8 text-sm" />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Out of Stock Message</Label>
-                <Input value={settings.out_of_stock_message || ""} onChange={(e) => update("out_of_stock_message", e.target.value)} placeholder="দুঃখিত, স্টকে নেই।" className="h-8 text-sm" />
+                <Input value={settings.out_of_stock_message || ""} onChange={(e) => update("out_of_stock_message", e.target.value)} placeholder="Sorry, this item is out of stock." className="h-8 text-sm" />
               </div>
             </CardContent>
           </Card>
