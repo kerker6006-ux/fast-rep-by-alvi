@@ -13,6 +13,27 @@ serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+  // ===== Require service_role JWT (called by pg_cron with service role bearer) =====
+  const authHeader = req.headers.get("authorization") || "";
+  const token = authHeader.toLowerCase().startsWith("bearer ") ? authHeader.slice(7) : "";
+  if (!token || token !== supabaseKey) {
+    // Fallback: decode JWT payload and check role
+    let role = "";
+    try {
+      const parts = token.split(".");
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+        role = payload.role || "";
+      }
+    } catch { /* ignore */ }
+    if (role !== "service_role") {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
+
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   const PAGE_ACCESS_TOKEN = Deno.env.get("FB_PAGE_ACCESS_TOKEN");
