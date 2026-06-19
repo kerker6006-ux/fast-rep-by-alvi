@@ -97,14 +97,14 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
               )}
             >
               <item.icon className="h-[18px] w-[18px] shrink-0" />
-              {!collapsed && <span className="truncate animate-fade-in">{t(item.labelKey)}</span>}
+              {!collapsed && <span className="truncate animate-fade-in">{t(labelKey)}</span>}
             </button>
           );
           if (collapsed) {
             return (
               <Tooltip key={item.id} delayDuration={0}>
                 <TooltipTrigger asChild>{button}</TooltipTrigger>
-                <TooltipContent side="right" className="font-medium">{t(item.labelKey)}</TooltipContent>
+                <TooltipContent side="right" className="font-medium">{t(labelKey)}</TooltipContent>
               </Tooltip>
             );
           }
