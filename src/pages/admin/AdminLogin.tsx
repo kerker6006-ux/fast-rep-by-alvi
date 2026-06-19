@@ -29,9 +29,6 @@ const AdminLogin = () => {
     e.preventDefault();
     setBusy(true);
     try {
-      // Sign out any existing (non-admin) session first to keep panel isolated
-      if (session) await supabase.auth.signOut();
-
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
