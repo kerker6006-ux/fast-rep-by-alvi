@@ -236,6 +236,76 @@ async function handleCommentEvent(
   }
 }
 
+// ---- Instagram Comment Handler (public reply + DM handoff) ----
+
+async function handleIgCommentEvent(
+  supabase: any, value: any, pageAccessToken: string,
+  settings: Record<string, string>, userId: string | null,
+  lovableApiKey: string | undefined, igUserId: string | null
+) {
+  if (settings.ig_comment_auto_reply === "false") return;
+  const commentId = value?.id;
+  if (!commentId) return;
+  // Skip our own page's comments
+  if (igUserId && value?.from?.id === igUserId) return;
+
+  const commentText = value?.text || "";
+  const isBangla = /[\u0980-\u09FF]/.test(commentText);
+  const lang = isBangla ? "Bangla" : "English";
+
+  // Build short public reply with AI (kept tiny)
+  let publicReply = isBangla
+    ? "ধন্যবাদ! আপনাকে DM করছি 📩"
+    : "Thanks! Check your DMs 📩";
+  if (lovableApiKey && settings.comment_ai_reply !== "false") {
+    try {
+      const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Lovable-API-Key": lovableApiKey },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-lite",
+          messages: [
+            { role: "system", content: `Reply to an Instagram comment in ${lang}. Max 6 words, friendly, tell them to check DMs. ${settings.manual_instructions || ""}` },
+            { role: "user", content: commentText || "(no text)" },
+          ],
+          max_tokens: 40,
+        }),
+      });
+      const j = await aiRes.json();
+      const c = j.choices?.[0]?.message?.content?.trim();
+      if (c) publicReply = c.slice(0, 120);
+    } catch (e) { console.error("IG comment AI error:", e); }
+  }
+
+  // 1) Public reply on the comment
+  try {
+    await fetch(`https://graph.facebook.com/v21.0/${commentId}/replies?access_token=${pageAccessToken}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: publicReply }),
+    });
+  } catch (e) { console.error("IG public reply failed:", e); }
+
+  // 2) Private DM handoff via Private Replies API
+  if (settings.ig_comment_dm_handoff !== "false") {
+    try {
+      const dmText = isBangla
+        ? (settings.ig_dm_handoff_text_bn || "হ্যালো! আপনার কমেন্টের জন্য ধন্যবাদ — কীভাবে সাহায্য করতে পারি? 🙂")
+        : (settings.ig_dm_handoff_text || "Hi! Thanks for your comment — how can I help? 🙂");
+      const res = await fetch(`https://graph.facebook.com/v21.0/me/messages?access_token=${pageAccessToken}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipient: { comment_id: commentId },
+          message: { text: dmText },
+        }),
+      });
+      if (!res.ok) console.error("IG DM handoff error:", res.status, await res.text());
+    } catch (e) { console.error("IG DM handoff failed:", e); }
+  }
+}
+
+
 // ---- Page Post Auto-Import Handler ----
 
 async function handlePagePostEvent(
