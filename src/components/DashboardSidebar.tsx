@@ -80,7 +80,14 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
       {/* Nav */}
       <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
         {visibleItems.map((item) => {
-          const labelKey = item.id === "leads" && isService(category) ? "nav.appointments" : item.labelKey;
+          const nicheLabel = (id: string, base: string) => {
+            if (!isService(category)) return base;
+            if (id === "leads") return "nav.appointments";
+            if (id === "conversations") return `nav.chatsByCat.${category}`;
+            if (id === "complaints") return `nav.complaintsByCat.${category}`;
+            return base;
+          };
+          const labelKey = nicheLabel(item.id, item.labelKey);
           const isActive = activeTab === item.id;
           const button = (
             <button
