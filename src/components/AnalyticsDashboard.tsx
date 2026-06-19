@@ -10,19 +10,21 @@ const AnalyticsDashboard = () => {
   const { user } = useAuth();
 
   const { data: stats, isLoading } = useQuery({
-    queryKey: ["analytics"],
+    queryKey: ["analytics", user?.id],
+    enabled: !!user?.id,
     queryFn: async () => {
+      const uid = user!.id;
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
       const weekAgo = new Date(now.getTime() - 7 * 86400000).toISOString();
 
       const [convos, messages, todayMessages, orders, recentConvos] = await Promise.all([
-        supabase.from("conversations").select("id", { count: "exact", head: true }),
-        supabase.from("messages").select("id", { count: "exact", head: true }),
-        supabase.from("messages").select("id", { count: "exact", head: true }).gte("created_at", today),
-        supabase.from("orders").select("id, total, status", { count: "exact" }),
+        supabase.from("conversations").select("id", { count: "exact", head: true }).eq("user_id", uid),
+        supabase.from("messages").select("id", { count: "exact", head: true }).eq("user_id", uid),
+        supabase.from("messages").select("id", { count: "exact", head: true }).eq("user_id", uid).gte("created_at", today),
+        supabase.from("orders").select("id, total, status", { count: "exact" }).eq("user_id", uid),
         supabase.from("conversations").select("id, sender_name, fb_sender_id, last_message, last_message_at")
-          .gte("last_message_at", weekAgo).order("last_message_at", { ascending: false }).limit(8),
+          .eq("user_id", uid).gte("last_message_at", weekAgo).order("last_message_at", { ascending: false }).limit(8),
       ]);
 
       const orderData = orders.data || [];

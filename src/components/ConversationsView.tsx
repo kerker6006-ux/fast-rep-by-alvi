@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -28,14 +29,19 @@ type Message = {
 
 const ConversationsView = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [selectedConvo, setSelectedConvo] = useState<string | null>(null);
   const [trainOpen, setTrainOpen] = useState(false);
   const [trainData, setTrainData] = useState<{ customer: string; wrong: string }>({ customer: "", wrong: "" });
 
   const { data: conversations, isLoading } = useQuery({
-    queryKey: ["conversations"],
+    queryKey: ["conversations", user?.id],
+    enabled: !!user?.id,
     queryFn: async () => {
-      const { data, error } = await supabase.from("conversations").select("*").order("last_message_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("conversations").select("*")
+        .eq("user_id", user!.id)
+        .order("last_message_at", { ascending: false });
       if (error) throw error;
       return data as Conversation[];
     },
