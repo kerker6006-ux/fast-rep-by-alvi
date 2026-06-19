@@ -304,12 +304,12 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
         {stagedPreviews.length > 0 && (
           <div className="mx-4 mb-2 p-2 rounded-xl border border-primary/20 bg-muted/50 shrink-0">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs font-medium text-muted-foreground">{stagedPreviews.length} image{stagedPreviews.length > 1 ? 's' : ''} ready</span>
+              <span className="text-xs font-medium text-muted-foreground">{t("products.wImagesReady", { count: stagedPreviews.length })}</span>
               <div className="flex gap-1.5">
-                <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => fileInputRef.current?.click()}>+ More</Button>
+                <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => fileInputRef.current?.click()}>{t("products.wMore")}</Button>
                 <Button size="sm" className="h-6 text-xs px-3 gap-1" onClick={sendStagedImages} disabled={uploadingImage}>
                   {uploadingImage ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
-                  Send All
+                  {t("products.wSendAll")}
                 </Button>
               </div>
             </div>
