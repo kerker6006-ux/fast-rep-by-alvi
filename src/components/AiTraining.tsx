@@ -426,12 +426,18 @@ const AiTraining = () => {
           <p className="text-sm text-muted-foreground">{t(`aiTraining.subtitleByCat.${cat}`)}</p>
 
         </div>
-        {hasChanges && (
-          <Button onClick={() => saveMutation.mutate(settings)} disabled={saveMutation.isPending} size="sm" className="gap-1.5">
-            <Save className="h-3.5 w-3.5" />
-            {saveMutation.isPending ? t("aiTraining.saving") : t("aiTraining.save")}
+        <div className="flex items-center gap-2">
+          <Button onClick={loadStarterTemplate} variant="outline" size="sm" className="gap-1.5">
+            <Sparkles className="h-3.5 w-3.5" />
+            {t("aiTraining.loadTemplate")}
           </Button>
-        )}
+          {hasChanges && (
+            <Button onClick={() => saveMutation.mutate(settings)} disabled={saveMutation.isPending} size="sm" className="gap-1.5">
+              <Save className="h-3.5 w-3.5" />
+              {saveMutation.isPending ? t("aiTraining.saving") : t("aiTraining.save")}
+            </Button>
+          )}
+        </div>
       </div>
 
       <Tabs defaultValue="wizard" className="space-y-4">
