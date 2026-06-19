@@ -599,6 +599,11 @@ const AiTraining = () => {
                 <div className="flex items-center gap-2">
                   <Bot className="h-4 w-4 text-primary" />
                   <CardTitle className="text-sm">{t("aiTraining.assistant")}</CardTitle>
+                  {chatLangLabel && (
+                    <span className="text-[10px] text-muted-foreground inline-flex items-center gap-1 ml-1 px-1.5 py-0.5 rounded bg-muted">
+                      <Languages className="h-3 w-3" /> {chatLangLabel}
+                    </span>
+                  )}
                 </div>
                 <div className="flex gap-1.5">
                   <Button
@@ -610,6 +615,9 @@ const AiTraining = () => {
                   >
                     {isGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />}
                     {isGenerating ? t("aiTraining.generating") : t("aiTraining.applySettings")}
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={changeChatLanguage} className="h-7 text-xs gap-1" title={t("aiTraining.changeLanguage")}>
+                    <Languages className="h-3 w-3" />
                   </Button>
                   <Button variant="ghost" size="sm" onClick={resetChat} className="h-7 text-xs gap-1">
                     <RotateCcw className="h-3 w-3" /> {t("aiTraining.resetConversation")}
