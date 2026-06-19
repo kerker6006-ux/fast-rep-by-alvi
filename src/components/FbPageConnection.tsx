@@ -263,6 +263,17 @@ const FbPageConnection = () => {
                     {statusBadge(page.subscription_status, page.is_active)}
                   </div>
 
+                  {page.ig_username && (
+                    <div className="flex items-center gap-2 text-xs bg-gradient-to-r from-fuchsia-500/10 to-orange-400/10 border border-fuchsia-500/20 rounded-md px-2 py-1.5">
+                      <Instagram className="h-3.5 w-3.5 text-fuchsia-600" />
+                      <span className="font-medium">@{page.ig_username}</span>
+                      <span className="text-muted-foreground">·</span>
+                      <span className={page.ig_subscription_status === "active" ? "text-emerald-600" : "text-amber-600"}>
+                        {page.ig_subscription_status === "active" ? "DMs + comments live" : (page.ig_subscription_status || "pending")}
+                      </span>
+                    </div>
+                  )}
+
                   {page.subscription_error && (
                     <p className="text-xs text-destructive bg-destructive/10 rounded-md px-2 py-1">{page.subscription_error}</p>
                   )}
