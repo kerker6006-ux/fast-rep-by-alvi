@@ -10,7 +10,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Search, Plus, Minus, Trash2, Ban, CheckCircle2, Coins, Globe, Package, ShoppingCart, MessageSquare, KeyRound } from "lucide-react";
+import { Search, Plus, Minus, Trash2, Ban, CheckCircle2, Coins, Globe, Package, ShoppingCart, MessageSquare, KeyRound, Facebook } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
