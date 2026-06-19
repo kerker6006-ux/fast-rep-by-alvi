@@ -128,11 +128,11 @@ const ScheduledMessages = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Scheduled Messages</h2>
-          <p className="text-muted-foreground">Auto-send follow-ups after X days to selected customers.</p>
+          <h2 className="text-2xl font-bold tracking-tight">{t("scheduled.title")}</h2>
+          <p className="text-muted-foreground">{t("scheduled.subtitle")}</p>
         </div>
         <Button className="gap-2" onClick={() => setOpen(true)}>
-          <Plus className="h-4 w-4" /> Schedule Message
+          <Plus className="h-4 w-4" /> {t("scheduled.schedule")}
         </Button>
       </div>
 
