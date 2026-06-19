@@ -281,12 +281,12 @@ const ProductsManager = () => {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 border rounded-lg px-3 py-1.5 bg-muted/50">
             <Bot className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium">{t("aiTraining.wizardTab")}</span>
+            <span className="text-sm font-medium">{t("products.aiWizard")}</span>
             <Switch checked={aiWizardEnabled} onCheckedChange={setAiWizardEnabled} />
           </div>
           {aiWizardEnabled && (
             <Button variant="outline" className="gap-2 shadow-lg border-primary/30 text-primary hover:bg-primary/10" onClick={() => setWizardOpen(true)}>
-              <Sparkles className="h-4 w-4" /> {t("aiTraining.wizardTab")}
+              <Sparkles className="h-4 w-4" /> {t("products.aiWizard")}
             </Button>
           )}
           <Dialog open={isOpen} onOpenChange={(v) => { if (!v) resetForm(); setIsOpen(v); }}>
@@ -297,28 +297,28 @@ const ProductsManager = () => {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 {editingProduct ? <Pencil className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
-                {editingProduct ? "Edit Product" : "Add New Product"}
+                {editingProduct ? t("products.editTitle") : t("products.addTitle")}
               </DialogTitle>
             </DialogHeader>
             <div className="grid gap-5 py-4">
               {/* Category */}
               <div className="space-y-2 p-4 rounded-xl border-2 border-dashed border-primary/20 bg-accent/30">
                 <Label className="text-sm font-semibold flex items-center gap-2">
-                  <FolderOpen className="h-4 w-4 text-primary" /> Category
+                  <FolderOpen className="h-4 w-4 text-primary" /> {t("products.category")}
                 </Label>
                 <Select value={showNewCategory ? "__new__" : (form.category || undefined)} onValueChange={handleCategorySelect}>
-                  <SelectTrigger><SelectValue placeholder="Select or create category" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("products.categoryPh")} /></SelectTrigger>
                   <SelectContent>
                     {categories.map(cat => (
                       <SelectItem key={cat} value={cat}>{cat} ({categoryProductCounts[cat] || 0})</SelectItem>
                     ))}
-                    <SelectItem value="__new__">➕ Create new category</SelectItem>
+                    <SelectItem value="__new__">{t("products.createNew")}</SelectItem>
                   </SelectContent>
                 </Select>
                 {showNewCategory && (
                   <div className="flex gap-2">
-                    <Input value={newCategory} onChange={e => setNewCategory(e.target.value)} placeholder="e.g. Hijab, Sharee" onKeyDown={e => e.key === "Enter" && handleAddNewCategory()} />
-                    <Button size="sm" onClick={handleAddNewCategory} disabled={!newCategory.trim()}>Add</Button>
+                    <Input value={newCategory} onChange={e => setNewCategory(e.target.value)} placeholder={t("products.newCatPh")} onKeyDown={e => e.key === "Enter" && handleAddNewCategory()} />
+                    <Button size="sm" onClick={handleAddNewCategory} disabled={!newCategory.trim()}>{t("products.addBtn")}</Button>
                   </div>
                 )}
                 {form.category && !showNewCategory && (
@@ -329,68 +329,68 @@ const ProductsManager = () => {
               {/* Names */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Name (English) *</Label>
-                  <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Product name" />
+                  <Label>{t("products.nameEnLabel")}</Label>
+                  <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder={t("products.namePh")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Name (alternate language, optional)</Label>
-                  <Input value={form.name_bn} onChange={e => setForm(f => ({ ...f, name_bn: e.target.value }))} placeholder="Product name in a second language" />
+                  <Label>{t("products.nameAlt")}</Label>
+                  <Input value={form.name_bn} onChange={e => setForm(f => ({ ...f, name_bn: e.target.value }))} placeholder={t("products.nameAltPh")} />
                 </div>
               </div>
 
               {/* Attributes row */}
               <div className="grid grid-cols-4 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Price ($)</Label>
+                  <Label className="text-xs">{t("products.price")}</Label>
                   <Input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="0" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Color / রং</Label>
-                  <Input value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} placeholder="Red, মেরুন" />
+                  <Label className="text-xs">{t("products.color")}</Label>
+                  <Input value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} placeholder={t("products.colorPh")} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Size</Label>
-                  <Input value={form.size} onChange={e => setForm(f => ({ ...f, size: e.target.value }))} placeholder="M, L, XL" />
+                  <Label className="text-xs">{t("products.size")}</Label>
+                  <Input value={form.size} onChange={e => setForm(f => ({ ...f, size: e.target.value }))} placeholder={t("products.sizePh")} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Material</Label>
-                  <Input value={form.material} onChange={e => setForm(f => ({ ...f, material: e.target.value }))} placeholder="Cotton" />
+                  <Label className="text-xs">{t("products.material")}</Label>
+                  <Input value={form.material} onChange={e => setForm(f => ({ ...f, material: e.target.value }))} placeholder={t("products.materialPh")} />
                 </div>
               </div>
 
               {/* AI Descriptions */}
               <div className="space-y-3 p-4 rounded-xl bg-gradient-to-br from-accent/40 to-primary/5 border border-primary/10">
                 <div className="flex items-center gap-2 text-sm font-semibold text-primary">
-                  <Sparkles className="h-4 w-4" /> AI-Powered Descriptions
+                  <Sparkles className="h-4 w-4" /> {t("products.aiDescTitle")}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs">Description (English)</Label>
+                      <Label className="text-xs">{t("products.descLabelEn")}</Label>
                       <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10" onClick={() => generateAiDescription("en")} disabled={aiGenerating || !form.name}>
                         {aiGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                        Generate
+                        {t("products.generate")}
                       </Button>
                     </div>
-                    <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Click Generate or type manually..." rows={3} />
+                    <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder={t("products.descriptionPh")} rows={3} />
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs">Description (alternate language, optional)</Label>
+                      <Label className="text-xs">{t("products.descriptionAlt")}</Label>
                       <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10" onClick={() => generateAiDescription("bn")} disabled={aiGeneratingBn || !form.name}>
                         {aiGeneratingBn ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                        Generate
+                        {t("products.generate")}
                       </Button>
                     </div>
-                    <Textarea value={form.description_bn} onChange={e => setForm(f => ({ ...f, description_bn: e.target.value }))} placeholder="Click Generate or type manually..." rows={3} />
+                    <Textarea value={form.description_bn} onChange={e => setForm(f => ({ ...f, description_bn: e.target.value }))} placeholder={t("products.descriptionPh")} rows={3} />
                   </div>
                 </div>
               </div>
 
               {/* Keywords */}
               <div className="space-y-2">
-                <Label className="text-xs flex items-center gap-1">Keywords <span className="text-muted-foreground">(auto-filled by AI or add manually)</span></Label>
-                <Input value={form.keywords} onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))} placeholder="hijab, scarf, হিজাব" />
+                <Label className="text-xs flex items-center gap-1">{t("products.keywords")} <span className="text-muted-foreground">{t("products.keywordsHint")}</span></Label>
+                <Input value={form.keywords} onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))} placeholder={t("products.keywordsPh")} />
               </div>
 
               {/* Main Product Image */}
