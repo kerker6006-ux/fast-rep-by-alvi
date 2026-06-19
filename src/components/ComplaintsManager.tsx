@@ -22,15 +22,18 @@ const statusColors: Record<string, string> = {
 const ComplaintsManager = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [selected, setSelected] = useState<any>(null);
   const [adminNote, setAdminNote] = useState("");
 
   const { data: complaints, isLoading } = useQuery({
-    queryKey: ["complaints"],
+    queryKey: ["complaints", user?.id],
+    enabled: !!user?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("complaints")
         .select("*, conversations(sender_name, fb_sender_id)")
+        .eq("user_id", user!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
