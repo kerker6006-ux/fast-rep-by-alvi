@@ -41,10 +41,8 @@ const CreditDashboard = () => {
 
   const costText = data?.costText ?? 0.003;
   const costImage = data?.costImage ?? 0.015;
-  const msgsPerDime = Math.floor(0.10 / costText);
-  const imgsPerDime = Math.floor(0.10 / costImage);
-  const textCents = (costText * 100).toFixed(2);
-  const imageCents = (costImage * 100).toFixed(2);
+  const msgsPerDollar = Math.floor(1 / costText);
+  const imgsPerDollar = Math.floor(1 / costImage);
 
   const txLabel = (type: string) => {
     if (type === "recharge") return t("credits.tx.recharge");
