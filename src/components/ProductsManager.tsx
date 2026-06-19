@@ -618,11 +618,11 @@ const ProductsManager = () => {
                 )}
                 <div className="flex items-center justify-between">
                   <span className="text-2xl font-bold text-primary">${previewProduct.price}</span>
-                  <Badge variant={previewProduct.is_active ? "default" : "destructive"}>{previewProduct.is_active ? "Active" : "Inactive"}</Badge>
+                  <Badge variant={previewProduct.is_active ? "default" : "destructive"}>{previewProduct.is_active ? t("products.previewActive") : t("products.previewInactive")}</Badge>
                 </div>
                 {((previewProduct as any).size_variants?.length > 0) && (
                   <div className="space-y-1">
-                    <p className="text-xs font-semibold text-muted-foreground">📏 Size Options</p>
+                    <p className="text-xs font-semibold text-muted-foreground">📏 {t("products.previewSizeOptions")}</p>
                     <div className="flex flex-wrap gap-2">
                       {(previewProduct as any).size_variants.map((s: SizeVariant, i: number) => (
                         <Badge key={i} variant="secondary">{s.size} — ${s.price}</Badge>
