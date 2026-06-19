@@ -560,7 +560,7 @@ const ProductsManager = () => {
         <div className="flex items-center gap-3">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search by name, color, material..." className="pl-9" />
+            <Input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder={t("products.searchPh2")} className="pl-9" />
           </div>
           <div className="flex items-center gap-1 border rounded-lg p-0.5 bg-muted/50">
             <button onClick={() => setViewMode("grid")} className={`p-1.5 rounded-md transition-colors ${viewMode === "grid" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}>
