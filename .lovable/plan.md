@@ -1,115 +1,74 @@
-## Facebook Page Connection (One-Click OAuth)
+# Plan: Standalone Admin Panel + Full i18n + FB Connect Hardening
 
-Extends existing `fb_pages` table and `fb-webhook` function. Adds Meta OAuth login, page picker, auto webhook subscription, and a Connections management page.
+## 1. Admin Access (kerker6006@gmail.com / admin121)
 
-### Step 1 — Create your Meta App (you do this, I'll guide)
+- Auto-promote that exact email to `admin` role in `user_roles` whenever they sign in or sign up (handled in DB trigger + a client-side ensure call).
+- All `/admin/*` routes wrapped in an `AdminRoute` guard that checks `has_role(uid, 'admin')`. Non-admins get redirected to `/dashboard` (or `/auth`).
+- Password `admin121` is just the account password the user creates on signup — I'll instruct them to sign up once with that email/password; the trigger handles role assignment.
 
-Before I build, you need a Meta App. In chat I'll walk you through:
-1. Go to developers.facebook.com → My Apps → Create App → type "Business".
-2. Add products: **Facebook Login** and **Webhooks** and **Messenger**.
-3. Facebook Login → Settings → add Valid OAuth Redirect URI:
-   `https://urtpathqupraeokaigzz.supabase.co/functions/v1/fb-oauth-callback`
-4. Copy **App ID** (public) and **App Secret** (secret).
-5. Permissions needed (work in Dev Mode for admins/testers immediately; App Review required for public launch):
-   `pages_show_list`, `pages_manage_metadata`, `pages_messaging`, `pages_read_engagement`, `pages_manage_engagement`, `leads_retrieval`, `pages_read_user_content`.
-6. Webhooks → Page object → Callback URL = existing `fb-webhook` URL, subscribe to `messages`, `messaging_postbacks`, `feed`, `leadgen`.
+## 2. Separate `/admin` Panel (full-featured)
 
-Once you have App ID + App Secret, I'll request them via secret form: `FB_APP_ID`, `FB_APP_SECRET`. The existing `FB_VERIFY_TOKEN` / page tokens stay as-is.
+New routes under a dedicated `AdminLayout` (independent from user dashboard sidebar):
 
-### Step 2 — Database (migration)
+- `/admin` — Overview: KPIs (total users, active bots, revenue, AI spend, FB pages connected, messages today, orders today), charts (signups/week, revenue/month, AI usage/day).
+- `/admin/users` — Searchable user table: email, signup date, credit balance, bot status, FB pages, last active. Actions: add/remove credits (with reason + transaction log), suspend/unsuspend, delete account, view detail drawer.
+- `/admin/recharges` — Pending manual recharge requests: approve/reject with one click, adds credit + writes `credit_transactions`.
+- `/admin/payments` — Stripe placeholder (UI scaffolded, "Connect Stripe" CTA). Wires up when keys arrive.
+- `/admin/pricing` — Edit global `pricing_settings` (৳/text, ৳/image, signup bonus). Stored in new `app_settings` table.
+- `/admin/fb-pages` — All connected FB pages across all users; force-disconnect, view sync status.
+- `/admin/announcements` — Compose & send broadcast notifications to all users.
+- `/admin/analytics` — Deeper analytics (per-user AI usage, top spenders, model breakdown).
+- `/admin/settings` — Admin profile + sign out.
 
-Extend `public.fb_pages` (no breaking changes):
-- `connected_at timestamptz default now()`
-- `last_sync_at timestamptz`
-- `subscribed_fields text[] default '{}'`
-- `subscription_status text default 'pending'` — `pending | active | failed | disconnected`
-- `subscription_error text`
-- `disconnected_at timestamptz`
-- Use existing `is_active` as the connected flag.
+### UI direction
+- Same white & blue palette + Space Grotesk / DM Sans, but **dedicated admin shell** (dark navy sidebar accent, sticky top bar with quick search, breadcrumbs, command palette `Cmd+K` for jump-to-user).
+- Bento-grid overview cards with sparkline charts (recharts).
+- Drawers/dialogs for destructive actions with confirm-by-type pattern.
+- Everything keyboard-accessible, table rows clickable, toast on every mutation.
 
-RLS already correct (user owns rows). No new table.
+## 3. Database Changes
 
-### Step 3 — Edge functions
+- New table `app_settings` (key/value) — pricing config, signup bonus.
+- New table `announcements` (id, title, body, audience, created_by, created_at).
+- New table `admin_audit_log` (admin_id, action, target_user, payload, created_at) — every admin action recorded.
+- `profiles.suspended` boolean column.
+- Updated trigger `handle_new_user`: if email = `kerker6006@gmail.com`, auto-insert `user_roles(user_id, 'admin')`.
+- Edge function `admin-adjust-credits` (service-role) for safe credit add/remove with audit log.
+- Edge function `admin-broadcast` for announcements.
+- Edge function `admin-delete-user` (auth.admin.deleteUser).
+- RLS: admin tables only readable/writable via `has_role(uid,'admin')`.
 
-**`fb-oauth-start`** (verify_jwt on)
-- Requires logged-in user. Generates signed state `{user_id, nonce, ts}` (HMAC with `FB_APP_SECRET`), stores nonce in-memory not needed — verified by HMAC.
-- Returns `{ url }` = `https://www.facebook.com/v21.0/dialog/oauth?client_id=FB_APP_ID&redirect_uri=...&state=...&scope=...&response_type=code`.
+## 4. Full i18n Pass — No Mixing
 
-**`fb-oauth-callback`** (verify_jwt off, public — Facebook hits it)
-- Validates `state` HMAC → extracts `user_id`.
-- Exchanges `code` → short-lived user token → long-lived user token (`/oauth/access_token?grant_type=fb_exchange_token`).
-- Fetches `/me/accounts?fields=id,name,access_token,tasks` → list of pages with page tokens (already long-lived).
-- Stores pages in a short-lived `pending_fb_connections` row? Simpler: redirects back to app with `#fb_user_token=<long_lived>` fragment so it never touches our logs, OR caches pages keyed by a one-time code returned in query string.
-- Chosen approach: store the long-lived user token encrypted in a temporary `fb_oauth_sessions` table with one-time `session_token` (10 min TTL), redirect to `/dashboard/facebook?session=<token>`.
+Translate every screen for EN / KO / BN / ES:
+- Auth, Dashboard, Sidebar, Products, Orders, Conversations, Complaints, Settings, Wizards (Training, Product), FB Connection, Auto-reply rules, Scheduled messages, Credits/Recharge, Admin panel.
+- All toast messages, button labels, table headers, empty states, validation errors moved to `src/i18n/locales/*.json`.
+- Lint pass: search for hardcoded English strings in `src/**/*.tsx` and convert to `t()`.
+- Language preference persists per user in `profiles.language` (already in localStorage; sync to DB).
 
-**`fb-list-pages`** (verify_jwt on)
-- Input: `session_token`. Verifies it belongs to caller. Returns page list (id, name, category, picture).
+## 5. FB Connect Verification
 
-**`fb-connect-page`** (verify_jwt on)
-- Input: `session_token`, `page_id`.
-- Looks up page access token from session, upserts into `fb_pages` (user_id + fb_page_id unique).
-- Calls Graph API `POST /{page-id}/subscribed_apps?subscribed_fields=messages,messaging_postbacks,message_deliveries,messaging_optins,feed,leadgen` using the page token.
-- Updates `subscription_status='active'`, `subscribed_fields`, `last_sync_at`, `is_active=true`, `connected_at=now()`. Records failure if Graph errors.
-- Deletes the session row.
+- Audit all 6 edge functions (`fb-connect-page`, `fb-disconnect-page`, `fb-list-pages`, `fb-oauth-callback`, `fb-oauth-start`, `fb-sync-page`).
+- Verify redirect URI is the deployed function URL and matches what's configured in the FB App dashboard.
+- Add clearer error toasts in `FbPageConnection.tsx` (show actual Graph API error message instead of generic failure).
+- Add a "Test Connection" button that calls `/me` on the stored page token and reports back.
+- Document the exact Valid OAuth Redirect URI to paste in the FB App settings.
 
-**`fb-disconnect-page`** (verify_jwt on)
-- Input: `fb_pages.id`. Calls `DELETE /{page-id}/subscribed_apps` with stored page token.
-- Sets `is_active=false`, `subscription_status='disconnected'`, `disconnected_at=now()`, clears `page_access_token` (security).
+## 6. Order of Operations
 
-**`fb-sync-page`** (verify_jwt on)
-- Re-fetches page name + re-subscribes. Updates `last_sync_at`.
+1. DB migration (admin role trigger, app_settings, announcements, audit log, suspended col).
+2. Admin edge functions (adjust-credits, broadcast, delete-user).
+3. `AdminRoute` + `AdminLayout` + admin pages.
+4. i18n pass (all locale files + replace strings across app).
+5. FB Connect audit + Test Connection button.
+6. Manual verification via Playwright: sign up kerker6006@gmail.com → confirm `/admin` accessible → adjust credits on a test user → switch language → verify no English bleeds through in Korean mode.
 
-Add new functions to `supabase/config.toml`. `fb-oauth-callback` set `verify_jwt = false`.
+## Technical Notes
 
-### Step 4 — Temporary session table
+- Admin guard uses `has_role()` RPC (already exists), no client-trustable flags.
+- Credit adjustments go through service-role edge functions only — never direct table writes from client.
+- All admin actions write to `admin_audit_log` for accountability.
+- Stripe panel ships as a stub today; when you add Stripe secret, I wire `stripe-checkout` + webhook to credit users automatically.
 
-```
-fb_oauth_sessions(
-  session_token text primary key,
-  user_id uuid not null,
-  user_access_token text not null,  -- long-lived
-  pages jsonb not null,             -- [{id,name,access_token,category,picture}]
-  created_at timestamptz default now(),
-  expires_at timestamptz default now() + interval '10 minutes'
-)
-```
-RLS: only service_role. Grants accordingly. No anon/auth grants.
-
-### Step 5 — Frontend
-
-New files under `src/`:
-- `pages/FacebookConnections.tsx` — list of connected pages (card grid): page name + avatar, Page ID, status badge (Active/Disconnected/Failed), last sync time, Sync button, Disconnect button (confirm). Empty state with big "Connect Facebook Page" CTA.
-- `components/facebook/ConnectFacebookButton.tsx` — branded FB-blue button (`#1877F2`), Facebook "f" logo, loading spinner. Calls `fb-oauth-start` → `window.location.href = url`.
-- `components/facebook/PageSelectModal.tsx` — shadcn Dialog. Reads `?session=` from URL on `FacebookConnections` mount, calls `fb-list-pages`, renders selectable list with avatars + categories, Confirm button → `fb-connect-page` → toast "Facebook Page Connected Successfully" → refresh list → clean URL.
-- `components/facebook/ConnectedPageCard.tsx` — single page card.
-- Add route `/dashboard/facebook` in router; add nav entry in dashboard sidebar.
-- Add a small "Connect Facebook Page" card on main dashboard linking to the page.
-
-UX: loading skeletons, error toasts, mobile-responsive grid (1 col mobile, 2-3 desktop), uses existing design tokens.
-
-### Step 6 — Webhook subscription guarantee
-
-`fb-webhook` already handles messages/feed; no code change needed there. The new `fb-connect-page` ensures pages are subscribed via `/subscribed_apps` so Meta starts delivering events. If user added more pages in Meta later, "Sync" re-subscribes.
-
-### Step 7 — Success / error states
-
-- Toasts: success on connect/disconnect/sync; specific errors for "Token expired — reconnect", "Missing permission — re-authorize".
-- Status badges colored: green active, amber pending, red failed, gray disconnected.
-
-### Technical notes
-
-- All Graph calls use API version `v21.0`.
-- State HMAC: `crypto.subtle` HMAC-SHA256 with `FB_APP_SECRET`.
-- Long-lived page tokens (returned from `/me/accounts` after long-lived user token) don't expire normally — but we still expose Sync/Reconnect.
-- Never log tokens. On disconnect we null out `page_access_token`.
-- `FB_APP_ID` is read on the client via a tiny `fb-config` edge function (or hardcoded in start function only) — kept server-side; client never sees App Secret.
-
-### Build order
-
-1. Migration (extend `fb_pages` + create `fb_oauth_sessions`).
-2. Request `FB_APP_ID`, `FB_APP_SECRET` secrets.
-3. Edge functions: `fb-oauth-start`, `fb-oauth-callback`, `fb-list-pages`, `fb-connect-page`, `fb-disconnect-page`, `fb-sync-page`.
-4. Frontend page + components + route + dashboard CTA.
-5. Smoke test with your test page.
-
-Approve to start, and I'll kick off with the Meta App walkthrough + migration.
+## Open Questions (none blocking)
+- FB Connect: you didn't report a specific error, so I'll just audit + harden + add a Test button. If you hit a specific error after, paste it and I'll fix that case.
