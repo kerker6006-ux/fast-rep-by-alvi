@@ -353,7 +353,7 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
             <Input
               value={input}
               onChange={e => setInput(e.target.value)}
-              placeholder="Describe your product or ask anything..."
+              placeholder={t("products.wInputPh")}
               className="flex-1"
               onKeyDown={e => e.key === "Enter" && !e.shiftKey && handleSend()}
               disabled={isLoading}
