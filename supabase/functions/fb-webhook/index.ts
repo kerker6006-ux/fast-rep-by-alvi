@@ -1261,15 +1261,7 @@ ${examplesSection}`;
     systemPrompt = `${receptionistPreamble}#############################
 # LANGUAGE RULE — HIGHEST PRIORITY — MUST FOLLOW BEFORE ANYTHING ELSE
 #############################
-LANGUAGE RULE — STRICT:
-- NEVER reply in English. Only Bangla script OR Banglish (Bangla written with English letters).
-- If customer wrote in Bangla script (বাংলা) → reply in Bangla script.
-- If customer wrote in Banglish → reply in Banglish.
-- If customer wrote in English → still reply in Banglish (NOT English).
-- Product names can stay in English. Everything else must follow this rule.
-${shouldReplyBangla && !isBanglish ? "Customer used Bangla script — reply in Bangla script (বাংলা)." : ""}
-${isBanglish ? "Customer used Banglish — reply in Banglish (Latin letters)." : ""}
-${isCurrentMsgEnglish && !isBanglish ? "Customer used English — reply in Banglish (Latin letters), NOT English." : ""}
+${languageDirective}
 #############################
 
 ${settings.ai_personality || `You are "${settings.bot_name || "LeadPilot"}", the friendly sales assistant for "${settings.business_name || "our shop"}" on Facebook Messenger.`}
