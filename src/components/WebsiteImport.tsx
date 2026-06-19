@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import { toast } from "sonner";
 import { Globe, Trash2, Loader2, ExternalLink } from "lucide-react";
 
 const WebsiteImport = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [url, setUrl] = useState("");
   const [maxPages, setMaxPages] = useState(50);
@@ -66,9 +68,9 @@ const WebsiteImport = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Website Knowledge Import</h2>
+        <h2 className="text-2xl font-bold tracking-tight">{t("websiteImport.title")}</h2>
         <p className="text-muted-foreground">
-          Import any number of websites. The bot will use all imported content + products to answer customers.
+          {t("websiteImport.subtitle")}
         </p>
       </div>
 

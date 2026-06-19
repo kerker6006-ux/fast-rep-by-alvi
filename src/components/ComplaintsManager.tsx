@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +19,7 @@ const statusColors: Record<string, string> = {
 };
 
 const ComplaintsManager = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<any>(null);
   const [adminNote, setAdminNote] = useState("");
@@ -55,8 +57,7 @@ const ComplaintsManager = () => {
     return (
       <div className="text-center py-16">
         <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-lg font-semibold">No complaints yet</h3>
-        <p className="text-muted-foreground">Customer complaints will appear here when they report issues via Messenger.</p>
+        <h3 className="text-lg font-semibold">{t("complaints.empty")}</h3>
       </div>
     );
   }
@@ -64,8 +65,8 @@ const ComplaintsManager = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Complaints</h2>
-        <p className="text-muted-foreground">Customer complaints received via Messenger bot.</p>
+        <h2 className="text-2xl font-bold tracking-tight">{t("complaints.title")}</h2>
+        <p className="text-muted-foreground">{t("complaints.subtitle")}</p>
       </div>
 
       {/* Stats */}

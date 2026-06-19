@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,6 +39,7 @@ type Product = {
 };
 
 const ProductsManager = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -270,26 +272,26 @@ const ProductsManager = () => {
         <div>
           <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <Package className="h-6 w-6 text-primary" />
-            Product Catalog
+            {t("products.title")}
           </h2>
           <p className="text-muted-foreground text-sm mt-1">
-            Manage your products with AI-powered descriptions
+            {t("products.subtitle")}
           </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 border rounded-lg px-3 py-1.5 bg-muted/50">
             <Bot className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium">AI Wizard</span>
+            <span className="text-sm font-medium">{t("aiTraining.wizardTab")}</span>
             <Switch checked={aiWizardEnabled} onCheckedChange={setAiWizardEnabled} />
           </div>
           {aiWizardEnabled && (
             <Button variant="outline" className="gap-2 shadow-lg border-primary/30 text-primary hover:bg-primary/10" onClick={() => setWizardOpen(true)}>
-              <Sparkles className="h-4 w-4" /> Open AI Wizard
+              <Sparkles className="h-4 w-4" /> {t("aiTraining.wizardTab")}
             </Button>
           )}
           <Dialog open={isOpen} onOpenChange={(v) => { if (!v) resetForm(); setIsOpen(v); }}>
           <DialogTrigger asChild>
-            <Button className="gap-2 shadow-lg bg-primary hover:bg-primary/90"><Plus className="h-4 w-4" /> Add Product</Button>
+            <Button className="gap-2 shadow-lg bg-primary hover:bg-primary/90"><Plus className="h-4 w-4" /> {t("products.addProduct")}</Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -499,7 +501,7 @@ const ProductsManager = () => {
                 </div>
                 <Button onClick={() => saveMutation.mutate()} disabled={!form.name || saveMutation.isPending} className="px-6 gap-2 shadow-md">
                   {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  {saveMutation.isPending ? "Saving..." : editingProduct ? "Update Product" : "Add Product"}
+                  {saveMutation.isPending ? t("common.saving") : editingProduct ? t("common.update") : t("products.addProduct")}
                 </Button>
               </div>
             </div>

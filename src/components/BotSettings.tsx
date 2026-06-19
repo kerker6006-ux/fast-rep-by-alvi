@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -12,6 +13,7 @@ import { useState, useEffect } from "react";
 import { Save, Globe, MessageCircle, Info } from "lucide-react";
 
 const BotSettings = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [settings, setSettings] = useState<Record<string, string>>({});
@@ -42,7 +44,7 @@ const BotSettings = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bot-settings"] });
-      toast.success("Settings saved!");
+      toast.success(t("botSettings.saved"));
     },
     onError: (e) => toast.error(e.message),
   });
@@ -51,20 +53,22 @@ const BotSettings = () => {
 
   if (isLoading) return <div className="animate-pulse space-y-4">{[1,2,3].map(i => <div key={i} className="h-32 bg-muted rounded-lg" />)}</div>;
 
+  const botOn = settings.bot_enabled !== "false";
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Bot Settings</h2>
-          <p className="text-muted-foreground">Customize how your AI bot responds to customers.</p>
+          <h2 className="text-2xl font-bold tracking-tight">{t("botSettings.title")}</h2>
+          <p className="text-muted-foreground">{t("botSettings.subtitle")}</p>
         </div>
         <div className="flex items-center gap-3 border rounded-xl px-4 py-3 bg-muted/50">
           <div className="flex flex-col">
-            <span className="text-sm font-semibold">{settings.bot_enabled !== "false" ? "Bot is ON" : "Bot is OFF"}</span>
-            <span className="text-xs text-muted-foreground">{settings.bot_enabled !== "false" ? "Replying to customers" : "Not replying"}</span>
+            <span className="text-sm font-semibold">{botOn ? t("botSettings.botOn") : t("botSettings.botOff")}</span>
+            <span className="text-xs text-muted-foreground">{botOn ? t("botSettings.replying") : t("botSettings.notReplying")}</span>
           </div>
           <Switch
-            checked={settings.bot_enabled !== "false"}
+            checked={botOn}
             onCheckedChange={(v) => update("bot_enabled", v ? "true" : "false")}
           />
         </div>
@@ -73,33 +77,33 @@ const BotSettings = () => {
       <div className="grid gap-6">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Globe className="h-5 w-5" /> Business Info</CardTitle>
-            <CardDescription>Tell the AI about your business so it can represent you well.</CardDescription>
+            <CardTitle className="flex items-center gap-2"><Globe className="h-5 w-5" /> {t("botSettings.businessInfo")}</CardTitle>
+            <CardDescription>{t("botSettings.businessInfoDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Business Name</Label>
-              <Input value={settings.business_name || ""} onChange={e => update("business_name", e.target.value)} placeholder="My Business" />
+              <Label>{t("botSettings.businessName")}</Label>
+              <Input value={settings.business_name || ""} onChange={e => update("business_name", e.target.value)} placeholder={t("botSettings.businessNamePh")} />
             </div>
             <div className="space-y-2">
-              <Label>Business Description</Label>
-              <Textarea value={settings.business_description || ""} onChange={e => update("business_description", e.target.value)} placeholder="Describe what your business does..." />
+              <Label>{t("botSettings.businessDesc")}</Label>
+              <Textarea value={settings.business_description || ""} onChange={e => update("business_description", e.target.value)} placeholder={t("botSettings.businessDescPh")} />
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><MessageCircle className="h-5 w-5" /> Welcome Message</CardTitle>
-            <CardDescription>The first message customers receive when they message your page. Write it in the language you want the bot to use.</CardDescription>
+            <CardTitle className="flex items-center gap-2"><MessageCircle className="h-5 w-5" /> {t("botSettings.welcomeMessage")}</CardTitle>
+            <CardDescription>{t("botSettings.welcomeDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Welcome Message</Label>
-              <Textarea value={settings.welcome_message || ""} onChange={e => update("welcome_message", e.target.value)} placeholder="Type your welcome message…" />
+              <Label>{t("botSettings.welcomeMessage")}</Label>
+              <Textarea value={settings.welcome_message || ""} onChange={e => update("welcome_message", e.target.value)} placeholder={t("botSettings.welcomePh")} />
             </div>
             <div className="space-y-2">
-              <Label>Out of Stock Message</Label>
+              <Label>{t("botSettings.outOfStock")}</Label>
               <Textarea value={settings.out_of_stock_message || ""} onChange={e => update("out_of_stock_message", e.target.value)} />
             </div>
           </CardContent>
@@ -107,16 +111,16 @@ const BotSettings = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5" /> AI Custom Instructions</CardTitle>
-            <CardDescription>Give the AI specific instructions on how to behave. Write in plain text.</CardDescription>
+            <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5" /> {t("botSettings.customInstructions")}</CardTitle>
+            <CardDescription>{t("botSettings.customInstructionsDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Custom Instructions for AI</Label>
+              <Label>{t("botSettings.customInstructionsLabel")}</Label>
               <Textarea
                 value={settings.custom_instructions || ""}
                 onChange={e => update("custom_instructions", e.target.value)}
-                placeholder="e.g. Always mention free delivery for orders above $500. Don't discuss competitor products."
+                placeholder={t("botSettings.customInstructionsPh")}
                 className="min-h-[120px]"
               />
             </div>
@@ -125,14 +129,14 @@ const BotSettings = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><MessageCircle className="h-5 w-5" /> Comment & Feed Settings</CardTitle>
-            <CardDescription>Control how the bot handles comments and page posts.</CardDescription>
+            <CardTitle className="flex items-center gap-2"><MessageCircle className="h-5 w-5" /> {t("botSettings.commentFeed")}</CardTitle>
+            <CardDescription>{t("botSettings.commentFeedDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label>AI-Powered Comment Replies</Label>
-                <p className="text-xs text-muted-foreground">Use AI to reply to comments intelligently instead of static text</p>
+                <Label>{t("botSettings.aiComments")}</Label>
+                <p className="text-xs text-muted-foreground">{t("botSettings.aiCommentsDesc")}</p>
               </div>
               <Switch
                 checked={settings.comment_ai_reply === "true"}
@@ -141,8 +145,8 @@ const BotSettings = () => {
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <Label>Auto-Import Products from Page Posts</Label>
-                <p className="text-xs text-muted-foreground">When you post a photo on your page, AI analyzes it and creates a pending product</p>
+                <Label>{t("botSettings.autoImport")}</Label>
+                <p className="text-xs text-muted-foreground">{t("botSettings.autoImportDesc")}</p>
               </div>
               <Switch
                 checked={settings.auto_import_products !== "false"}
@@ -154,22 +158,22 @@ const BotSettings = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>🔗 Facebook Connection</CardTitle>
-            <CardDescription>Use these values when setting up your Facebook Webhook.</CardDescription>
+            <CardTitle>🔗 {t("botSettings.fbConnection")}</CardTitle>
+            <CardDescription>{t("botSettings.fbConnectionDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Webhook URL</Label>
+              <Label>{t("botSettings.webhookUrl")}</Label>
               <Input readOnly value={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fb-webhook`} className="font-mono text-xs" />
-              <p className="text-xs text-muted-foreground">Paste this in Facebook Developer App → Messenger → Webhooks → Callback URL</p>
+              <p className="text-xs text-muted-foreground">{t("botSettings.webhookHint")}</p>
             </div>
-            <p className="text-xs text-muted-foreground">Each connected Facebook Page has its own unique Verify Token. Go to the <strong>FB Pages</strong> tab to see yours.</p>
+            <p className="text-xs text-muted-foreground">{t("botSettings.eachPageHint")}</p>
           </CardContent>
         </Card>
 
         <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} size="lg" className="gap-2">
           <Save className="h-4 w-4" />
-          {saveMutation.isPending ? "Saving..." : "Save All Settings"}
+          {saveMutation.isPending ? t("common.saving") : t("botSettings.saveAll")}
         </Button>
       </div>
     </div>
