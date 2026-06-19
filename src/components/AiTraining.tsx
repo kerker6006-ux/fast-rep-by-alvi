@@ -24,6 +24,7 @@ import {
   parseSettingsJson,
   type SettingsMap,
 } from "@/lib/ai-training-settings";
+import AutoLearnPanel from "@/components/AutoLearnPanel";
 
 type CatField = { key: string; labelKey: string; phKey: string; type?: "text" | "textarea" };
 
@@ -524,14 +525,18 @@ const AiTraining = () => {
       </div>
 
       <Tabs defaultValue="wizard" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 h-10">
+        <TabsList className="grid w-full grid-cols-3 h-10">
           <TabsTrigger value="wizard" className="gap-1.5 text-sm">
             <Sparkles className="h-3.5 w-3.5" /> {t("aiTraining.wizardTab")}
           </TabsTrigger>
           <TabsTrigger value="manual" className="gap-1.5 text-sm">
             <Settings2 className="h-3.5 w-3.5" /> {t("aiTraining.manualTab")}
           </TabsTrigger>
+          <TabsTrigger value="autolearn" className="gap-1.5 text-sm">
+            <Brain className="h-3.5 w-3.5" /> {t("autoLearn.tab")}
+          </TabsTrigger>
         </TabsList>
+        <TabsContent value="autolearn"><AutoLearnPanel /></TabsContent>
 
         {/* ===== AI WIZARD TAB ===== */}
         <TabsContent value="wizard" className="space-y-4">

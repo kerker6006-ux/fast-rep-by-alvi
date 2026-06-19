@@ -1,48 +1,58 @@
-## Goal
-Make the Products → "Add Product" dialog fully translated and remove leftover Bangla example text (replace with neutral examples like "t-shirt", "Red", "M, L, XL"). Texts must switch live with the language switcher.
+# Self-Learning AI Training + Chat-Level Corrections
 
-## Problem
-`src/components/ProductsManager.tsx` currently hardcodes English labels and uses Bangla examples in placeholders/hints (e.g. `"Red, মেরুন"`, `"M, L, XL"`, `"hijab, scarf, হিজাব"`, `"e.g. Hijab, Sharee"`, `"e.g. Cream, Pink, কালো"`, `"Color / রং"`, plus help text such as "Bot sends the exact color image customer asks for"). These never change when switching languages.
+Add two new training capabilities, both scoped per-user (existing RLS already isolates each user's data — no DB users get mixed).
 
-## Changes
+## 1. Auto-Learn from Real Conversations
 
-### 1. `src/components/ProductsManager.tsx`
-Replace every hardcoded English/Bangla string in the component with `t("products.form.<key>")` calls. Specifically:
+A scheduled / on-demand analyzer that reads the user's own past messages, finds patterns + bot mistakes, and proposes settings updates the user must confirm before they apply.
 
-- Dialog title: "Edit Product" / "Add New Product"
-- Section labels: Category, Names (English / alternate), Price, Color, Size, Material
-- All placeholders — strip Bangla examples and use neutral ones:
-  - Category new input: `"e.g. T-shirt, Hijab"` → translated, no Bangla
-  - Name: `"Product name"` → translated, e.g. "T-shirt"
-  - Color: `"Red, Blue"` (remove `মেরুন`)
-  - Size: `"M, L, XL"` (translated label, same example)
-  - Material: `"Cotton"`
-  - Keywords: `"t-shirt, cotton, summer"` (remove `হিজাব`)
-  - Color variant name: `"e.g. Cream, Pink, Black"` (remove Bangla)
-  - Size variant: `"50ml / 100ml / 250g"` (keep, neutral)
-- AI section: "AI-Powered Descriptions", "Generate", "Click Generate or type manually..."
-- Variants: "🎨 Color Variants", helper text, "Add Color", "No color variants yet.", example hint, color-name uppercase label, photo label, the "⚠️ Important" hint
-- Size/ML Variants section + empty state
-- Active toggle label "Active (Bot will show this)"
-- Save button states already use `t("common.*")` — keep
-- Stats: "Total Products", "Active", "Inactive", "Categories"
-- Search placeholder, view-mode tooltips, "All", "Uncategorized" pill
-- Empty state: "No products yet", description, "Add Your First Product"
-- Preview modal: "Color Variants", "Size Options", "Active"/"Inactive", "Edit", "Delete"
-- Toasts (keep English or translate — translate the user-facing ones: "Enter product name first", "AI description generated!", "AI generation failed", "Product updated!", "Product added!", "Product deleted!", "Product details filled by AI! Review and save.")
+**New edge function:** `ai-auto-learn`
+- Pulls last N (default 100) messages from `conversations` + `messages` for the calling user only (scoped by `user_id`).
+- Sends them to Gemini with a prompt that extracts:
+  - Recurring customer question patterns → suggested FAQ additions
+  - Bot replies that got negative follow-ups ("না", "wrong", "you didn't understand", repeat questions) → suggested fixes
+  - New product/keyword mentions not yet in catalog → suggested auto-reply rules
+  - Tone/length issues
+- Returns a structured `suggestions[]` array (type, before, after, reason). Nothing is saved yet.
 
-### 2. Locale JSON files
-Add a `products.form.*` namespace (and reuse existing `products.*` where present) in all four locale files with full translations:
+**New table:** `training_suggestions`
+- Columns: id, user_id, kind (faq | rule | personality | example | never_say), payload (jsonb), reason, status (pending | applied | rejected), created_at.
+- RLS: user can only see/modify their own rows. GRANTs for authenticated + service_role.
 
-- `src/i18n/locales/en.json`
-- `src/i18n/locales/bn.json`
-- `src/i18n/locales/ko.json`
-- `src/i18n/locales/es.json`
+**New UI in AI Training page:** "Auto-Learn" tab
+- Button: "Analyze my last 100 conversations"
+- Shows each suggestion as a card with Before / After / Why
+- Per-card Approve / Reject buttons
+- Approve → merges into `bot_settings` (FAQ list append, never_say append, personality patch, etc.) and marks suggestion `applied`
+- Reject → marks `rejected`
+- Fully translated (en/bn/ko/es)
 
-Each new key gets a translation in all four languages. Examples will use generic items (T-shirt, Hijab, Cotton, Red, M/L/XL) — no embedded Bangla in the English/Korean/Spanish placeholders.
+## 2. Per-Chat Bot Correction
 
-### 3. No logic changes
-Database fields, mutations, AI wizard wiring, image upload — all unchanged. Pure i18n + placeholder cleanup.
+In the Chats view, let the user select an assistant message and tell the bot how it should have replied. This becomes a training example.
+
+**Changes to `ConversationsView.tsx`:**
+- On each outgoing (bot) message: small "Train" / pencil icon
+- Click opens a dialog: shows the original customer message + bot reply, with a textarea "How should the bot have replied?" and optional "Why was this wrong?"
+- Submit → inserts into `training_suggestions` as kind=`example` with payload `{customer, wrong_reply, correct_reply, reason}`, status=`pending`
+- User then approves it in the Auto-Learn tab (same approval flow), which appends to `bot_settings.reply_examples`
+
+**Optional fast path:** an "Apply immediately" checkbox in the dialog that skips the suggestion queue and writes directly to `reply_examples` — still per-user, still RLS-scoped.
+
+## 3. Data Isolation (confirmation, no new work)
+
+Already enforced — `bot_settings`, `conversations`, `messages`, `training_suggestions` all carry `user_id` with RLS `auth.uid() = user_id`. The new function uses the caller's JWT and never reads cross-user. No shared storage between accounts.
+
+## Files
+
+- New: `supabase/functions/ai-auto-learn/index.ts`
+- New migration: `training_suggestions` table + RLS + GRANTs
+- New: `src/components/AutoLearnPanel.tsx` (suggestions list + approve/reject)
+- New: `src/components/TrainBotDialog.tsx` (per-message correction dialog)
+- Edit: `src/components/AiTraining.tsx` — add "Auto-Learn" tab
+- Edit: `src/components/ConversationsView.tsx` — add Train button on bot messages
+- Edit: `src/i18n/locales/{en,bn,ko,es}.json` — new keys
 
 ## Out of scope
-Other pages (Orders, Leads, Bot Settings, etc.) — only the Products page was reported. If more Bangla leftovers exist elsewhere, please point them out and I will sweep them next.
+- No automatic background cron — user clicks "Analyze" (cheaper, predictable). Can add cron later if requested.
+- No model retraining; we update bot settings/examples that the existing reply pipeline already reads.

@@ -772,5 +772,46 @@
   "appointments": {
     "title": "Appointments",
     "subtitle": "Bookings captured by your AI Receptionist."
+  },
+  "autoLearn": {
+    "tab": "Auto-Learn",
+    "title": "Self-Learning",
+    "desc": "Let the bot analyze your recent conversations and suggest improvements. Nothing is applied until you approve it.",
+    "analyzeBtn": "Analyze last 100 conversations",
+    "analyzing": "Analyzing...",
+    "analyzedOk": "Found {{n}} suggestions",
+    "pending": "Pending suggestions",
+    "pendingDesc": "Approve to apply to your bot, reject to discard.",
+    "empty": "No suggestions yet. Click Analyze to generate some.",
+    "approve": "Apply",
+    "reject": "Reject",
+    "applied": "Applied to your bot",
+    "rejected": "Rejected",
+    "customerSaid": "Customer said",
+    "wrongReply": "Wrong reply",
+    "correctReply": "Correct reply",
+    "keyword": "Keyword",
+    "response": "Response",
+    "fromChat": "From chat",
+    "fromAuto": "Auto-learned",
+    "kind": {
+      "faq": "FAQ",
+      "rule": "Auto-reply rule",
+      "personality": "Personality",
+      "example": "Example reply",
+      "never_say": "Never say"
+    }
+  },
+  "trainBot": {
+    "button": "Train",
+    "title": "Train the bot",
+    "desc": "Tell the bot how it should have replied. Saved for your approval in AI Training.",
+    "customer": "Customer message",
+    "wrong": "Bot replied",
+    "correct": "How it should reply",
+    "correctPh": "Type the better reply...",
+    "reason": "Why was this wrong?",
+    "submit": "Save for training",
+    "saved": "Saved. Approve it in AI Training → Auto-Learn."
   }
 }

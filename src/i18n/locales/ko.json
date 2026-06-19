@@ -772,5 +772,46 @@
   "appointments": {
     "title": "예약",
     "subtitle": "AI 안내 직원이 받은 예약입니다."
+  },
+  "autoLearn": {
+    "tab": "자동 학습",
+    "title": "자가 학습",
+    "desc": "봇이 최근 대화를 분석해 개선안을 제안합니다. 승인 전까지 적용되지 않습니다.",
+    "analyzeBtn": "최근 100건 분석",
+    "analyzing": "분석 중...",
+    "analyzedOk": "{{n}}개 제안 발견",
+    "pending": "대기 중인 제안",
+    "pendingDesc": "승인하면 봇에 적용됩니다.",
+    "empty": "아직 제안이 없습니다.",
+    "approve": "적용",
+    "reject": "거부",
+    "applied": "적용되었습니다",
+    "rejected": "거부됨",
+    "customerSaid": "고객 메시지",
+    "wrongReply": "잘못된 답변",
+    "correctReply": "올바른 답변",
+    "keyword": "키워드",
+    "response": "응답",
+    "fromChat": "채팅에서",
+    "fromAuto": "자동 학습",
+    "kind": {
+      "faq": "FAQ",
+      "rule": "자동 답변",
+      "personality": "성격",
+      "example": "예시 답변",
+      "never_say": "금지어"
+    }
+  },
+  "trainBot": {
+    "button": "학습",
+    "title": "봇 학습시키기",
+    "desc": "봇이 어떻게 답했어야 하는지 알려주세요. 승인 후 적용됩니다.",
+    "customer": "고객 메시지",
+    "wrong": "봇 답변",
+    "correct": "올바른 답변",
+    "correctPh": "더 나은 답변 입력...",
+    "reason": "왜 잘못됐나요?",
+    "submit": "학습용으로 저장",
+    "saved": "저장됨. AI Training → 자동 학습에서 승인하세요."
   }
 }

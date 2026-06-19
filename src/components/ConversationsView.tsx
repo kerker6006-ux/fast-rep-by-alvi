@@ -5,8 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, User, Clock, ArrowLeft } from "lucide-react";
+import { MessageSquare, User, Clock, ArrowLeft, GraduationCap } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import TrainBotDialog from "@/components/TrainBotDialog";
 
 type Conversation = {
   id: string;
@@ -28,6 +29,8 @@ type Message = {
 const ConversationsView = () => {
   const { t } = useTranslation();
   const [selectedConvo, setSelectedConvo] = useState<string | null>(null);
+  const [trainOpen, setTrainOpen] = useState(false);
+  const [trainData, setTrainData] = useState<{ customer: string; wrong: string }>({ customer: "", wrong: "" });
 
   const { data: conversations, isLoading } = useQuery({
     queryKey: ["conversations"],
@@ -138,7 +141,9 @@ const ConversationsView = () => {
               </div>
               <ScrollArea className="flex-1 p-4">
                 <div className="space-y-3">
-                  {messages?.map(m => (
+                  {messages?.map((m, idx) => {
+                    const prevIncoming = [...(messages ?? [])].slice(0, idx).reverse().find(x => x.direction === "incoming");
+                    return (
                     <div key={m.id} className={`flex ${m.direction === "outgoing" ? "justify-end" : "justify-start"}`}>
                       <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
                         m.direction === "outgoing"
@@ -149,18 +154,31 @@ const ConversationsView = () => {
                           <img src={m.image_url} alt="" className="rounded-lg max-w-[200px] mb-2" />
                         )}
                         {m.content && <p className="text-sm whitespace-pre-wrap">{m.content}</p>}
-                        <p className={`text-xs mt-1 ${m.direction === "outgoing" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                          {m.direction === "outgoing" ? "🤖 Bot" : "👤 Customer"} · {new Date(m.created_at).toLocaleTimeString()}
-                        </p>
+                        <div className="flex items-center justify-between gap-2 mt-1">
+                          <p className={`text-xs ${m.direction === "outgoing" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                            {m.direction === "outgoing" ? "🤖 Bot" : "👤 Customer"} · {new Date(m.created_at).toLocaleTimeString()}
+                          </p>
+                          {m.direction === "outgoing" && (
+                            <button
+                              onClick={() => { setTrainData({ customer: prevIncoming?.content ?? "", wrong: m.content ?? "" }); setTrainOpen(true); }}
+                              className="text-[10px] underline opacity-80 hover:opacity-100 flex items-center gap-0.5"
+                              title={t("trainBot.title")}
+                            >
+                              <GraduationCap className="h-3 w-3" /> {t("trainBot.button")}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </ScrollArea>
             </>
           )}
         </Card>
       </div>
+      <TrainBotDialog open={trainOpen} onOpenChange={setTrainOpen} customerMessage={trainData.customer} wrongReply={trainData.wrong} />
     </div>
   );
 };
