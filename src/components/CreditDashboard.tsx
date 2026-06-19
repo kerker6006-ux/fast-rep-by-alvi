@@ -78,7 +78,7 @@ const CreditDashboard = () => {
         <CardContent className="space-y-3 text-sm">
           <div className="flex justify-between border-b pb-2">
             <span className="flex items-center gap-2"><MessageSquare className="h-4 w-4 text-blue-600" /> {t("credits.textReply")}</span>
-            <Badge variant="secondary">{fmtUSD(costText)} ({textCents}¢)</Badge>
+            <Badge variant="secondary">{fmtUSD(costText)}</Badge>
           </div>
           <div className="flex justify-between border-b pb-2">
             <span className="flex items-center gap-2"><Image className="h-4 w-4 text-purple-600" /> {t("credits.imageReply")}</span>
