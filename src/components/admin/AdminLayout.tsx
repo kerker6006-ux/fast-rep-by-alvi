@@ -67,7 +67,7 @@ const AdminLayout = () => {
             variant="ghost"
             size="sm"
             className="w-full justify-start text-slate-300 hover:text-white hover:bg-slate-800"
-            onClick={async () => { await signOut(); nav("/auth"); }}
+            onClick={async () => { await signOut(); nav("/admin/login"); }}
           >
             <LogOut className="h-4 w-4 mr-2" /> {t("common.signOut")}
           </Button>

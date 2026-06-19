@@ -14,8 +14,8 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
       </div>
     );
   }
-  if (!session) return <Navigate to="/auth?redirect=/admin" replace />;
-  if (!isAdmin) return <Navigate to="/" replace />;
+  if (!session) return <Navigate to="/admin/login" replace />;
+  if (!isAdmin) return <Navigate to="/admin/login" replace />;
   return <>{children}</>;
 };
 
