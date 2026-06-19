@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -71,45 +72,26 @@ const AdjustCreditsDialog = ({ userId, displayName, mode, onDone }: { userId: st
 
 const AdminUsers = () => {
   const { t } = useTranslation();
+  const { session } = useAuth();
   const qc = useQueryClient();
   const [q, setQ] = useState("");
 
   const { data: users, isLoading } = useQuery({
-    queryKey: ["admin-users-full"],
+    queryKey: ["admin-users-full", session?.user?.id, session?.access_token],
+    enabled: !!session?.access_token,
     queryFn: async () => {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, display_name, created_at, suspended")
-        .order("created_at", { ascending: false });
-
-      // Fetch emails via admin edge function
-      let emails: Record<string, string> = {};
-      try {
-        const { data: emailRes } = await supabase.functions.invoke("admin-list-users");
-        emails = emailRes?.emails ?? {};
-      } catch {
-        // non-fatal
-      }
-
-      const enriched = await Promise.all((profiles ?? []).map(async (p: any) => {
-        const [credits, products, orders, conversations, pages] = await Promise.all([
-          supabase.from("user_credits").select("balance").eq("user_id", p.id).maybeSingle(),
-          supabase.from("products").select("id", { count: "exact", head: true }).eq("user_id", p.id),
-          supabase.from("orders").select("id", { count: "exact", head: true }).eq("user_id", p.id),
-          supabase.from("conversations").select("id", { count: "exact", head: true }).eq("user_id", p.id),
-          supabase.from("fb_pages").select("page_name").eq("user_id", p.id),
-        ]);
-        return {
-          ...p,
-          email: emails[p.id] ?? null,
-          balance: Number(credits.data?.balance ?? 0),
-          productCount: products.count ?? 0,
-          orderCount: orders.count ?? 0,
-          conversationCount: conversations.count ?? 0,
-          pages: pages.data ?? [],
-        };
-      }));
-      return enriched;
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-list-users`, {
+        method: "POST",
+        headers: {
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${session!.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ include_details: true }),
+      });
+      const result = await response.json();
+      if (!response.ok || result?.error) throw new Error(result?.error || "Failed to load users");
+      return result.users ?? [];
     },
   });
 
