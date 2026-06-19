@@ -54,9 +54,9 @@ const AnalyticsDashboard = () => {
 
   const greeting = (() => {
     const h = new Date().getHours();
-    if (h < 12) return "Good morning";
-    if (h < 18) return "Good afternoon";
-    return "Good evening";
+    if (h < 12) return t("greeting.morning");
+    if (h < 18) return t("greeting.afternoon");
+    return t("greeting.evening");
   })();
   const firstName = (user?.user_metadata?.display_name || user?.email?.split("@")[0] || "").split(" ")[0];
 
@@ -98,7 +98,7 @@ const AnalyticsDashboard = () => {
                 <ArrowUpRight className="h-3.5 w-3.5" />
                 {stats?.deliveredOrders || 0} {t("analytics.deliveredOrders").toLowerCase()}
               </span>
-              <span>of {stats?.totalOrders || 0} {t("analytics.totalOrders").toLowerCase()}</span>
+              <span>{t("analytics.of")} {stats?.totalOrders || 0} {t("analytics.totalOrders").toLowerCase()}</span>
             </div>
           </div>
         </Card>
