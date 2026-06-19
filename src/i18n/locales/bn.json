@@ -349,7 +349,16 @@
         "deposit": "জামানত দিতে হবে?",
         "depositA": "কালার ও দীর্ঘ সার্ভিসে ২০% জামানত প্রয়োজন।"
       }
-    }
+    },
+    "profileTitle": "আপনার ব্যবসার প্রোফাইল",
+    "profileProgress": "{{total}} এর মধ্যে {{filled}} পূরণ হয়েছে",
+    "profileComplete": "প্রোফাইল সম্পূর্ণ — সংরক্ষণের জন্য প্রস্তুত",
+    "notSetYet": "এখনও সেট করা হয়নি",
+    "askAi": "AI কে জিজ্ঞাসা করুন",
+    "askHintPrefix": "অনুগ্রহ করে সেট করতে সাহায্য করুন:",
+    "resetConversation": "কথোপকথন রিসেট",
+    "itemsLabel": "টি",
+    "businessName": "ব্যবসার নাম"
   },
   "autoReply": {
     "title": "অটো-রিপ্লাই নিয়ম",

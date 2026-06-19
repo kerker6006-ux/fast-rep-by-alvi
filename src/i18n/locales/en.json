@@ -349,7 +349,16 @@
         "deposit": "Do I need to pay a deposit?",
         "depositA": "A 20% deposit is required to confirm color and longer services."
       }
-    }
+    },
+    "profileTitle": "Your business profile",
+    "profileProgress": "{{filled}} of {{total}} filled",
+    "profileComplete": "Profile complete — ready to save",
+    "notSetYet": "Not set yet",
+    "askAi": "Ask AI",
+    "askHintPrefix": "Please help me set:",
+    "resetConversation": "Reset conversation",
+    "itemsLabel": "items",
+    "businessName": "Business name"
   },
   "autoReply": {
     "title": "Auto-Reply Rules",

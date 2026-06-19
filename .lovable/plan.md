@@ -1,45 +1,56 @@
-## Goal
-Make Fast Rep fully niche-aware end-to-end: the webhook AI uses the selected category's training/persona (not the hardcoded skincare/Bangla shop), the sidebar + every screen reflect the niche, AI Training only asks for what that niche needs (with preset templates), and all new strings translate fully in en/ko/es/bn.
+# Smarter AI Training: skip-known, persistent chat, live summary
 
-## 1. Niche-aware webhook (`supabase/functions/fb-webhook/index.ts`)
-Currently lines ~1053-1193 hardcode a Bangla skincare shopkeeper prompt for every user. Refactor so the system prompt is built from the user's `business_category`:
+Make the AI Training wizard feel like a real assistant: it reads what you've already configured, skips those questions, remembers the whole conversation across reloads, and shows a live "What I know about your business" panel that updates as the chat progresses.
 
-- Add `buildSystemPrompt(category, settings, businessInfo, services, products, websiteKnowledge, langSignals)` with **four mutually exclusive branches** (`ecommerce | dental | hvac | salon`).
-- Shared header: identity, language mirroring rule (keep the existing Bangla/Banglish/English mirror), "answer only what is asked", reply length, never invent facts.
-- **ecommerce branch**: keeps product catalog, category summary, image-compare logic, order collection, delivery/payment/return blocks. (Current behavior, just moved into this branch.)
-- **dental / hvac / salon branches**: drop product catalog, skincare examples, "Korean", `SUGGEST_PRODUCT`, order/quantity flow. Inject Services list, Hours, Address, Insurance (dental), Service area (hvac), Emergency policy, Cancellation policy, Deposit policy (salon), FAQ list, Never-say list. Replace "ORDER COLLECTION" with **Appointment/Lead Capture** using the right fields per `leadFieldsByCategory`, ask one missing field at a time, then confirm.
-- Persona defaults per category (overridable by `settings.ai_personality`): Dental → "polite clinic receptionist", HVAC → "dispatch coordinator", Salon → "front-desk concierge", Ecommerce → existing shopkeeper.
-- `extractAndSaveLead` (already around line 1611) already branches by category — verify field list matches `leadFieldsByCategory` above and align.
-- Same change for image handling: only ecommerce does product-image visual compare; service verticals just acknowledge an attachment and continue lead capture.
+## 1. Skip what's already configured
 
-## 2. AI Training: niche-only fields + preset templates (`src/components/AiTraining.tsx`)
-- `CATEGORY_FIELDS` already exists. Verify only the matching fields render (hide tabs/sections that reference delivery, returns, payment, product catalog, order examples when `cat !== "ecommerce"`).
-- **Preset templates ("Load starter template" button per category)** that pre-fill empty fields with editable defaults:
-  - **ecommerce**: delivery_info ("Inside Dhaka 60৳, outside 120৳, 1-3 days"), payment_methods ("Cash on Delivery, bKash, Nagad"), return_policy ("7-day return for unused items, buyer pays return shipping").
-  - **dental**: operating_hours ("Sun-Thu 10am-8pm, Fri closed"), business_address (placeholder), insurance_accepted ("We accept ___; please share your card at the visit"), emergency_policy ("Same-day slots for acute pain — call front desk"), cancellation_policy ("Free reschedule 24h in advance; later cancellations forfeit deposit").
-  - **hvac**: operating_hours ("Mon-Sat 8am-7pm; 24/7 emergency"), service_area_zips ("List your zip codes"), emergency_policy ("Same-day for no-heat / no-cool / leaks"), pricing_policy ("Free estimates over phone; on-site diagnostic $79 credited to repair").
-  - **salon**: operating_hours ("Tue-Sun 10am-8pm"), business_address (placeholder), cancellation_policy ("24h notice required; no-show = deposit forfeit"), deposit_policy ("20% deposit on color/longer services, refundable up to 48h").
-  - Templates live in a new helper `getPresetTemplate(cat)` returning a `SettingsMap`. "Load template" merges only into empty keys (never overwrites user edits) and marks `hasChanges`.
-- Adapt the **chat wizard greeting + system prompt** to the category so it only asks niche-relevant questions (hours/address/insurance/emergency/cancellation/deposit/services for verticals; product list, delivery, returns, payment for ecommerce). Same for "AI-suggested FAQs" generator — pass `cat` so suggestions are vertical-specific.
-- Header copy already swaps "Train your AI Receptionist" / "Train your AI Shopkeeper" — keep, verify it uses `t()` keys.
-- Remove/hide the "Reply Examples" tab for service verticals (or relabel it to "Sample patient/client responses").
+In `supabase/functions/ai-training-chat/index.ts`:
 
-## 3. Sidebar + screens reflect the niche
-- `DashboardSidebar.tsx`: already hides Products/Pending/Suggestions/Orders for service verticals and renames Leads→Appointments. Also relabel **`nav.conversations`** to "Patient chats" (dental) / "Client chats" (salon) / "Customer calls/chats" (hvac) via a small `labelForCategory()` helper; same treatment for `nav.complaints` → "Issue tickets" only when ecommerce.
-- `ServicesManager.tsx` and `LeadsManager.tsx`: already use niche labels — verify all column headers, empty states, toasts, and CSV export labels go through `t()`.
-- `ConversationsView.tsx`, `ComplaintsManager.tsx`, `AnalyticsDashboard.tsx`, `BotSettings.tsx`: replace any hardcoded "customer", "shop", "product", "order" strings with `t()` calls that resolve to the niche-correct word via a new `t("terms.customer")` / `t("terms.product")` namespace whose values differ per language (no per-category branching — instead expose a `useNicheTerms()` hook that returns `{ customer, item, booking, ... }` already translated).
+- Build a `knownFields` / `missingFields` list from the incoming `settings` + `category`, using the same per-niche field list the UI uses (business_name, operating_hours, address, insurance, emergency_policy, cancellation_policy, deposit_policy, service_area_zips, pricing_policy, delivery_info, payment_methods, return_policy, faq_list, never_say_list, reply_tone, welcome_message…).
+- Inject both into the system prompt with strict rules:
+  - "These fields are ALREADY set — do NOT ask about them again. Only ask for confirmation if the user brings them up."
+  - "Ask ONLY about MISSING fields, in priority order: <missing list>."
+  - "When everything required for <category> is filled, say the setup is complete and offer to save."
+- Same for the `start` greeting: greet by `business_name` if known and immediately ask the first missing question instead of generic intro.
 
-## 4. i18n completeness (en/ko/es/bn)
-- Audit added keys (`aiTraining.*`, `appointments.*`, `services.*`, `nav.appointments`, new preset placeholders, niche terms) and ensure all four locale files have them with native translations — no English fallbacks in ko/es/bn.
-- Add a dev-time guard: a tiny script `scripts/check-i18n.mjs` that diffs key sets across the four files and prints missing keys. (Not run in build; for manual verification.)
-- Verify `LanguageSwitcher` triggers a re-render of Services, Leads, AI Training, Sidebar — confirm components read `t()` inside render (not module scope).
+## 2. Persistent chat history
 
-## 5. Verification
-1. Set category = Dental → sidebar shows Services + Appointments (no Products/Orders/Suggestions); AI Training shows only hours/address/insurance/emergency/cancellation + FAQ + Never-say; "Load template" fills clinic defaults; send a FB test message → webhook prompt logged contains "dental clinic receptionist" and no skincare/Bangla shopkeeper text; lead saved with `preferred_date`.
-2. Switch language to Korean → every label in Services, Leads/Appointments, AI Training, Sidebar, BotSettings is Korean (spot-check 10 strings). Repeat for es and bn.
-3. Switch category to Ecommerce → Products/Orders return, AI Training shows delivery/return/payment, webhook prompt contains product catalog.
-4. Switch category to HVAC → service area + emergency fields appear; preset loads zip placeholder; webhook prompt contains "dispatch coordinator" persona and Services list.
-5. Switch to Salon → cancellation + deposit fields appear; preset loads salon defaults.
+Store the wizard transcript in the existing `bot_settings` table under a single key `ai_training_chat_history` (JSON-serialized `ChatMessage[]`). No new tables.
+
+In `src/components/AiTraining.tsx`:
+
+- On mount, hydrate `chatMessages` from `settings.ai_training_chat_history` (parse JSON). If present, set `chatStarted = true` so the user lands back in their conversation.
+- After every successful `startChat` / `sendMessage` / `generateAndApplySettings`, upsert `ai_training_chat_history` with the latest messages (debounced/awaited like other settings).
+- Add a "Reset conversation" button that clears the key and resets local state (keeps configured fields intact).
+
+## 3. Live "What I know" summary panel
+
+Add a sidebar/card next to the chat (above on mobile) titled e.g. "Your business profile":
+
+- Renders a checklist of the niche's expected fields from `CATEGORY_FIELDS[cat]` + core fields (business_name, reply_tone, faq count, never_say count).
+- Each row shows: field label, a green check + truncated value if set, or a muted "Not set yet" with a small "Ask AI" button that drops a hint into the chat input.
+- Re-derives from `settings` on every render, so it updates the moment `generateAndApplySettings` merges new values or the user edits manually.
+- Progress bar: `filled / total` for the current niche.
+
+## 4. Auto-merge as the chat progresses (optional but small)
+
+Right now settings only merge when the user clicks "Generate & Save". To make the summary feel alive:
+
+- After every 2 user turns, call `generate_settings` silently in the background and merge any new fields into `bot_settings`. Show a subtle "Updated: operating_hours, insurance_accepted" toast.
+- Existing manual values are never overwritten (`mergeGeneratedSettings` already preserves non-empty fields — verify and keep that behavior).
+
+## i18n
+
+Add keys for: "Your business profile", "Not set yet", "Ask AI about this", "Reset conversation", "Profile complete", "Updated from chat: {fields}" across en/ko/es/bn.
 
 ## Out of scope
-Calendar integration, SMS/email reminders, payment capture for deposits, new DB tables. All preset data is stored as plain rows in existing `bot_settings`.
+
+- No new DB tables, no schema changes.
+- No changes to the FB webhook or runtime bot behavior.
+- No changes to non-training tabs.
+
+## Files touched
+
+- `supabase/functions/ai-training-chat/index.ts` — known/missing fields in prompt, smarter greeting.
+- `src/components/AiTraining.tsx` — hydrate/persist chat history, summary panel, reset button, optional auto-merge.
+- `src/i18n/locales/{en,ko,es,bn}.json` — new keys.

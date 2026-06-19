@@ -349,7 +349,16 @@
         "deposit": "¿Necesito dejar un depósito?",
         "depositA": "Se requiere 20% de depósito para color y servicios largos."
       }
-    }
+    },
+    "profileTitle": "Perfil del negocio",
+    "profileProgress": "{{filled}} de {{total}} completados",
+    "profileComplete": "Perfil completo — listo para guardar",
+    "notSetYet": "Sin configurar",
+    "askAi": "Preguntar a la IA",
+    "askHintPrefix": "Por favor ayúdame a configurar:",
+    "resetConversation": "Reiniciar conversación",
+    "itemsLabel": "elementos",
+    "businessName": "Nombre del negocio"
   },
   "autoReply": {
     "title": "Reglas de auto-respuesta",

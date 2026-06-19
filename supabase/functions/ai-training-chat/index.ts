@@ -171,39 +171,66 @@ Rules:
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const currentSettingsSummary = settings ? Object.entries(settings)
-      .filter(([_, v]) => v && String(v).trim())
-      .map(([k, v]) => `${k}: ${String(v).slice(0, 200)}`)
-      .join("\n") : "No settings configured yet.";
+    // Build known vs missing field lists per niche so the AI never re-asks
+    const PRIORITY_BY_CAT: Record<string, string[]> = {
+      ecommerce: ["business_name", "business_description", "reply_tone", "delivery_info", "payment_methods", "return_policy", "welcome_message", "out_of_stock_message", "faq_list", "never_say_list", "order_instructions"],
+      dental: ["business_name", "business_description", "reply_tone", "operating_hours", "business_address", "insurance_accepted", "emergency_policy", "cancellation_policy", "welcome_message", "faq_list", "never_say_list"],
+      hvac: ["business_name", "business_description", "reply_tone", "operating_hours", "service_area_zips", "emergency_policy", "pricing_policy", "welcome_message", "faq_list", "never_say_list"],
+      salon: ["business_name", "business_description", "reply_tone", "operating_hours", "business_address", "cancellation_policy", "deposit_policy", "welcome_message", "faq_list", "never_say_list"],
+    };
+    const priority = PRIORITY_BY_CAT[cat] || PRIORITY_BY_CAT.ecommerce;
+    const isFilled = (k: string, v: unknown): boolean => {
+      if (v === null || v === undefined) return false;
+      const s = String(v).trim();
+      if (!s) return false;
+      if (k === "faq_list" || k === "never_say_list" || k === "reply_examples") {
+        try { const arr = JSON.parse(s); return Array.isArray(arr) && arr.length > 0; } catch { return false; }
+      }
+      return true;
+    };
+    const known: string[] = [];
+    const missing: string[] = [];
+    for (const k of priority) {
+      if (isFilled(k, settings?.[k])) known.push(k); else missing.push(k);
+    }
+    const businessName = (settings?.business_name && String(settings.business_name).trim()) || "";
+
+    const knownSummary = known.length
+      ? known.map((k) => `- ${k}: ${String(settings[k]).slice(0, 200)}`).join("\n")
+      : "(nothing configured yet)";
+    const missingList = missing.length ? missing.join(", ") : "(everything is filled — confirm and offer to save)";
 
     const wizardByCategory: Record<string, string> = {
-      ecommerce: `You are training an AI Shopkeeper for a Facebook Messenger online store.
-Ask 1-2 questions at a time about: business name, what they sell, bot tone, delivery info, payment methods, return policy, top FAQs, things the bot should never say, order collection style.
-DO NOT ask about appointments, insurance, service area, or clinic hours.`,
-      dental: `You are training an AI Receptionist for a DENTAL CLINIC.
-Ask 1-2 questions at a time about: clinic name, operating hours, address, insurance accepted, emergency policy, cancellation policy, common patient FAQs, things the bot should never say, and what info to collect to book an appointment (name, phone, preferred date, service).
-DO NOT ask about delivery, returns, payment methods, product catalog, or order collection.`,
-      hvac: `You are training an AI Dispatcher for an HVAC / HOME-SERVICES company.
-Ask 1-2 questions at a time about: company name, operating hours, service area / zip codes, emergency availability, pricing / estimate policy, common job-type FAQs, things the bot should never say, and what info to collect to dispatch a job (name, phone, address, service needed, preferred visit date).
-DO NOT ask about delivery, returns, product catalog, or shopkeeper-style orders.`,
-      salon: `You are training an AI Receptionist for a BEAUTY SALON / MED SPA.
-Ask 1-2 questions at a time about: salon name, operating hours, address, cancellation policy, deposit policy, common treatment FAQs, things the bot should never say, and what info to collect to book an appointment (name, phone, service, preferred date).
-DO NOT ask about delivery, returns, payment methods for goods, product catalog, or shopkeeper-style orders.`,
+      ecommerce: `You are training an AI Shopkeeper for a Facebook Messenger online store.`,
+      dental: `You are training an AI Receptionist for a DENTAL CLINIC.`,
+      hvac: `You are training an AI Dispatcher for an HVAC / HOME-SERVICES company.`,
+      salon: `You are training an AI Receptionist for a BEAUTY SALON / MED SPA.`,
+    };
+    const offLimitsByCategory: Record<string, string> = {
+      ecommerce: `DO NOT ask about appointments, insurance, service area, or clinic hours.`,
+      dental: `DO NOT ask about delivery, returns, payment methods for goods, product catalog, or order collection.`,
+      hvac: `DO NOT ask about delivery, returns, product catalog, or shopkeeper-style orders.`,
+      salon: `DO NOT ask about delivery, returns, payment methods for goods, product catalog, or order collection.`,
     };
 
     const systemPrompt = `${wizardByCategory[cat]}
+${offLimitsByCategory[cat]}
 
-CURRENT BOT SETTINGS:
-${currentSettingsSummary}
+ALREADY CONFIGURED (DO NOT ASK ABOUT THESE AGAIN — only confirm if the user brings them up):
+${knownSummary}
+
+STILL MISSING (ask about these, ONE OR TWO AT A TIME, in this priority order):
+${missingList}
+
+${businessName ? `The business name is "${businessName}" — address the owner naturally and never ask for the business name again.` : ""}
 
 RULES FOR YOU:
-- Ask 1-2 questions at a time, NOT all at once.
-- Use simple language. Be encouraging and make it feel easy.
-- After each answer, briefly acknowledge it and move to the next missing piece.
+- Greet briefly${businessName ? ` (use the business name "${businessName}")` : ""}, then jump straight to the FIRST missing field above.
+- Ask 1-2 questions at a time, NOT all at once. Keep messages 3-4 lines max.
+- After each answer, briefly acknowledge it and move to the next MISSING piece.
+- NEVER re-ask anything in the ALREADY CONFIGURED list.
 - Mirror the user's language (English/Spanish/Korean/Bangla).
-- Keep YOUR messages short (3-4 lines max).
-- If existing settings cover a topic, ask "Is this still correct or should we change it?"
-- When you've covered enough, say "I think we have a great setup! Want me to save these settings?"`;
+- When the MISSING list is empty, say "Your setup is complete — want me to save?" and stop asking new questions.`;
 
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
