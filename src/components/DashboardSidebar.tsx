@@ -125,6 +125,7 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
           <div className="px-3 py-2 text-[11px] text-sidebar-foreground/50 truncate">{user.email}</div>
         )}
         <LanguageSwitcher collapsed={collapsed} />
+        <ChangePasswordDialog collapsed={collapsed} email={user?.email} />
         <button
           onClick={signOut}
           className={cn(
