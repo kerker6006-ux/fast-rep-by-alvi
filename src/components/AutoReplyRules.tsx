@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,24 +9,25 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useState } from "react";
-import { Plus, Trash2, Zap, Pencil, X } from "lucide-react";
-
-const TEMPLATE_RULES = [
-  { keywords: "delivery, shipping", response: "We deliver within 2-3 business days. Standard delivery rates apply.", responseBn: "", label: "🚚 Delivery Info" },
-  { keywords: "payment, pay", response: "We accept Cash on Delivery and other payment methods.", responseBn: "", label: "💳 Payment Methods" },
-  { keywords: "return, exchange, refund", response: "If there's any issue with the product, let us know within 3 days for a return or exchange.", responseBn: "", label: "🔄 Return Policy" },
-  { keywords: "open, close, time, hours", response: "We're open every day from 10 AM to 10 PM.", responseBn: "", label: "🕐 Business Hours" },
-];
+import { Plus, Trash2, Zap, Pencil } from "lucide-react";
 
 const AutoReplyRules = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<any>(null);
   const [form, setForm] = useState({ keywords: "", response: "", responseBn: "", priority: 0 });
+
+  const TEMPLATE_RULES = [
+    { keywords: "delivery, shipping", response: t("autoReply.deliveryResp"), responseBn: "", label: t("autoReply.deliveryInfo") },
+    { keywords: "payment, pay", response: t("autoReply.paymentResp"), responseBn: "", label: t("autoReply.paymentMethods") },
+    { keywords: "return, exchange, refund", response: t("autoReply.returnResp"), responseBn: "", label: t("autoReply.returnPolicy") },
+    { keywords: "open, close, time, hours", response: t("autoReply.hoursResp"), responseBn: "", label: t("autoReply.businessHours") },
+  ];
 
   const { data: rules, isLoading } = useQuery({
     queryKey: ["auto-reply-rules"],
@@ -56,7 +58,7 @@ const AutoReplyRules = () => {
       queryClient.invalidateQueries({ queryKey: ["auto-reply-rules"] });
       setOpen(false);
       resetForm();
-      toast.success("Rule added!");
+      toast.success(t("autoReply.ruleAdded"));
     },
     onError: (e) => toast.error(e.message),
   });
@@ -78,7 +80,7 @@ const AutoReplyRules = () => {
       queryClient.invalidateQueries({ queryKey: ["auto-reply-rules"] });
       setEditingRule(null);
       resetForm();
-      toast.success("Rule updated!");
+      toast.success(t("autoReply.ruleUpdated"));
     },
     onError: (e) => toast.error(e.message),
   });
@@ -98,7 +100,7 @@ const AutoReplyRules = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["auto-reply-rules"] });
-      toast.success("Rule deleted");
+      toast.success(t("autoReply.ruleDeleted"));
     },
   });
 
@@ -125,22 +127,22 @@ const AutoReplyRules = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Auto-Reply Rules</h2>
-          <p className="text-muted-foreground">Keyword-based instant replies (bypasses AI).</p>
+          <h2 className="text-2xl font-bold tracking-tight">{t("autoReply.title")}</h2>
+          <p className="text-muted-foreground">{t("autoReply.subtitle")}</p>
         </div>
         <Button className="gap-2" onClick={() => { resetForm(); setOpen(true); }}>
-          <Plus className="h-4 w-4" /> Add Rule
+          <Plus className="h-4 w-4" /> {t("autoReply.addRule")}
         </Button>
       </div>
 
       {/* Quick Templates */}
       {(!rules || rules.length < 3) && (
         <div>
-          <p className="text-sm font-medium mb-2">Quick Templates — click to add:</p>
+          <p className="text-sm font-medium mb-2">{t("autoReply.quickTemplates")}</p>
           <div className="flex flex-wrap gap-2">
-            {TEMPLATE_RULES.map((t, i) => (
-              <Button key={i} variant="outline" size="sm" onClick={() => addTemplate(t)} className="text-xs">
-                {t.label}
+            {TEMPLATE_RULES.map((tpl, i) => (
+              <Button key={i} variant="outline" size="sm" onClick={() => addTemplate(tpl)} className="text-xs">
+                {tpl.label}
               </Button>
             ))}
           </div>
@@ -151,24 +153,24 @@ const AutoReplyRules = () => {
       <Dialog open={open || !!editingRule} onOpenChange={(v) => { if (!v) { setOpen(false); setEditingRule(null); resetForm(); } }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingRule ? "Edit Rule" : "New Auto-Reply Rule"}</DialogTitle>
+            <DialogTitle>{editingRule ? t("autoReply.editRule") : t("autoReply.newRule")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Trigger Keywords (comma separated)</Label>
-              <Input value={form.keywords} onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))} placeholder="delivery, shipping, price" />
-              <p className="text-xs text-muted-foreground">When a customer message contains any of these words, this reply is sent instantly.</p>
+              <Label>{t("autoReply.triggerKeywords")}</Label>
+              <Input value={form.keywords} onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))} placeholder={t("autoReply.keywordsPh")} />
+              <p className="text-xs text-muted-foreground">{t("autoReply.keywordsHint")}</p>
             </div>
             <div className="space-y-2">
-              <Label>Response</Label>
-              <Textarea value={form.response} onChange={e => setForm(f => ({ ...f, response: e.target.value }))} placeholder="We deliver within 2-3 business days..." rows={3} />
+              <Label>{t("autoReply.response")}</Label>
+              <Textarea value={form.response} onChange={e => setForm(f => ({ ...f, response: e.target.value }))} placeholder={t("autoReply.responsePh")} rows={3} />
             </div>
             <div className="space-y-2">
-              <Label>Response (alternate language, optional)</Label>
-              <Textarea value={form.responseBn} onChange={e => setForm(f => ({ ...f, responseBn: e.target.value }))} placeholder="Optional second-language version of the same reply…" rows={2} />
+              <Label>{t("autoReply.responseAlt")}</Label>
+              <Textarea value={form.responseBn} onChange={e => setForm(f => ({ ...f, responseBn: e.target.value }))} placeholder={t("autoReply.responseAltPh")} rows={2} />
             </div>
             <div className="space-y-2">
-              <Label>Priority (higher = checked first)</Label>
+              <Label>{t("autoReply.priority")}</Label>
               <Input type="number" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: parseInt(e.target.value) || 0 }))} />
             </div>
             <Button
@@ -176,7 +178,9 @@ const AutoReplyRules = () => {
               disabled={addRule.isPending || updateRule.isPending}
               className="w-full"
             >
-              {(addRule.isPending || updateRule.isPending) ? "Saving..." : editingRule ? "Update Rule" : "Add Rule"}
+              {(addRule.isPending || updateRule.isPending)
+                ? t("common.saving")
+                : editingRule ? t("autoReply.updateRule") : t("autoReply.addRule")}
             </Button>
           </div>
         </DialogContent>
@@ -185,8 +189,8 @@ const AutoReplyRules = () => {
       {!rules?.length ? (
         <div className="text-center py-16">
           <Zap className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold">No auto-reply rules</h3>
-          <p className="text-muted-foreground">Add keyword triggers for instant responses. Use the templates above to get started!</p>
+          <h3 className="text-lg font-semibold">{t("autoReply.noRules")}</h3>
+          <p className="text-muted-foreground">{t("autoReply.noRulesDesc")}</p>
         </div>
       ) : (
         <div className="grid gap-3">
@@ -201,7 +205,7 @@ const AutoReplyRules = () => {
                   </div>
                   <p className="text-sm text-muted-foreground line-clamp-2">{rule.response_text}</p>
                   {rule.response_text_bn && (
-                    <p className="text-xs text-muted-foreground line-clamp-1">Alt: {rule.response_text_bn}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-1">{t("autoReply.altLabel")} {rule.response_text_bn}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">

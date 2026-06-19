@@ -73,22 +73,22 @@ const Auth = () => {
             <div className="space-y-4">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border shadow-soft text-xs font-medium">
                 <Sparkles className="h-3.5 w-3.5 text-primary" />
-                <span>Powered by AI · Trusted by businesses</span>
+                <span>{t("auth.heroBadge")}</span>
               </div>
               <h1 className="font-display text-5xl xl:text-6xl font-bold tracking-tight leading-[1.05]">
-                Reply to every customer.{" "}
-                <span className="text-gradient">Even at 3 AM.</span>
+                {t("auth.heroLine1")}{" "}
+                <span className="text-gradient">{t("auth.heroLine2")}</span>
               </h1>
               <p className="text-lg text-muted-foreground leading-relaxed">
-                {t("app.tagline")} — Connect your Facebook Page in one click and let AI handle Messenger replies, orders, and leads.
+                {t("auth.heroDesc")}
               </p>
             </div>
 
             <div className="grid grid-cols-3 gap-4">
               {[
-                { icon: Zap, label: "1-click setup" },
-                { icon: Globe, label: "4 languages" },
-                { icon: Sparkles, label: "AI replies" },
+                { icon: Zap, label: t("auth.feature1") },
+                { icon: Globe, label: t("auth.feature2") },
+                { icon: Sparkles, label: t("auth.feature3") },
               ].map((f) => (
                 <div key={f.label} className="rounded-2xl bg-card/60 backdrop-blur border border-border p-4 shadow-soft">
                   <f.icon className="h-5 w-5 text-primary mb-2" />
@@ -98,7 +98,7 @@ const Auth = () => {
             </div>
           </div>
 
-          <p className="text-xs text-muted-foreground">© 2026 Fast Rep · All rights reserved</p>
+          <p className="text-xs text-muted-foreground">{t("auth.copyright")}</p>
         </div>
 
         {/* Right side — form */}
