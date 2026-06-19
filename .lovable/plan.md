@@ -1,69 +1,45 @@
-# Plan: Category-aware Services, AI Training & Leads
+## Goal
+Make Fast Rep fully niche-aware end-to-end: the webhook AI uses the selected category's training/persona (not the hardcoded skincare/Bangla shop), the sidebar + every screen reflect the niche, AI Training only asks for what that niche needs (with preset templates), and all new strings translate fully in en/ko/es/bn.
 
-Goal: make the platform feel professionally niche per category. Service verticals (Dental, HVAC, Salon) should speak in "Appointments" language; E-commerce keeps Delivery/Shipping. AI Training adapts its fields, presets, and chat wizard to the selected category.
+## 1. Niche-aware webhook (`supabase/functions/fb-webhook/index.ts`)
+Currently lines ~1053-1193 hardcode a Bangla skincare shopkeeper prompt for every user. Refactor so the system prompt is built from the user's `business_category`:
 
-## 1. Services → Appointments framing (service categories only)
+- Add `buildSystemPrompt(category, settings, businessInfo, services, products, websiteKnowledge, langSignals)` with **four mutually exclusive branches** (`ecommerce | dental | hvac | salon`).
+- Shared header: identity, language mirroring rule (keep the existing Bangla/Banglish/English mirror), "answer only what is asked", reply length, never invent facts.
+- **ecommerce branch**: keeps product catalog, category summary, image-compare logic, order collection, delivery/payment/return blocks. (Current behavior, just moved into this branch.)
+- **dental / hvac / salon branches**: drop product catalog, skincare examples, "Korean", `SUGGEST_PRODUCT`, order/quantity flow. Inject Services list, Hours, Address, Insurance (dental), Service area (hvac), Emergency policy, Cancellation policy, Deposit policy (salon), FAQ list, Never-say list. Replace "ORDER COLLECTION" with **Appointment/Lead Capture** using the right fields per `leadFieldsByCategory`, ask one missing field at a time, then confirm.
+- Persona defaults per category (overridable by `settings.ai_personality`): Dental → "polite clinic receptionist", HVAC → "dispatch coordinator", Salon → "front-desk concierge", Ecommerce → existing shopkeeper.
+- `extractAndSaveLead` (already around line 1611) already branches by category — verify field list matches `leadFieldsByCategory` above and align.
+- Same change for image handling: only ecommerce does product-image visual compare; service verticals just acknowledge an attachment and continue lead capture.
 
-In `ServicesManager.tsx` and `LeadsManager.tsx`:
-- Read `business_category` via `useBusinessCategory`.
-- Rebrand labels when category ∈ {dental, hvac, salon}:
-  - Page title: "Services & Appointments" (Dental: "Treatments & Appointments", HVAC: "Services & Job Bookings", Salon: "Treatments & Bookings").
-  - "Leads" tab/page → "Appointments" for service verticals; stays "Leads" for ecommerce.
-  - Add columns relevant to appointments: `preferred_date`, `status` chips (New / Booked / Completed / No-show).
-  - Quick actions: "Mark Booked", "Mark Completed".
-- Add category-specific service presets (one-click seed):
-  - Dental: Cleaning, Whitening, Implant, Braces, Root Canal, Emergency Visit.
-  - HVAC: AC Repair, AC Install, Heating, Plumbing, Duct Cleaning, Emergency Call.
-  - Salon: Haircut, Color, Facial, Manicure, Botox, Massage.
-- Each service row exposes: name, description, price text, duration, service area (HVAC only), active toggle.
+## 2. AI Training: niche-only fields + preset templates (`src/components/AiTraining.tsx`)
+- `CATEGORY_FIELDS` already exists. Verify only the matching fields render (hide tabs/sections that reference delivery, returns, payment, product catalog, order examples when `cat !== "ecommerce"`).
+- **Preset templates ("Load starter template" button per category)** that pre-fill empty fields with editable defaults:
+  - **ecommerce**: delivery_info ("Inside Dhaka 60৳, outside 120৳, 1-3 days"), payment_methods ("Cash on Delivery, bKash, Nagad"), return_policy ("7-day return for unused items, buyer pays return shipping").
+  - **dental**: operating_hours ("Sun-Thu 10am-8pm, Fri closed"), business_address (placeholder), insurance_accepted ("We accept ___; please share your card at the visit"), emergency_policy ("Same-day slots for acute pain — call front desk"), cancellation_policy ("Free reschedule 24h in advance; later cancellations forfeit deposit").
+  - **hvac**: operating_hours ("Mon-Sat 8am-7pm; 24/7 emergency"), service_area_zips ("List your zip codes"), emergency_policy ("Same-day for no-heat / no-cool / leaks"), pricing_policy ("Free estimates over phone; on-site diagnostic $79 credited to repair").
+  - **salon**: operating_hours ("Tue-Sun 10am-8pm"), business_address (placeholder), cancellation_policy ("24h notice required; no-show = deposit forfeit"), deposit_policy ("20% deposit on color/longer services, refundable up to 48h").
+  - Templates live in a new helper `getPresetTemplate(cat)` returning a `SettingsMap`. "Load template" merges only into empty keys (never overwrites user edits) and marks `hasChanges`.
+- Adapt the **chat wizard greeting + system prompt** to the category so it only asks niche-relevant questions (hours/address/insurance/emergency/cancellation/deposit/services for verticals; product list, delivery, returns, payment for ecommerce). Same for "AI-suggested FAQs" generator — pass `cat` so suggestions are vertical-specific.
+- Header copy already swaps "Train your AI Receptionist" / "Train your AI Shopkeeper" — keep, verify it uses `t()` keys.
+- Remove/hide the "Reply Examples" tab for service verticals (or relabel it to "Sample patient/client responses").
 
-## 2. AI Training adapts per category
+## 3. Sidebar + screens reflect the niche
+- `DashboardSidebar.tsx`: already hides Products/Pending/Suggestions/Orders for service verticals and renames Leads→Appointments. Also relabel **`nav.conversations`** to "Patient chats" (dental) / "Client chats" (salon) / "Customer calls/chats" (hvac) via a small `labelForCategory()` helper; same treatment for `nav.complaints` → "Issue tickets" only when ecommerce.
+- `ServicesManager.tsx` and `LeadsManager.tsx`: already use niche labels — verify all column headers, empty states, toasts, and CSV export labels go through `t()`.
+- `ConversationsView.tsx`, `ComplaintsManager.tsx`, `AnalyticsDashboard.tsx`, `BotSettings.tsx`: replace any hardcoded "customer", "shop", "product", "order" strings with `t()` calls that resolve to the niche-correct word via a new `t("terms.customer")` / `t("terms.product")` namespace whose values differ per language (no per-category branching — instead expose a `useNicheTerms()` hook that returns `{ customer, item, booking, ... }` already translated).
 
-`AiTraining.tsx` currently shows a single shopkeeper-style form with `delivery_info`, `return_policy`, etc. Refactor to a category-driven schema:
+## 4. i18n completeness (en/ko/es/bn)
+- Audit added keys (`aiTraining.*`, `appointments.*`, `services.*`, `nav.appointments`, new preset placeholders, niche terms) and ensure all four locale files have them with native translations — no English fallbacks in ko/es/bn.
+- Add a dev-time guard: a tiny script `scripts/check-i18n.mjs` that diffs key sets across the four files and prints missing keys. (Not run in build; for manual verification.)
+- Verify `LanguageSwitcher` triggers a re-render of Services, Leads, AI Training, Sidebar — confirm components read `t()` inside render (not module scope).
 
-- New helper `getTrainingSchemaForCategory(cat)` returning the fields, labels, placeholders, and chat-wizard prompts for that vertical.
-- Field groups by category:
-  - **ecommerce**: Business info, Delivery info, Return policy, Payment methods, FAQs, Never-say list. (unchanged)
-  - **dental**: Clinic info, Operating hours, Address, Insurance accepted, Emergency policy, FAQs, Never-say list. (NO delivery/return)
-  - **hvac**: Company info, Service area / zip codes, Operating hours, Emergency availability, Pricing/estimate policy, FAQs, Never-say list.
-  - **salon**: Salon info, Operating hours, Address, Cancellation policy, Booking deposit policy, FAQs, Never-say list.
-- Quick-test panel's seeded prompts swap per category (Dental: "Do you take Delta Dental?", HVAC: "Do you service 90210?", Salon: "Can I book a facial Saturday?").
-- AI chat wizard system prompt branches by category so generated settings match the schema above (no delivery info for service verticals).
-- "AI-suggested FAQs" generator passes category context so suggestions are domain-appropriate.
-- Rebrand header copy: "Train your AI Receptionist" (service) vs "Train your AI Shopkeeper" (ecommerce).
-
-## 3. Wording & icons
-
-- BotSettings, sidebar, dashboard cards: when category is a service vertical, replace "Orders" with "Appointments", "Customers" with "Patients" (dental) / "Clients" (salon) / "Customers" (hvac).
-- Sidebar already swaps Products/Services — extend to also rename Leads → Appointments for service verticals.
-
-## 4. i18n
-
-Add keys to all four locale files (`en/ko/es/bn.json`):
-- `services.appointments.*`, `aiTraining.dental.*`, `aiTraining.hvac.*`, `aiTraining.salon.*`, status chips, preset names, chat wizard greetings per category.
-- Remove/hide existing delivery/return strings in service-vertical views (keys remain for ecommerce).
-
-## 5. Edge function alignment
-
-`supabase/functions/fb-webhook/index.ts`:
-- Knowledge-base assembly already branches on category. Extend so it pulls the new category-specific fields (insurance, service area, hours, cancellation policy) instead of delivery/return when not ecommerce.
-- Lead extraction prompt for service verticals targets: name, phone, preferred date/time, service requested, address (HVAC only), notes.
-
-## Technical notes
-
-- No new tables. Add optional keys into existing `bot_settings` (`setting_key` is free-form text already). Examples: `operating_hours`, `service_area_zips`, `insurance_accepted`, `cancellation_policy`, `emergency_policy`.
-- `LeadsManager` reuses existing `leads` table; status chips driven by `leads.status`.
-- All copy via `t()`; no hardcoded strings.
+## 5. Verification
+1. Set category = Dental → sidebar shows Services + Appointments (no Products/Orders/Suggestions); AI Training shows only hours/address/insurance/emergency/cancellation + FAQ + Never-say; "Load template" fills clinic defaults; send a FB test message → webhook prompt logged contains "dental clinic receptionist" and no skincare/Bangla shopkeeper text; lead saved with `preferred_date`.
+2. Switch language to Korean → every label in Services, Leads/Appointments, AI Training, Sidebar, BotSettings is Korean (spot-check 10 strings). Repeat for es and bn.
+3. Switch category to Ecommerce → Products/Orders return, AI Training shows delivery/return/payment, webhook prompt contains product catalog.
+4. Switch category to HVAC → service area + emergency fields appear; preset loads zip placeholder; webhook prompt contains "dispatch coordinator" persona and Services list.
+5. Switch to Salon → cancellation + deposit fields appear; preset loads salon defaults.
 
 ## Out of scope
-
-- Calendar integration / real booking system (only intake + status chips).
-- Payment/deposit collection.
-- SMS reminders.
-
-## Verification
-
-1. Switch category to Dental → AiTraining shows clinic/hours/insurance fields, no delivery field; ServicesManager titled "Treatments & Appointments"; sidebar shows "Appointments".
-2. Switch to E-commerce → delivery + return fields reappear; sidebar shows Products + Leads.
-3. Switch language to Korean → all new labels localized.
-4. Trigger FB webhook with a Dental account → AI replies using clinic KB and saves lead with preferred_date.
+Calendar integration, SMS/email reminders, payment capture for deposits, new DB tables. All preset data is stored as plain rows in existing `bot_settings`.
