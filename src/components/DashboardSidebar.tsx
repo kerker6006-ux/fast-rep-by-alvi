@@ -23,7 +23,7 @@ const navItems: NavItem[] = [
   { id: "ai-training", labelKey: "nav.aiTraining", icon: Brain },
   { id: "products", labelKey: "nav.products", icon: Package, show: (c) => !c || isEcom(c) },
   { id: "services", labelKey: "nav.services", icon: Briefcase, show: (c) => isService(c) },
-  { id: "leads", labelKey: "nav.leads", icon: UserPlus },
+  { id: "leads", labelKey: "nav.leads", icon: UserPlus, show: () => true },
   { id: "pending-products", labelKey: "nav.autoImport", icon: Inbox, show: (c) => !c || isEcom(c) },
   { id: "suggestions", labelKey: "nav.suggestions", icon: Lightbulb, show: (c) => !c || isEcom(c) },
   { id: "website-import", labelKey: "nav.websiteImport", icon: Globe },
