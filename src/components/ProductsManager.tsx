@@ -648,10 +648,10 @@ const ProductsManager = () => {
                 )}
                 <div className="flex gap-2 pt-2">
                   <Button variant="outline" className="flex-1 gap-1" onClick={() => { setPreviewProduct(null); openEdit(previewProduct); }}>
-                    <Pencil className="h-3 w-3" /> Edit
+                    <Pencil className="h-3 w-3" /> {t("products.previewEdit")}
                   </Button>
                   <Button variant="destructive" className="gap-1" onClick={() => { deleteMutation.mutate(previewProduct.id); setPreviewProduct(null); }}>
-                    <Trash2 className="h-3 w-3" /> Delete
+                    <Trash2 className="h-3 w-3" /> {t("products.previewDelete")}
                   </Button>
                 </div>
               </div>
