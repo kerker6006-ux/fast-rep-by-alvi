@@ -461,6 +461,7 @@ async function handleMessagingEvent(
 
       await detectAndProcessOrder(supabase, lovableApiKey, conversationId, messageText, replyText, userId);
       await detectAndCreateComplaint(supabase, lovableApiKey, conversationId, senderId, pageAccessToken, messageText, replyText, userId);
+      await extractAndSaveLead(supabase, lovableApiKey, conversationId, userId);
     } catch (aiError) {
       console.error("AI processing error:", aiError);
       const fallback = settings.welcome_message || "ধন্যবাদ! আমরা শীঘ্রই আপনার সাথে যোগাযোগ করব।";
@@ -861,6 +862,50 @@ async function generateAiReply(
   if (userId) productQuery = productQuery.eq("user_id", userId);
   const { data: products } = await productQuery;
 
+  // ----- AI Receptionist: load business category + services -----
+  let businessCategory: string | null = null;
+  let businessInfoObj: any = {};
+  let servicesList: any[] = [];
+  if (userId) {
+    const { data: prof } = await supabase
+      .from("profiles").select("business_category, business_info").eq("id", userId).maybeSingle();
+    businessCategory = prof?.business_category || null;
+    businessInfoObj = prof?.business_info || {};
+    if (businessCategory && businessCategory !== "ecommerce") {
+      const { data: svcs } = await supabase
+        .from("services").select("name, description, price_text, duration_text, service_area")
+        .eq("user_id", userId).eq("category", businessCategory).eq("active", true);
+      servicesList = svcs || [];
+    }
+  }
+
+  const leadFieldsByCategory: Record<string, string[]> = {
+    ecommerce: ["Customer Name", "Phone Number", "Product Interested In"],
+    dental:    ["Patient Name", "Phone Number", "Interested Service", "Preferred Appointment Date"],
+    hvac:      ["Customer Name", "Phone Number", "Address", "Service Needed", "Preferred Visit Date"],
+    salon:     ["Customer Name", "Phone Number", "Service Interested In", "Appointment Date"],
+  };
+  const categoryLabel: Record<string, string> = {
+    ecommerce: "online store", dental: "dental clinic",
+    hvac: "HVAC / home services company", salon: "beauty salon / med spa",
+  };
+  const receptionistPreamble = businessCategory ? `#############################
+# ROLE — AI RECEPTIONIST (HIGHEST PRIORITY)
+#############################
+You are the AI Receptionist for a ${categoryLabel[businessCategory] || "business"}. Your two jobs:
+1) ANSWER questions using ONLY the knowledge base below. If something is not in the knowledge base, say you'll check with the team — NEVER invent prices, hours, services, or policies.
+2) CAPTURE a lead by collecting these fields naturally during the conversation: ${leadFieldsByCategory[businessCategory].join(", ")}. Ask one missing field at a time.
+
+${servicesList.length ? `SERVICES WE OFFER:\n${servicesList.map((s: any) => `- ${s.name}${s.price_text ? ` — ${s.price_text}` : ""}${s.duration_text ? ` (${s.duration_text})` : ""}${s.description ? `: ${s.description}` : ""}${s.service_area ? ` | Area: ${s.service_area}` : ""}`).join("\n")}` : ""}
+${businessInfoObj.delivery_info ? `\nDELIVERY: ${businessInfoObj.delivery_info}` : ""}
+${businessInfoObj.return_policy ? `\nRETURN POLICY: ${businessInfoObj.return_policy}` : ""}
+${businessInfoObj.hours ? `\nHOURS: ${businessInfoObj.hours}` : ""}
+${businessInfoObj.address ? `\nADDRESS: ${businessInfoObj.address}` : ""}
+${businessInfoObj.faqs ? `\nFAQs: ${businessInfoObj.faqs}` : ""}
+#############################
+` : "";
+
+
   // Fetch website knowledge base (if any)
   let websiteKnowledge = "";
   if (userId) {
@@ -1005,7 +1050,7 @@ async function generateAiReply(
   // If message has Bangla script OR is Banglish, reply in Bangla
   const shouldReplyBangla = !isCurrentMsgEnglish || isBanglish;
 
-  const systemPrompt = `#############################
+  const systemPrompt = `${receptionistPreamble}#############################
 # LANGUAGE RULE — HIGHEST PRIORITY — MUST FOLLOW BEFORE ANYTHING ELSE
 #############################
 LANGUAGE RULE — STRICT:
@@ -1555,5 +1600,77 @@ async function detectAndCreateComplaint(
     console.log("Complaint created for conversation:", conversationId);
   } catch (e) {
     console.error("Complaint detection error:", e);
+  }
+}
+
+// ---- AI Receptionist: lead extraction ----
+async function extractAndSaveLead(supabase: any, apiKey: string, conversationId: string, userId: string | null) {
+  if (!userId || !apiKey) return;
+  try {
+    const { data: prof } = await supabase
+      .from("profiles").select("business_category").eq("id", userId).maybeSingle();
+    const category = prof?.business_category;
+    if (!category) return;
+
+    const { data: msgs } = await supabase
+      .from("messages").select("direction, content")
+      .eq("conversation_id", conversationId).order("created_at", { ascending: true }).limit(50);
+    if (!msgs?.length) return;
+
+    const transcript = msgs.map((m: any) => `${m.direction === "incoming" ? "Customer" : "Bot"}: ${m.content || ""}`).join("\n");
+
+    const fields = category === "ecommerce"
+      ? ["name", "phone", "service_or_product"]
+      : category === "hvac"
+      ? ["name", "phone", "address", "service_or_product", "preferred_date"]
+      : ["name", "phone", "service_or_product", "preferred_date"];
+
+    const sysPrompt = `Extract lead information from this Facebook Messenger conversation. Return ONLY a JSON object with these fields (null if not stated): ${fields.join(", ")}. Use null for missing values. Do not invent data.`;
+
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-lite",
+        messages: [
+          { role: "system", content: sysPrompt },
+          { role: "user", content: transcript.slice(-4000) },
+        ],
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const raw = data.choices?.[0]?.message?.content || "{}";
+    let parsed: any = {};
+    try { parsed = JSON.parse(raw); } catch { return; }
+
+    // Require at least name OR phone
+    if (!parsed.name && !parsed.phone) return;
+
+    // Upsert: one lead per conversation
+    const { data: existing } = await supabase
+      .from("leads").select("id").eq("conversation_id", conversationId).maybeSingle();
+
+    const payload: any = {
+      user_id: userId,
+      category,
+      conversation_id: conversationId,
+      source: "facebook",
+      name: parsed.name || null,
+      phone: parsed.phone || null,
+      address: parsed.address || null,
+      service_or_product: parsed.service_or_product || null,
+      preferred_date: parsed.preferred_date || null,
+    };
+
+    if (existing) {
+      await supabase.from("leads").update(payload).eq("id", existing.id);
+    } else {
+      await supabase.from("leads").insert(payload);
+    }
+    console.log("Lead saved for conversation:", conversationId);
+  } catch (e) {
+    console.error("Lead extraction error:", e);
   }
 }

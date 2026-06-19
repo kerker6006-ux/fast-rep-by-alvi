@@ -2,26 +2,32 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import {
   BarChart3, Package, ShoppingCart, MessageSquare,
-  Zap, Clock, Settings, Bot, Brain, ChevronLeft, ChevronRight, LogOut, Globe, ShieldCheck, Activity, Coins, AlertTriangle, Inbox, Lightbulb,
+  Zap, Clock, Settings, Bot, Brain, ChevronLeft, ChevronRight, LogOut, Globe, Activity, Coins, AlertTriangle, Inbox, Lightbulb, Briefcase, UserPlus,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useBusinessCategory } from "@/hooks/useBusinessCategory";
 import { useNavigate } from "react-router-dom";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 
-type NavItem = { id: string; labelKey: string; icon: React.ElementType; adminOnly?: boolean };
+type NavItem = { id: string; labelKey: string; icon: React.ElementType; adminOnly?: boolean; show?: (cat: string | null | undefined) => boolean };
+
+const isEcom = (c: any) => c === "ecommerce";
+const isService = (c: any) => c && c !== "ecommerce";
 
 const navItems: NavItem[] = [
   { id: "analytics", labelKey: "nav.analytics", icon: BarChart3 },
   { id: "credits", labelKey: "nav.credits", icon: Coins },
   { id: "ai-usage", labelKey: "nav.aiUsage", icon: Activity },
   { id: "ai-training", labelKey: "nav.aiTraining", icon: Brain },
-  { id: "products", labelKey: "nav.products", icon: Package },
-  { id: "pending-products", labelKey: "nav.autoImport", icon: Inbox },
-  { id: "suggestions", labelKey: "nav.suggestions", icon: Lightbulb },
+  { id: "products", labelKey: "nav.products", icon: Package, show: (c) => !c || isEcom(c) },
+  { id: "services", labelKey: "nav.services", icon: Briefcase, show: (c) => isService(c) },
+  { id: "leads", labelKey: "nav.leads", icon: UserPlus },
+  { id: "pending-products", labelKey: "nav.autoImport", icon: Inbox, show: (c) => !c || isEcom(c) },
+  { id: "suggestions", labelKey: "nav.suggestions", icon: Lightbulb, show: (c) => !c || isEcom(c) },
   { id: "website-import", labelKey: "nav.websiteImport", icon: Globe },
-  { id: "orders", labelKey: "nav.orders", icon: ShoppingCart },
+  { id: "orders", labelKey: "nav.orders", icon: ShoppingCart, show: (c) => !c || isEcom(c) },
   { id: "complaints", labelKey: "nav.complaints", icon: AlertTriangle },
   { id: "conversations", labelKey: "nav.chats", icon: MessageSquare },
   { id: "auto-reply", labelKey: "nav.autoReply", icon: Zap },
@@ -41,9 +47,14 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
   const { t } = useTranslation();
   const { signOut, user } = useAuth();
   const { isAdmin } = useIsAdmin();
+  const { category } = useBusinessCategory();
   const navigate = useNavigate();
 
-  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
+  const visibleItems = navItems.filter((item) => {
+    if (item.adminOnly && !isAdmin) return false;
+    if (item.show && !item.show(category)) return false;
+    return true;
+  });
 
   return (
     <aside
