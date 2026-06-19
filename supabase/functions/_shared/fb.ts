@@ -9,7 +9,6 @@ export const SUBSCRIBED_FIELDS = [
   "message_reads",
   "messaging_optins",
   "feed",
-  "leadgen",
 ];
 
 // Instagram webhook fields (subscribed on the IG user via {ig-user-id}/subscribed_apps)
@@ -22,7 +21,7 @@ export const IG_SUBSCRIBED_FIELDS = [
 ];
 
 // Only request scopes that are added to your Meta app via Use Cases.
-// Extra scopes (instagram_*, leads_retrieval, pages_manage_engagement) must
+// Extra scopes (instagram_*, pages_manage_engagement) must
 // be added in App Dashboard → Use Cases → Customize before re-enabling here.
 export const OAUTH_SCOPES = [
   "pages_show_list",
