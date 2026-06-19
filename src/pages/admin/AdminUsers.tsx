@@ -10,7 +10,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Search, Plus, Minus, Trash2, Ban, CheckCircle2, Coins, Globe, Package, ShoppingCart, MessageSquare } from "lucide-react";
+import { Search, Plus, Minus, Trash2, Ban, CheckCircle2, Coins, Globe, Package, ShoppingCart, MessageSquare, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -122,6 +122,16 @@ const AdminUsers = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const sendReset = useMutation({
+    mutationFn: async (userId: string) => {
+      const { data, error } = await supabase.functions.invoke("admin-send-password-reset", { body: { user_id: userId } });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => toast.success("Reset email sent"),
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const refresh = () => qc.invalidateQueries({ queryKey: ["admin-users-full"] });
 
   const filtered = (users ?? []).filter((u: any) =>
@@ -177,6 +187,9 @@ const AdminUsers = () => {
                       {u.suspended
                         ? <><CheckCircle2 className="h-3.5 w-3.5 mr-1" />{t("admin.users.unsuspend")}</>
                         : <><Ban className="h-3.5 w-3.5 mr-1" />{t("admin.users.suspend")}</>}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => sendReset.mutate(u.id)} disabled={sendReset.isPending}>
+                      <KeyRound className="h-3.5 w-3.5 mr-1" />Reset password
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
