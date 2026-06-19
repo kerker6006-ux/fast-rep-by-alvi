@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBusinessCategory, BusinessCategory } from "@/hooks/useBusinessCategory";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,12 +25,73 @@ import {
   type SettingsMap,
 } from "@/lib/ai-training-settings";
 
+type CatField = { key: string; labelKey: string; phKey: string; type?: "text" | "textarea" };
+
+const CATEGORY_FIELDS: Record<BusinessCategory, CatField[]> = {
+  ecommerce: [
+    { key: "delivery_info", labelKey: "aiTraining.deliveryInfo", phKey: "aiTraining.deliveryInfoPh" },
+    { key: "payment_methods", labelKey: "aiTraining.paymentMethods", phKey: "aiTraining.paymentMethodsPh" },
+    { key: "return_policy", labelKey: "aiTraining.returnPolicy", phKey: "aiTraining.returnPolicyPh" },
+  ],
+  dental: [
+    { key: "operating_hours", labelKey: "aiTraining.operatingHours", phKey: "aiTraining.operatingHoursPh" },
+    { key: "business_address", labelKey: "aiTraining.address", phKey: "aiTraining.addressPh" },
+    { key: "insurance_accepted", labelKey: "aiTraining.insurance", phKey: "aiTraining.insurancePh" },
+    { key: "emergency_policy", labelKey: "aiTraining.emergencyPolicy", phKey: "aiTraining.emergencyPolicyPh", type: "textarea" },
+    { key: "cancellation_policy", labelKey: "aiTraining.cancellationPolicy", phKey: "aiTraining.cancellationPolicyPh", type: "textarea" },
+  ],
+  hvac: [
+    { key: "operating_hours", labelKey: "aiTraining.operatingHours", phKey: "aiTraining.operatingHoursPh" },
+    { key: "service_area_zips", labelKey: "aiTraining.serviceArea", phKey: "aiTraining.serviceAreaPh" },
+    { key: "emergency_policy", labelKey: "aiTraining.emergencyAvailability", phKey: "aiTraining.emergencyAvailabilityPh", type: "textarea" },
+    { key: "pricing_policy", labelKey: "aiTraining.pricingPolicy", phKey: "aiTraining.pricingPolicyPh", type: "textarea" },
+  ],
+  salon: [
+    { key: "operating_hours", labelKey: "aiTraining.operatingHours", phKey: "aiTraining.operatingHoursPh" },
+    { key: "business_address", labelKey: "aiTraining.address", phKey: "aiTraining.addressPh" },
+    { key: "cancellation_policy", labelKey: "aiTraining.cancellationPolicy", phKey: "aiTraining.cancellationPolicyPh", type: "textarea" },
+    { key: "deposit_policy", labelKey: "aiTraining.depositPolicy", phKey: "aiTraining.depositPolicyPh", type: "textarea" },
+  ],
+};
+
+const QUICK_ADD_BY_CAT: Record<BusinessCategory, { qKey: string; aKey: string }[]> = {
+  ecommerce: [
+    { qKey: "autoReply.deliveryInfo", aKey: "autoReply.deliveryResp" },
+    { qKey: "autoReply.paymentMethods", aKey: "autoReply.paymentResp" },
+    { qKey: "autoReply.returnPolicy", aKey: "autoReply.returnResp" },
+    { qKey: "autoReply.businessHours", aKey: "autoReply.hoursResp" },
+  ],
+  dental: [
+    { qKey: "aiTraining.qa.dental.hours", aKey: "aiTraining.qa.dental.hoursA" },
+    { qKey: "aiTraining.qa.dental.insurance", aKey: "aiTraining.qa.dental.insuranceA" },
+    { qKey: "aiTraining.qa.dental.emergency", aKey: "aiTraining.qa.dental.emergencyA" },
+    { qKey: "aiTraining.qa.dental.book", aKey: "aiTraining.qa.dental.bookA" },
+  ],
+  hvac: [
+    { qKey: "aiTraining.qa.hvac.area", aKey: "aiTraining.qa.hvac.areaA" },
+    { qKey: "aiTraining.qa.hvac.emergency", aKey: "aiTraining.qa.hvac.emergencyA" },
+    { qKey: "aiTraining.qa.hvac.estimate", aKey: "aiTraining.qa.hvac.estimateA" },
+    { qKey: "aiTraining.qa.hvac.hours", aKey: "aiTraining.qa.hvac.hoursA" },
+  ],
+  salon: [
+    { qKey: "aiTraining.qa.salon.book", aKey: "aiTraining.qa.salon.bookA" },
+    { qKey: "aiTraining.qa.salon.cancel", aKey: "aiTraining.qa.salon.cancelA" },
+    { qKey: "aiTraining.qa.salon.hours", aKey: "aiTraining.qa.salon.hoursA" },
+    { qKey: "aiTraining.qa.salon.deposit", aKey: "aiTraining.qa.salon.depositA" },
+  ],
+};
+
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
 const AiTraining = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { category } = useBusinessCategory();
+  const cat: BusinessCategory = (category as BusinessCategory) || "ecommerce";
+  const isEcom = cat === "ecommerce";
+  const catFields = CATEGORY_FIELDS[cat];
+  const quickAdd = QUICK_ADD_BY_CAT[cat];
   const [settings, setSettings] = useState<SettingsMap>({});
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -300,9 +362,10 @@ const AiTraining = () => {
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2">
             <Brain className="h-5 w-5 text-primary" />
-            {t("aiTraining.title")}
+            {t(`aiTraining.titleByCat.${cat}`)}
           </h2>
-          <p className="text-sm text-muted-foreground">{t("aiTraining.subtitle")}</p>
+          <p className="text-sm text-muted-foreground">{t(`aiTraining.subtitleByCat.${cat}`)}</p>
+
         </div>
         {hasChanges && (
           <Button onClick={() => saveMutation.mutate(settings)} disabled={saveMutation.isPending} size="sm" className="gap-1.5">
@@ -471,22 +534,43 @@ const AiTraining = () => {
                 <Label className="text-xs">{t("botSettings.customInstructionsLabel")}</Label>
                 <Textarea value={settings.custom_instructions || ""} onChange={(e) => update("custom_instructions", e.target.value)} placeholder={t("botSettings.customInstructionsPh")} className="min-h-[80px] text-sm" />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">{t("aiTraining.replyTone")}</Label>
-                  <Input value={settings.reply_tone || ""} onChange={(e) => update("reply_tone", e.target.value)} placeholder={t("aiTraining.replyTonePh")} className="h-8 text-sm" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">{t("aiTraining.deliveryInfo")}</Label>
-                  <Input value={settings.delivery_info || ""} onChange={(e) => update("delivery_info", e.target.value)} placeholder={t("aiTraining.deliveryInfoPh")} className="h-8 text-sm" />
-                </div>
-              </div>
               <div className="space-y-1">
-                <Label className="text-xs">{t("aiTraining.paymentMethods")}</Label>
-                <Input value={settings.payment_methods || ""} onChange={(e) => update("payment_methods", e.target.value)} placeholder={t("aiTraining.paymentMethodsPh")} className="h-8 text-sm" />
+                <Label className="text-xs">{t("aiTraining.replyTone")}</Label>
+                <Input value={settings.reply_tone || ""} onChange={(e) => update("reply_tone", e.target.value)} placeholder={t("aiTraining.replyTonePh")} className="h-8 text-sm" />
               </div>
             </CardContent>
           </Card>
+
+          {/* Category-specific knowledge */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">{t(`aiTraining.kbTitle.${cat}`)}</CardTitle>
+              <CardDescription className="text-xs">{t(`aiTraining.kbDesc.${cat}`)}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {catFields.map((f) => (
+                <div key={f.key} className="space-y-1">
+                  <Label className="text-xs">{t(f.labelKey)}</Label>
+                  {f.type === "textarea" ? (
+                    <Textarea
+                      value={settings[f.key] || ""}
+                      onChange={(e) => update(f.key, e.target.value)}
+                      placeholder={t(f.phKey)}
+                      className="min-h-[60px] text-sm"
+                    />
+                  ) : (
+                    <Input
+                      value={settings[f.key] || ""}
+                      onChange={(e) => update(f.key, e.target.value)}
+                      placeholder={t(f.phKey)}
+                      className="h-8 text-sm"
+                    />
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
 
           {/* Welcome */}
           <Card>
@@ -602,12 +686,8 @@ const AiTraining = () => {
                   <Sparkles className="h-3 w-3" /> {t("aiTraining.quickAdd")}
                 </p>
                 <div className="grid gap-1.5">
-                  {[
-                    { q: t("autoReply.deliveryInfo"), a: settings.delivery_info || t("autoReply.deliveryResp") },
-                    { q: t("autoReply.paymentMethods"), a: settings.payment_methods || t("autoReply.paymentResp") },
-                    { q: t("autoReply.returnPolicy"), a: t("autoReply.returnResp") },
-                    { q: t("autoReply.businessHours"), a: t("autoReply.hoursResp") },
-                  ]
+                  {quickAdd
+                    .map(({ qKey, aKey }) => ({ q: t(qKey), a: t(aKey) }))
                     .filter((s) => !faqList.some((f: any) => f.q === s.q))
                     .map((s, i) => (
                       <button

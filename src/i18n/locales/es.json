@@ -87,7 +87,8 @@
     "collapse": "Colapsar",
     "language": "Idioma",
     "services": "Servicios",
-    "leads": "Leads"
+    "leads": "Leads",
+    "appointments": "Citas"
   },
   "settings": {
     "language": "Idioma"
@@ -259,7 +260,83 @@
     "replyAlt": "Respuesta (idioma alternativo, opcional)",
     "replyPrimaryPh": "Por favor escríbenos al inbox 📩",
     "replyAltPh": "Respuesta en idioma alternativo…",
-    "saveAll": "Guardar todos los cambios"
+    "saveAll": "Guardar todos los cambios",
+    "titleByCat": {
+      "ecommerce": "Entrenamiento del Asistente de Tienda",
+      "dental": "Entrenamiento de la Recepcionista IA",
+      "hvac": "Entrenamiento del Despachador IA",
+      "salon": "Entrenamiento de la Recepcionista IA"
+    },
+    "subtitleByCat": {
+      "ecommerce": "Entrena al asistente para responder sobre productos, envío y pagos.",
+      "dental": "Entrena a tu recepcionista para atender pacientes y agendar citas.",
+      "hvac": "Entrena al despachador para calificar trabajos y agendar visitas.",
+      "salon": "Entrena a la recepción para atender clientes y agendar citas."
+    },
+    "kbTitle": {
+      "ecommerce": "Información de la Tienda",
+      "dental": "Información de la Clínica",
+      "hvac": "Información de la Empresa",
+      "salon": "Información del Salón"
+    },
+    "kbDesc": {
+      "ecommerce": "Envío, pagos y devoluciones que usará el bot.",
+      "dental": "Horario, dirección, seguros y emergencias que usará el bot.",
+      "hvac": "Zona de servicio, horarios, emergencias y precios que usará el bot.",
+      "salon": "Horario, dirección, cancelación y depósito que usará el bot."
+    },
+    "returnPolicy": "Política de Devolución",
+    "returnPolicyPh": "Devoluciones aceptadas en 7 días…",
+    "operatingHours": "Horario",
+    "operatingHoursPh": "L–V 9–18, Sáb 10–16",
+    "address": "Dirección",
+    "addressPh": "Calle Principal 123, Ciudad",
+    "insurance": "Seguros aceptados",
+    "insurancePh": "MetLife, AXA, Mapfre…",
+    "emergencyPolicy": "Política de Emergencias",
+    "emergencyPolicyPh": "Para urgencias dentales llame al (555) 123-4567.",
+    "cancellationPolicy": "Política de Cancelación",
+    "cancellationPolicyPh": "Cancele con al menos 24 horas de anticipación.",
+    "serviceArea": "Zona de servicio / Códigos postales",
+    "serviceAreaPh": "Madrid y 25 km a la redonda",
+    "emergencyAvailability": "Disponibilidad de emergencia",
+    "emergencyAvailabilityPh": "Servicio 24/7, recargo nocturno",
+    "pricingPolicy": "Política de Precios / Presupuestos",
+    "pricingPolicyPh": "Presupuestos gratis. Diagnóstico sin coste si hay reparación.",
+    "depositPolicy": "Política de Depósito",
+    "depositPolicyPh": "Se requiere 20% de depósito para color.",
+    "qa": {
+      "dental": {
+        "hours": "¿Cuál es su horario?",
+        "hoursA": "Abrimos L–V 9–18 y Sáb 10–16.",
+        "insurance": "¿Aceptan mi seguro?",
+        "insuranceA": "Aceptamos los principales seguros. Indique su aseguradora.",
+        "emergency": "Tengo una urgencia dental.",
+        "emergencyA": "Llame al (555) 123-4567 de inmediato.",
+        "book": "Quiero agendar una cita.",
+        "bookA": "Indíquenos su nombre, teléfono y día/hora preferida."
+      },
+      "hvac": {
+        "area": "¿Atienden mi zona?",
+        "areaA": "Indique su código postal y le confirmamos.",
+        "emergency": "Necesito servicio urgente.",
+        "emergencyA": "Tenemos servicio 24/7. Indique su dirección.",
+        "estimate": "¿Pueden darme un presupuesto gratis?",
+        "estimateA": "Sí, presupuestos gratis. Indique el problema y dirección.",
+        "hours": "¿Cuál es su horario?",
+        "hoursA": "L–S 8–19; emergencias 24/7."
+      },
+      "salon": {
+        "book": "Quiero agendar una cita.",
+        "bookA": "Indique nombre, teléfono, servicio y hora preferida.",
+        "cancel": "¿Cuál es su política de cancelación?",
+        "cancelA": "Cancele al menos 24 horas antes para evitar cargo.",
+        "hours": "¿Cuál es su horario?",
+        "hoursA": "Ma–Sáb 10–20.",
+        "deposit": "¿Necesito dejar un depósito?",
+        "depositA": "Se requiere 20% de depósito para color y servicios largos."
+      }
+    }
   },
   "autoReply": {
     "title": "Reglas de auto-respuesta",
@@ -560,7 +637,13 @@
     "presetsAdded": "Servicios iniciales agregados",
     "empty": "Aún no hay servicios. Agrega uno o carga la lista inicial.",
     "nameRequired": "El nombre es obligatorio",
-    "notForEcommerce": "Esta página es para negocios de servicios. E-commerce usa la página de Productos."
+    "notForEcommerce": "Esta página es para negocios de servicios. E-commerce usa la página de Productos.",
+    "titleByCat": {
+      "ecommerce": "Servicios",
+      "dental": "Tratamientos y Citas",
+      "hvac": "Servicios y Reservas",
+      "salon": "Tratamientos y Reservas"
+    }
   },
   "leads": {
     "title": "Leads",
@@ -584,5 +667,9 @@
       "booked": "Reservado",
       "closed": "Cerrado"
     }
+  },
+  "appointments": {
+    "title": "Citas",
+    "subtitle": "Reservas capturadas por tu Recepcionista IA."
   }
 }

@@ -87,7 +87,8 @@
     "collapse": "접기",
     "language": "언어",
     "services": "서비스",
-    "leads": "리드"
+    "leads": "리드",
+    "appointments": "예약"
   },
   "settings": {
     "language": "언어"
@@ -259,7 +260,83 @@
     "replyAlt": "응답 (대체 언어, 선택사항)",
     "replyPrimaryPh": "메시지로 문의해 주세요 📩",
     "replyAltPh": "대체 언어 응답…",
-    "saveAll": "모든 변경사항 저장"
+    "saveAll": "모든 변경사항 저장",
+    "titleByCat": {
+      "ecommerce": "AI 상점 도우미 학습",
+      "dental": "AI 안내 직원 학습",
+      "hvac": "AI 배차 담당 학습",
+      "salon": "AI 안내 직원 학습"
+    },
+    "subtitleByCat": {
+      "ecommerce": "상품, 배송, 결제 안내를 학습시키세요.",
+      "dental": "환자 응대와 예약을 받도록 학습시키세요.",
+      "hvac": "문의를 분류하고 출장 예약을 잡도록 학습시키세요.",
+      "salon": "고객 응대와 예약을 받도록 학습시키세요."
+    },
+    "kbTitle": {
+      "ecommerce": "쇼핑 정보",
+      "dental": "병원 정보",
+      "hvac": "업체 정보",
+      "salon": "살롱 정보"
+    },
+    "kbDesc": {
+      "ecommerce": "봇이 사용할 배송·결제·반품 정보입니다.",
+      "dental": "봇이 사용할 진료시간·주소·보험·응급 안내입니다.",
+      "hvac": "봇이 사용할 서비스 지역·시간·응급·요금 정책입니다.",
+      "salon": "봇이 사용할 영업시간·주소·취소·예약금 정책입니다."
+    },
+    "returnPolicy": "반품 정책",
+    "returnPolicyPh": "7일 이내 반품 가능…",
+    "operatingHours": "영업 시간",
+    "operatingHoursPh": "월–금 9시–18시, 토 10시–16시",
+    "address": "주소",
+    "addressPh": "서울시 강남구 …",
+    "insurance": "보험 가능",
+    "insurancePh": "국민건강보험, 실손보험 …",
+    "emergencyPolicy": "응급 안내",
+    "emergencyPolicyPh": "응급 시 (02) 123-4567 로 연락하세요.",
+    "cancellationPolicy": "취소 정책",
+    "cancellationPolicyPh": "방문 24시간 전까지 취소해 주세요.",
+    "serviceArea": "서비스 지역 / 우편번호",
+    "serviceAreaPh": "서울 전 지역 및 인근 40km",
+    "emergencyAvailability": "응급 출동 가능 여부",
+    "emergencyAvailabilityPh": "24시간 응급 출동, 야간 추가 요금",
+    "pricingPolicy": "견적 / 요금 정책",
+    "pricingPolicyPh": "견적 무료, 수리 시 진단비 면제",
+    "depositPolicy": "예약금 정책",
+    "depositPolicyPh": "컬러 시술은 20% 예약금 필요",
+    "qa": {
+      "dental": {
+        "hours": "진료 시간이 어떻게 되나요?",
+        "hoursA": "월–금 9시–18시, 토 10시–16시에 진료합니다.",
+        "insurance": "보험 적용되나요?",
+        "insuranceA": "대부분의 보험이 적용됩니다. 가입사를 알려주세요.",
+        "emergency": "응급 상황입니다.",
+        "emergencyA": "(02) 123-4567 응급 라인으로 바로 연락 주세요.",
+        "book": "예약하고 싶어요.",
+        "bookA": "성함, 전화번호, 원하는 날짜·시간을 알려주세요."
+      },
+      "hvac": {
+        "area": "저희 지역도 출장 가능한가요?",
+        "areaA": "우편번호를 알려주시면 바로 확인해 드릴게요.",
+        "emergency": "긴급 점검이 필요합니다.",
+        "emergencyA": "24시간 응급 출동이 가능합니다. 주소를 알려주세요.",
+        "estimate": "견적 받을 수 있나요?",
+        "estimateA": "견적은 무료입니다. 증상과 주소를 알려주세요.",
+        "hours": "영업 시간이 어떻게 되나요?",
+        "hoursA": "월–토 8시–19시, 응급은 24시간입니다."
+      },
+      "salon": {
+        "book": "예약하고 싶어요.",
+        "bookA": "성함, 연락처, 시술 종류와 희망 시간을 알려주세요.",
+        "cancel": "취소 정책이 어떻게 되나요?",
+        "cancelA": "방문 24시간 전까지 취소해 주세요.",
+        "hours": "영업 시간은요?",
+        "hoursA": "화–토 10시–20시에 영업합니다.",
+        "deposit": "예약금이 필요한가요?",
+        "depositA": "컬러와 긴 시술은 20% 예약금이 필요합니다."
+      }
+    }
   },
   "autoReply": {
     "title": "자동 응답 규칙",
@@ -560,7 +637,13 @@
     "presetsAdded": "기본 서비스 추가됨",
     "empty": "아직 서비스가 없습니다. 추가하거나 기본 목록을 불러오세요.",
     "nameRequired": "이름은 필수입니다",
-    "notForEcommerce": "이 페이지는 서비스 비즈니스용입니다. 이커머스는 상품 페이지를 사용하세요."
+    "notForEcommerce": "이 페이지는 서비스 비즈니스용입니다. 이커머스는 상품 페이지를 사용하세요.",
+    "titleByCat": {
+      "ecommerce": "서비스",
+      "dental": "진료 항목 및 예약",
+      "hvac": "서비스 및 출장 예약",
+      "salon": "시술 및 예약"
+    }
   },
   "leads": {
     "title": "리드",
@@ -584,5 +667,9 @@
       "booked": "예약됨",
       "closed": "종료"
     }
+  },
+  "appointments": {
+    "title": "예약",
+    "subtitle": "AI 안내 직원이 받은 예약입니다."
   }
 }

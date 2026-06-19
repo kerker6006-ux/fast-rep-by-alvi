@@ -23,7 +23,7 @@ const navItems: NavItem[] = [
   { id: "ai-training", labelKey: "nav.aiTraining", icon: Brain },
   { id: "products", labelKey: "nav.products", icon: Package, show: (c) => !c || isEcom(c) },
   { id: "services", labelKey: "nav.services", icon: Briefcase, show: (c) => isService(c) },
-  { id: "leads", labelKey: "nav.leads", icon: UserPlus },
+  { id: "leads", labelKey: "nav.leads", icon: UserPlus, show: () => true },
   { id: "pending-products", labelKey: "nav.autoImport", icon: Inbox, show: (c) => !c || isEcom(c) },
   { id: "suggestions", labelKey: "nav.suggestions", icon: Lightbulb, show: (c) => !c || isEcom(c) },
   { id: "website-import", labelKey: "nav.websiteImport", icon: Globe },
@@ -80,6 +80,7 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
       {/* Nav */}
       <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
         {visibleItems.map((item) => {
+          const labelKey = item.id === "leads" && isService(category) ? "nav.appointments" : item.labelKey;
           const isActive = activeTab === item.id;
           const button = (
             <button
@@ -96,14 +97,14 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
               )}
             >
               <item.icon className="h-[18px] w-[18px] shrink-0" />
-              {!collapsed && <span className="truncate animate-fade-in">{t(item.labelKey)}</span>}
+              {!collapsed && <span className="truncate animate-fade-in">{t(labelKey)}</span>}
             </button>
           );
           if (collapsed) {
             return (
               <Tooltip key={item.id} delayDuration={0}>
                 <TooltipTrigger asChild>{button}</TooltipTrigger>
-                <TooltipContent side="right" className="font-medium">{t(item.labelKey)}</TooltipContent>
+                <TooltipContent side="right" className="font-medium">{t(labelKey)}</TooltipContent>
               </Tooltip>
             );
           }
