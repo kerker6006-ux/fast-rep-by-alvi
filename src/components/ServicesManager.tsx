@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBusinessCategory, BusinessCategory } from "@/hooks/useBusinessCategory";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,21 +30,22 @@ type ServiceRow = {
   active: boolean;
 };
 
-const empty = { name: "", description: "", price_text: "", duration_text: "", service_area: "", active: true };
+const emptyForm = { name: "", description: "", price_text: "", duration_text: "", service_area: "", active: true };
 
 const ServicesManager = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { category } = useBusinessCategory();
   const qc = useQueryClient();
-  const [editing, setEditing] = useState<ServiceRow | null>(null);
-  const [form, setForm] = useState(empty);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState(emptyForm);
 
   const cat = (category && category !== "ecommerce" ? category : "dental") as Exclude<BusinessCategory, "ecommerce">;
 
   const { data: services = [], isLoading } = useQuery({
     queryKey: ["services", user?.id, cat],
-    enabled: !!user?.id,
+    enabled: !!user?.id && category !== "ecommerce",
     queryFn: async () => {
       const { data, error } = await supabase
         .from("services")
@@ -70,8 +71,8 @@ const ServicesManager = () => {
         service_area: form.service_area || null,
         active: form.active,
       };
-      if (editing) {
-        const { error } = await supabase.from("services").update(payload).eq("id", editing.id);
+      if (editingId) {
+        const { error } = await supabase.from("services").update(payload).eq("id", editingId);
         if (error) throw error;
       } else {
         const { error } = await supabase.from("services").insert(payload);
@@ -81,8 +82,9 @@ const ServicesManager = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["services"] });
       toast.success(t("services.saved"));
-      setEditing(null);
-      setForm(empty);
+      setDialogOpen(false);
+      setEditingId(null);
+      setForm(emptyForm);
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -100,12 +102,7 @@ const ServicesManager = () => {
 
   const seedPresets = useMutation({
     mutationFn: async () => {
-      const rows = PRESETS[cat].map((name) => ({
-        user_id: user!.id,
-        category: cat,
-        name,
-        active: true,
-      }));
+      const rows = PRESETS[cat].map((name) => ({ user_id: user!.id, category: cat, name, active: true }));
       const { error } = await supabase.from("services").insert(rows);
       if (error) throw error;
     },
@@ -116,9 +113,9 @@ const ServicesManager = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const openNew = () => { setEditing(null); setForm(empty); };
+  const openNew = () => { setEditingId(null); setForm(emptyForm); setDialogOpen(true); };
   const openEdit = (s: ServiceRow) => {
-    setEditing(s);
+    setEditingId(s.id);
     setForm({
       name: s.name,
       description: s.description || "",
@@ -127,12 +124,13 @@ const ServicesManager = () => {
       service_area: s.service_area || "",
       active: s.active,
     });
+    setDialogOpen(true);
   };
 
   if (!category) return null;
-  if (category === "ecommerce") return (
-    <Card><CardContent className="p-6 text-sm text-muted-foreground">{t("services.notForEcommerce")}</CardContent></Card>
-  );
+  if (category === "ecommerce") {
+    return <Card><CardContent className="p-6 text-sm text-muted-foreground">{t("services.notForEcommerce")}</CardContent></Card>;
+  }
 
   return (
     <div className="space-y-6">
@@ -147,12 +145,7 @@ const ServicesManager = () => {
               <Sparkles className="h-4 w-4 mr-2" />{t("services.addPresets")}
             </Button>
           )}
-          <Dialog open={editing !== null || form !== empty && form.name !== ""} onOpenChange={(o) => { if (!o) { setEditing(null); setForm(empty); } }}>
-            <Button onClick={() => { openNew(); setForm({ ...empty, name: " " }); setForm(empty); document.getElementById("svc-add-trigger")?.click(); }} className="hidden" />
-          </Dialog>
-          <Button onClick={() => { openNew(); document.getElementById("svc-open")?.click(); }}>
-            <Plus className="h-4 w-4 mr-2" />{t("services.add")}
-          </Button>
+          <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />{t("services.add")}</Button>
         </div>
       </div>
 
@@ -178,7 +171,7 @@ const ServicesManager = () => {
                   </div>
                 </div>
                 <div className="flex gap-1 shrink-0">
-                  <Button size="icon" variant="ghost" onClick={() => { openEdit(s); document.getElementById("svc-open")?.click(); }}><Pencil className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" onClick={() => openEdit(s)}><Pencil className="h-4 w-4" /></Button>
                   <Button size="icon" variant="ghost" onClick={() => remove.mutate(s.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                 </div>
               </CardContent>
@@ -187,38 +180,49 @@ const ServicesManager = () => {
         </div>
       )}
 
-      {/* Edit dialog */}
-      <Dialog>
-        <button id="svc-open" className="hidden" onClick={(e) => { e.preventDefault(); (document.getElementById("svc-dialog-trigger") as HTMLButtonElement)?.click(); }} />
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editingId ? t("services.editTitle") : t("services.addTitle")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label>{t("services.fName")}</Label>
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("services.fNamePh")} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("services.fDesc")}</Label>
+              <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={t("services.fDescPh")} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>{t("services.fPrice")}</Label>
+                <Input value={form.price_text} onChange={(e) => setForm({ ...form, price_text: e.target.value })} placeholder={cat === "hvac" ? "$100 - $300" : "$500"} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("services.fDuration")}</Label>
+                <Input value={form.duration_text} onChange={(e) => setForm({ ...form, duration_text: e.target.value })} placeholder="45 min" />
+              </div>
+            </div>
+            {cat === "hvac" && (
+              <div className="space-y-1.5">
+                <Label>{t("services.fArea")}</Label>
+                <Input value={form.service_area} onChange={(e) => setForm({ ...form, service_area: e.target.value })} placeholder={t("services.fAreaPh")} />
+              </div>
+            )}
+            <div className="flex items-center justify-between pt-1">
+              <Label>{t("common.active")}</Label>
+              <Switch checked={form.active} onCheckedChange={(v) => setForm({ ...form, active: v })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("common.cancel")}</Button>
+            <Button onClick={() => upsert.mutate()} disabled={upsert.isPending}>{upsert.isPending ? t("common.saving") : t("common.save")}</Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
-
-      <ServiceDialog
-        category={cat}
-        editing={editing}
-        form={form}
-        setForm={setForm}
-        onClose={() => { setEditing(null); setForm(empty); }}
-        onSave={() => upsert.mutate()}
-        saving={upsert.isPending}
-      />
     </div>
   );
-};
-
-const ServiceDialog = ({
-  category, editing, form, setForm, onClose, onSave, saving,
-}: {
-  category: Exclude<BusinessCategory, "ecommerce">;
-  editing: ServiceRow | null;
-  form: typeof empty;
-  setForm: (f: typeof empty) => void;
-  onClose: () => void;
-  onSave: () => void;
-  saving: boolean;
-}) => {
-  const { t } = useTranslation();
-  // Use external open trigger via DOM click; simpler: use a controlled state in parent.
-  return null as any;
 };
 
 export default ServicesManager;

@@ -36,10 +36,10 @@ export function useBusinessCategory() {
   });
 
   const setBusinessInfo = useMutation({
-    mutationFn: async (info: Record<string, unknown>) => {
+    mutationFn: async (info: Record<string, any>) => {
       const { error } = await supabase
         .from("profiles")
-        .update({ business_info: info })
+        .update({ business_info: info as any })
         .eq("id", user!.id);
       if (error) throw error;
     },
