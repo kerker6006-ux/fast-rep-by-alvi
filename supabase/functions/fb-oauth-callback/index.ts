@@ -85,11 +85,11 @@ Deno.serve(async (req) => {
       pages,
     });
     if (error) {
-      return htmlRedirect(`${appOrigin}/?fb_error=session_store`, "Could not save session");
+      return htmlRedirect(`${appOrigin}/dashboard?fb_error=session_store#fb-pages`, "Could not save session");
     }
 
-    return htmlRedirect(`${appOrigin}/?fb_session=${sessionToken}#fb-pages`, "Loading your pages...");
+    return htmlRedirect(`${appOrigin}/dashboard?fb_session=${sessionToken}#fb-pages`, "Loading your pages...");
   } catch (e) {
-    return htmlRedirect(`${appOrigin}/?fb_error=${encodeURIComponent((e as Error).message)}`, "Unexpected error");
+    return htmlRedirect(`${appOrigin}/dashboard?fb_error=${encodeURIComponent((e as Error).message)}#fb-pages`, "Unexpected error");
   }
 });
