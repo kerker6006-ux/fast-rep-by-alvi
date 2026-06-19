@@ -81,6 +81,38 @@ const QUICK_ADD_BY_CAT: Record<BusinessCategory, { qKey: string; aKey: string }[
   ],
 };
 
+// Starter templates per niche — applied only to EMPTY fields (never overwrites edits).
+const PRESET_TEMPLATES: Record<BusinessCategory, SettingsMap> = {
+  ecommerce: {
+    delivery_info: "Inside Dhaka 60৳, outside Dhaka 120৳. Standard delivery 1–3 days.",
+    payment_methods: "Cash on Delivery, bKash, Nagad, Bank Transfer.",
+    return_policy: "7-day return for unused items in original packaging. Buyer pays return shipping.",
+    reply_tone: "Friendly, direct, helpful.",
+  },
+  dental: {
+    operating_hours: "Sun–Thu 10:00am – 8:00pm. Fri closed.",
+    business_address: "123 Main St, City",
+    insurance_accepted: "We accept Delta Dental, MetLife and Cigna. Please share your card at the visit.",
+    emergency_policy: "Same-day slots for acute pain or trauma — please call the front desk.",
+    cancellation_policy: "Free reschedule with 24h notice. Later cancellations may forfeit any deposit.",
+    reply_tone: "Warm, calm, professional.",
+  },
+  hvac: {
+    operating_hours: "Mon–Sat 8:00am – 7:00pm. 24/7 emergency line available.",
+    service_area_zips: "Dallas, TX and 25-mile radius. 75201, 75202, 75203…",
+    emergency_policy: "Same-day visits for no-heat, no-cool, gas smell or active leaks.",
+    pricing_policy: "Free phone estimates. On-site diagnostic $79, credited toward any repair.",
+    reply_tone: "Clear, confident, helpful.",
+  },
+  salon: {
+    operating_hours: "Tue–Sun 10:00am – 8:00pm. Mon closed.",
+    business_address: "123 Beauty Ave, City",
+    cancellation_policy: "24h notice required to reschedule. No-shows forfeit the deposit.",
+    deposit_policy: "20% deposit on color and longer services, refundable up to 48h before the visit.",
+    reply_tone: "Warm, polished, concierge-style.",
+  },
+};
+
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
 const AiTraining = () => {
