@@ -88,7 +88,17 @@
     "language": "Language",
     "services": "Services",
     "leads": "Leads",
-    "appointments": "Appointments"
+    "appointments": "Appointments",
+    "chatsByCat": {
+      "dental": "Patient chats",
+      "hvac": "Customer chats",
+      "salon": "Client chats"
+    },
+    "complaintsByCat": {
+      "dental": "Patient issues",
+      "hvac": "Service issues",
+      "salon": "Client issues"
+    }
   },
   "settings": {
     "language": "Language"
