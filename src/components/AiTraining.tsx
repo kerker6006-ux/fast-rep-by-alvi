@@ -274,10 +274,12 @@ const AiTraining = () => {
       });
       if (error) throw error;
       if (data.error) throw new Error(data.error);
-      setChatMessages([
+      const initial: ChatMessage[] = [
         { role: "user", content: "Hi, I want to set up my bot." },
         { role: "assistant", content: data.reply },
-      ]);
+      ];
+      setChatMessages(initial);
+      persistChatHistory(initial);
     } catch (e: any) {
       toast.error(e.message || "Failed to start training chat");
       setChatStarted(false);
