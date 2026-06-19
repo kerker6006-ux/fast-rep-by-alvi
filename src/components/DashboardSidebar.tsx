@@ -71,7 +71,7 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
         </div>
         {!collapsed && (
           <div className="animate-fade-in overflow-hidden">
-            <p className="font-display font-bold text-sm leading-tight truncate">Fast Rep</p>
+            <p className="font-display font-bold text-sm leading-tight truncate">LeadPilot</p>
             <p className="text-[11px] text-sidebar-foreground/60 leading-tight truncate">{t("app.tagline")}</p>
           </div>
         )}

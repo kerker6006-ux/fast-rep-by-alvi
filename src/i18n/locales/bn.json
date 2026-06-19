@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Fast Rep",
+    "name": "LeadPilot",
     "tagline": "মেসেঞ্জারের জন্য AI রিসেপশনিস্ট"
   },
   "common": {
@@ -45,7 +45,7 @@
     "signIn": "সাইন ইন",
     "signUp": "অ্যাকাউন্ট তৈরি করুন",
     "signInTitle": "আবার স্বাগতম",
-    "signUpTitle": "Fast Rep দিয়ে শুরু করুন",
+    "signUpTitle": "LeadPilot দিয়ে শুরু করুন",
     "signInSubtitle": "আপনার ড্যাশবোর্ড অ্যাক্সেস করতে আপনার প্রমাণপত্র দিন",
     "signUpSubtitle": "কয়েক সেকেন্ডে আপনার অ্যাকাউন্ট তৈরি করুন। অনুমোদন প্রয়োজন নেই।",
     "displayName": "আপনার নাম",
@@ -64,7 +64,7 @@
     "feature1": "১-ক্লিক সেটআপ",
     "feature2": "৪টি ভাষা",
     "feature3": "AI উত্তর",
-    "copyright": "© ২০২৬ Fast Rep · সর্বস্বত্ব সংরক্ষিত"
+    "copyright": "© ২০২৬ LeadPilot · সর্বস্বত্ব সংরক্ষিত"
   },
   "nav": {
     "analytics": "অ্যানালিটিক্স",
@@ -535,7 +535,7 @@
     },
     "overview": {
       "title": "প্ল্যাটফর্ম ওভারভিউ",
-      "subtitle": "Fast Rep প্ল্যাটফর্মের রিয়েল-টাইম স্ন্যাপশট।",
+      "subtitle": "LeadPilot প্ল্যাটফর্মের রিয়েল-টাইম স্ন্যাপশট।",
       "signups14d": "সাইনআপ (গত ১৪ দিন)"
     },
     "users": {
