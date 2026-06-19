@@ -380,7 +380,7 @@ const ProductsManager = () => {
                         Generate
                       </Button>
                     </div>
-                    <Textarea value={form.description_bn} onChange={e => setForm(f => ({ ...f, description_bn: e.target.value }))} placeholder="জেনারেট করুন অথবা লিখুন..." rows={3} />
+                    <Textarea value={form.description_bn} onChange={e => setForm(f => ({ ...f, description_bn: e.target.value }))} placeholder="Click Generate or type manually..." rows={3} />
                   </div>
                 </div>
               </div>

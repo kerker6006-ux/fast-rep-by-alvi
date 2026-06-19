@@ -131,7 +131,7 @@ const PendingProducts = () => {
                       <Input value={editForm.ai_name || ""} onChange={e => setEditForm(f => ({ ...f, ai_name: e.target.value }))} className="h-8 text-sm" />
                     </div>
                     <div>
-                      <Label className="text-xs">Name (বাংলা)</Label>
+                      <Label className="text-xs">Name (alternate language)</Label>
                       <Input value={editForm.ai_name_bn || ""} onChange={e => setEditForm(f => ({ ...f, ai_name_bn: e.target.value }))} className="h-8 text-sm" />
                     </div>
                     <div>
