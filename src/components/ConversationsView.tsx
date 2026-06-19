@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,6 +26,7 @@ type Message = {
 };
 
 const ConversationsView = () => {
+  const { t } = useTranslation();
   const [selectedConvo, setSelectedConvo] = useState<string | null>(null);
 
   const { data: conversations, isLoading } = useQuery({
@@ -54,8 +56,8 @@ const ConversationsView = () => {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Conversations</h2>
-        <p className="text-muted-foreground">View all customer conversations with your AI bot.</p>
+        <h2 className="text-2xl font-bold tracking-tight">{t("chats.title")}</h2>
+        <p className="text-muted-foreground">{t("chats.subtitle")}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[600px]">
@@ -69,7 +71,7 @@ const ConversationsView = () => {
             ) : conversations?.length === 0 ? (
               <div className="p-8 text-center">
                 <MessageSquare className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                <p className="text-sm text-muted-foreground">No conversations yet. Messages will appear here when customers message your page.</p>
+                <p className="text-sm text-muted-foreground">{t("chats.empty")}</p>
               </div>
             ) : (
               <div className="divide-y">
@@ -85,7 +87,7 @@ const ConversationsView = () => {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-sm truncate flex items-center gap-2">
-                          {c.sender_name || `Customer ${c.fb_sender_id.slice(-6)}`}
+                          {c.sender_name || `${t("analytics.customer")} ${c.fb_sender_id.slice(-6)}`}
                           {(c as any).needs_human && (
                             <span className="text-[10px] font-semibold bg-destructive text-destructive-foreground px-1.5 py-0.5 rounded">
                               REPLY ME
@@ -117,7 +119,7 @@ const ConversationsView = () => {
             <div className="flex-1 flex items-center justify-center text-muted-foreground">
               <div className="text-center">
                 <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-40" />
-                <p>Select a conversation to view messages</p>
+                <p>{t("chats.empty")}</p>
               </div>
             </div>
           ) : (
@@ -131,7 +133,7 @@ const ConversationsView = () => {
                   <User className="h-4 w-4 text-primary" />
                 </div>
                 <span className="font-medium text-sm">
-                  {selectedConversation?.sender_name || `Customer ${selectedConversation?.fb_sender_id.slice(-6)}`}
+                  {selectedConversation?.sender_name || `${t("analytics.customer")} ${selectedConversation?.fb_sender_id.slice(-6)}`}
                 </span>
               </div>
               <ScrollArea className="flex-1 p-4">
