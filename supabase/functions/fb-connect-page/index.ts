@@ -62,6 +62,25 @@ Deno.serve(async (req) => {
       subscribed = [];
     }
 
+    // Subscribe Instagram webhooks if this page has a linked IG Business Account
+    let igSubStatus: string | null = null;
+    if (page.ig_business_account_id) {
+      try {
+        const igRes = await fetch(`${FB_GRAPH}/${page.ig_business_account_id}/subscribed_apps`, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            subscribed_fields: IG_SUBSCRIBED_FIELDS.join(","),
+            access_token: page.access_token,
+          }),
+        });
+        const igJson = await igRes.json();
+        igSubStatus = igRes.ok && igJson.success !== false ? "active" : `failed: ${igJson.error?.message ?? "unknown"}`;
+      } catch (e) {
+        igSubStatus = `failed: ${(e as Error).message}`;
+      }
+    }
+
     // Upsert into fb_pages
     const { error: upErr } = await admin
       .from("fb_pages")
@@ -79,6 +98,10 @@ Deno.serve(async (req) => {
           subscription_status: subStatus,
           subscription_error: subError,
           disconnected_at: null,
+          ig_business_account_id: page.ig_business_account_id ?? null,
+          ig_username: page.ig_username ?? null,
+          ig_picture_url: page.ig_picture_url ?? null,
+          ig_subscription_status: igSubStatus,
         },
         { onConflict: "fb_page_id" },
       );
@@ -90,7 +113,7 @@ Deno.serve(async (req) => {
     await admin.from("fb_oauth_sessions").delete().eq("session_token", session_token);
 
     return new Response(
-      JSON.stringify({ ok: true, status: subStatus, error: subError, page: { id: page.id, name: page.name } }),
+      JSON.stringify({ ok: true, status: subStatus, error: subError, ig_status: igSubStatus, page: { id: page.id, name: page.name, ig: page.ig_username } }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
