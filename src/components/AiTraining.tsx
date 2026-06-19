@@ -536,23 +536,61 @@ const AiTraining = () => {
         {/* ===== AI WIZARD TAB ===== */}
         <TabsContent value="wizard" className="space-y-4">
           {!chatStarted ? (
-            <Card className="border-dashed border-primary/30">
-              <CardContent className="flex flex-col items-center justify-center py-10 space-y-4">
-                <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Bot className="h-7 w-7 text-primary" />
-                </div>
-                <div className="text-center space-y-1.5">
-                  <h3 className="font-semibold text-lg">{t("aiTraining.wizardTitle")}</h3>
-                  <p className="text-sm text-muted-foreground max-w-sm">
-                    {t("aiTraining.wizardDesc")}
-                  </p>
-                </div>
-                <Button onClick={startChat} className="gap-2">
-                  <Sparkles className="h-4 w-4" />
-                  {t("aiTraining.startTraining")}
-                </Button>
-              </CardContent>
-            </Card>
+            !chatLang ? (
+              <Card className="border-dashed border-primary/30">
+                <CardContent className="flex flex-col items-center justify-center py-10 space-y-4">
+                  <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Languages className="h-7 w-7 text-primary" />
+                  </div>
+                  <div className="text-center space-y-1.5">
+                    <h3 className="font-semibold text-lg">{t("aiTraining.chooseLanguageTitle")}</h3>
+                    <p className="text-sm text-muted-foreground max-w-sm">
+                      {t("aiTraining.chooseLanguageDesc")}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {LANG_OPTIONS.map((l) => (
+                      <Button
+                        key={l.code}
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          await setChatLanguage(l.code);
+                          await startChat(l.code);
+                        }}
+                        className="gap-1.5"
+                      >
+                        {l.label}
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border-dashed border-primary/30">
+                <CardContent className="flex flex-col items-center justify-center py-10 space-y-4">
+                  <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Bot className="h-7 w-7 text-primary" />
+                  </div>
+                  <div className="text-center space-y-1.5">
+                    <h3 className="font-semibold text-lg">{t("aiTraining.wizardTitle")}</h3>
+                    <p className="text-sm text-muted-foreground max-w-sm">
+                      {t("aiTraining.wizardDesc")}
+                    </p>
+                    <p className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                      <Languages className="h-3 w-3" /> {chatLangLabel}
+                      <button onClick={changeChatLanguage} className="underline ml-1 hover:text-primary">
+                        {t("aiTraining.changeLanguage")}
+                      </button>
+                    </p>
+                  </div>
+                  <Button onClick={() => startChat()} className="gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    {t("aiTraining.startTraining")}
+                  </Button>
+                </CardContent>
+              </Card>
+            )
           ) : (
             <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
             <Card className="flex flex-col" style={{ height: "calc(100vh - 260px)", minHeight: "400px" }}>
