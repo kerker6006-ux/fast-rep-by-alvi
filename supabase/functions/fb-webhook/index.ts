@@ -327,7 +327,8 @@ async function handlePagePostEvent(
 async function handleMessagingEvent(
   supabase: any, event: any, pageId: string,
   pageAccessToken: string, lovableApiKey: string | undefined,
-  settings: Record<string, string>, userId: string | null
+  settings: Record<string, string>, userId: string | null,
+  platform: "facebook" | "instagram" = "facebook"
 ) {
   const senderId = event.sender?.id;
   if (!senderId) return;
