@@ -697,12 +697,12 @@ const ProductsManager = () => {
                           </div>
                         )}
                         {!p.is_active && (
-                          <div className="absolute top-2 left-2"><Badge variant="destructive" className="text-[10px] shadow-md"><EyeOff className="h-3 w-3 mr-0.5" /> Hidden</Badge></div>
+                          <div className="absolute top-2 left-2"><Badge variant="destructive" className="text-[10px] shadow-md"><EyeOff className="h-3 w-3 mr-0.5" /> {t("products.hidden")}</Badge></div>
                         )}
                         {/* Quick actions on hover */}
                         <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
                           <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); openEdit(p); }} className="h-7 text-xs gap-1 shadow-lg">
-                            <Pencil className="h-3 w-3" /> Edit
+                            <Pencil className="h-3 w-3" /> {t("products.previewEdit")}
                           </Button>
                           <Button size="sm" variant="destructive" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(p.id); }} className="h-7 text-xs gap-1 shadow-lg">
                             <Trash2 className="h-3 w-3" />
