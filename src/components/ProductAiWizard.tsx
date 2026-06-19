@@ -275,26 +275,26 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
           <div className="mx-4 mb-2 p-3 rounded-xl border-2 border-primary/30 bg-primary/5 space-y-2 shrink-0">
             <div className="flex items-center gap-2 text-sm font-semibold text-primary">
               <Sparkles className="h-4 w-4" />
-              {pendingData.action === "add_variant" ? "Add Color Variant?" : "Create This Product?"}
+              {pendingData.action === "add_variant" ? t("products.wAddVariantQ") : t("products.wCreateQ")}
             </div>
             {pendingData.product && (
               <div className="text-xs space-y-0.5 text-foreground">
                 <p><strong>{pendingData.product.name}</strong> {pendingData.product.name_bn && `(${pendingData.product.name_bn})`}</p>
                 <p>${pendingData.product.price} • {pendingData.product.category} • {pendingData.product.color}</p>
-                {pendingData.product.material && <p>Material: {pendingData.product.material}</p>}
+                {pendingData.product.material && <p>{t("products.wMaterial")}: {pendingData.product.material}</p>}
               </div>
             )}
             {pendingData.variant && (
               <div className="text-xs text-foreground">
-                <p>Color: <strong>{pendingData.variant.color}</strong> → {pendingData.variant.product_name}</p>
+                <p>{t("products.wColor")}: <strong>{pendingData.variant.color}</strong> → {pendingData.variant.product_name}</p>
               </div>
             )}
             <div className="flex gap-2">
               <Button size="sm" className="flex-1 gap-1 h-8" onClick={handleAcceptProduct}>
-                <Check className="h-3 w-3" /> Yes, Apply
+                <Check className="h-3 w-3" /> {t("products.wYesApply")}
               </Button>
               <Button size="sm" variant="outline" className="flex-1 gap-1 h-8" onClick={handleRejectProduct}>
-                <X className="h-3 w-3" /> Adjust
+                <X className="h-3 w-3" /> {t("products.wAdjust")}
               </Button>
             </div>
           </div>
