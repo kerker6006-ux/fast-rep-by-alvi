@@ -583,7 +583,7 @@ const ProductsManager = () => {
             ))}
             {(categoryProductCounts.uncategorized || 0) > 0 && (
               <button onClick={() => setFilterCategory("uncategorized")} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${filterCategory === "uncategorized" ? "bg-primary text-primary-foreground shadow-md" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
-                Uncategorized ({categoryProductCounts.uncategorized})
+                {t("products.uncategorized")} ({categoryProductCounts.uncategorized})
               </button>
             )}
           </div>
