@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,17 +6,61 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Globe, Plus, Trash2, Copy, Check } from "lucide-react";
+import { Globe, Plus, Trash2, Copy, Check, RefreshCw, Loader2, Facebook, ChevronRight } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+
+type FbPage = {
+  id: string;
+  fb_page_id: string;
+  page_name: string | null;
+  page_picture_url?: string | null;
+  is_active: boolean;
+  connected_at?: string | null;
+  last_sync_at?: string | null;
+  subscription_status?: string | null;
+  subscription_error?: string | null;
+  verify_token?: string | null;
+};
+
+type SessionPage = { id: string; name: string; category: string | null; picture_url: string | null };
+
+const FB_BLUE = "#1877F2";
 
 const FbPageConnection = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const [showAdd, setShowAdd] = useState(false);
+  const [showManual, setShowManual] = useState(false);
   const [copied, setCopied] = useState(false);
   const [form, setForm] = useState({ pageId: "", pageName: "", accessToken: "" });
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [selectedPage, setSelectedPage] = useState<string | null>(null);
+  const [disconnectId, setDisconnectId] = useState<string | null>(null);
+
+  // Detect oauth return
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const sess = url.searchParams.get("fb_session");
+    const err = url.searchParams.get("fb_error");
+    if (err) {
+      toast.error(`Facebook error: ${err.replace(/_/g, " ")}`);
+      url.searchParams.delete("fb_error");
+      window.history.replaceState({}, "", url.pathname + (url.search || "") + url.hash);
+    }
+    if (sess) {
+      setSessionToken(sess);
+      setPickerOpen(true);
+      url.searchParams.delete("fb_session");
+      window.history.replaceState({}, "", url.pathname + (url.search || "") + url.hash);
+    }
+  }, []);
 
   const { data: pages, isLoading } = useQuery({
     queryKey: ["fb-pages"],
@@ -26,11 +70,79 @@ const FbPageConnection = () => {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+      return data as unknown as FbPage[];
     },
   });
 
-  const addPage = useMutation({
+  const { data: sessionPages, isLoading: loadingSession } = useQuery({
+    queryKey: ["fb-session-pages", sessionToken],
+    enabled: !!sessionToken && pickerOpen,
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("fb-list-pages", { body: { session_token: sessionToken } });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      return (data?.pages ?? []) as SessionPage[];
+    },
+  });
+
+  const startOAuth = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("fb-oauth-start");
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      window.location.href = data.url;
+    },
+    onError: (e: any) => toast.error(e.message || "Could not start Facebook login"),
+  });
+
+  const connectPage = useMutation({
+    mutationFn: async (pageId: string) => {
+      const { data, error } = await supabase.functions.invoke("fb-connect-page", {
+        body: { session_token: sessionToken, page_id: pageId },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["fb-pages"] });
+      setPickerOpen(false);
+      setSessionToken(null);
+      setSelectedPage(null);
+      if (data.status === "active") toast.success("Facebook Page Connected Successfully");
+      else toast.warning(`Connected, but webhook subscription failed: ${data.error ?? ""}`);
+    },
+    onError: (e: any) => toast.error(e.message || "Could not connect page"),
+  });
+
+  const disconnect = useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabase.functions.invoke("fb-disconnect-page", { body: { id } });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["fb-pages"] });
+      toast.success("Page disconnected");
+      setDisconnectId(null);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const sync = useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabase.functions.invoke("fb-sync-page", { body: { id } });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["fb-pages"] });
+      toast.success("Synced");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const addManual = useMutation({
     mutationFn: async () => {
       if (!form.pageId || !form.accessToken) throw new Error("Page ID and Access Token are required");
       const { error } = await supabase.from("fb_pages").insert({
@@ -44,153 +156,235 @@ const FbPageConnection = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fb-pages"] });
       setForm({ pageId: "", pageName: "", accessToken: "" });
-      setShowAdd(false);
-      toast.success("Facebook Page connected!");
+      setShowManual(false);
+      toast.success("Page added");
     },
-    onError: (e) => toast.error(e.message),
-  });
-
-  const deletePage = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("fb_pages").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["fb-pages"] });
-      toast.success("Page disconnected");
-    },
-  });
-
-  const togglePage = useMutation({
-    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
-      const { error } = await supabase.from("fb_pages").update({ is_active } as any).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["fb-pages"] }),
+    onError: (e: any) => toast.error(e.message),
   });
 
   const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fb-webhook`;
-
   const copyWebhook = () => {
     navigator.clipboard.writeText(webhookUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const statusBadge = (status?: string | null, isActive?: boolean) => {
+    const s = status ?? (isActive ? "active" : "pending");
+    if (s === "active") return <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20">Active</Badge>;
+    if (s === "failed") return <Badge variant="destructive">Failed</Badge>;
+    if (s === "disconnected") return <Badge variant="secondary">Disconnected</Badge>;
+    return <Badge variant="outline">Pending</Badge>;
+  };
+
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Facebook Page Connection</h2>
-        <p className="text-muted-foreground">Connect your Facebook Page to start receiving messages.</p>
+        <h2 className="text-2xl font-bold tracking-tight">Facebook Connections</h2>
+        <p className="text-muted-foreground">Connect your Facebook Pages so Fast Rep can auto-reply on Messenger and capture leads.</p>
       </div>
 
+      {/* Connect CTA */}
+      <Card className="overflow-hidden border-2" style={{ borderColor: `${FB_BLUE}30` }}>
+        <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: FB_BLUE }}>
+              <Facebook className="h-7 w-7 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-lg">Connect with Facebook</h3>
+              <p className="text-sm text-muted-foreground">One click. Pick a page. We handle the rest — webhook, tokens, subscriptions.</p>
+            </div>
+          </div>
+          <Button
+            size="lg"
+            disabled={startOAuth.isPending}
+            onClick={() => startOAuth.mutate()}
+            className="text-white hover:opacity-90 shrink-0"
+            style={{ backgroundColor: FB_BLUE }}
+          >
+            {startOAuth.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Facebook className="h-4 w-4 mr-2" />}
+            Connect Facebook Page
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Connected pages */}
+      <div>
+        <h3 className="text-lg font-semibold mb-3">Connected Pages</h3>
+        {isLoading ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[1, 2].map((i) => <div key={i} className="h-32 bg-muted animate-pulse rounded-lg" />)}
+          </div>
+        ) : !pages?.length ? (
+          <Card className="p-10 text-center border-dashed">
+            <Globe className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+            <h3 className="font-semibold">No pages connected yet</h3>
+            <p className="text-sm text-muted-foreground mt-1">Click "Connect Facebook Page" above to get started.</p>
+          </Card>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {pages.map((page) => (
+              <Card key={page.id} className={!page.is_active ? "opacity-70" : ""}>
+                <CardContent className="p-5 space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {page.page_picture_url ? (
+                        <img src={page.page_picture_url} alt="" className="h-11 w-11 rounded-full object-cover" />
+                      ) : (
+                        <div className="h-11 w-11 rounded-full flex items-center justify-center" style={{ backgroundColor: FB_BLUE }}>
+                          <Facebook className="h-5 w-5 text-white" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">{page.page_name || "Unnamed Page"}</p>
+                        <p className="text-xs text-muted-foreground font-mono truncate">ID: {page.fb_page_id}</p>
+                      </div>
+                    </div>
+                    {statusBadge(page.subscription_status, page.is_active)}
+                  </div>
+
+                  {page.subscription_error && (
+                    <p className="text-xs text-destructive bg-destructive/10 rounded-md px-2 py-1">{page.subscription_error}</p>
+                  )}
+
+                  <div className="text-xs text-muted-foreground space-y-0.5">
+                    {page.last_sync_at && <p>Last sync: {formatDistanceToNow(new Date(page.last_sync_at), { addSuffix: true })}</p>}
+                    {page.connected_at && <p>Connected: {formatDistanceToNow(new Date(page.connected_at), { addSuffix: true })}</p>}
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2 border-t">
+                    <Button variant="outline" size="sm" className="flex-1" disabled={sync.isPending} onClick={() => sync.mutate(page.id)}>
+                      <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${sync.isPending ? "animate-spin" : ""}`} />
+                      Sync
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1 text-destructive hover:text-destructive" onClick={() => setDisconnectId(page.id)}>
+                      <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                      Disconnect
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Webhook URL */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Webhook URL</CardTitle>
-          <CardDescription>All pages share the same webhook URL. Each page gets its own unique Verify Token shown below.</CardDescription>
+          <CardDescription>For reference. Pages connected through "Connect Facebook Page" are subscribed automatically.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent>
           <div className="flex items-center gap-2">
             <Input readOnly value={webhookUrl} className="font-mono text-xs" />
             <Button variant="outline" size="icon" onClick={copyWebhook}>
-              {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+              {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Your Pages</h3>
-        <Button onClick={() => setShowAdd(!showAdd)} variant={showAdd ? "secondary" : "default"} className="gap-2">
-          <Plus className="h-4 w-4" /> Add Page
-        </Button>
+      {/* Manual fallback */}
+      <div>
+        <button onClick={() => setShowManual(!showManual)} className="text-xs text-muted-foreground underline hover:text-foreground">
+          {showManual ? "Hide" : "Advanced: paste a Page Access Token manually"}
+        </button>
+        {showManual && (
+          <Card className="mt-3">
+            <CardContent className="pt-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Facebook Page ID</Label>
+                  <Input value={form.pageId} onChange={(e) => setForm((f) => ({ ...f, pageId: e.target.value }))} placeholder="123456789012345" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Page Name (optional)</Label>
+                  <Input value={form.pageName} onChange={(e) => setForm((f) => ({ ...f, pageName: e.target.value }))} placeholder="My Shop" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Page Access Token</Label>
+                <Input type="password" value={form.accessToken} onChange={(e) => setForm((f) => ({ ...f, accessToken: e.target.value }))} />
+              </div>
+              <Button onClick={() => addManual.mutate()} disabled={addManual.isPending}>
+                <Plus className="h-4 w-4 mr-1" />
+                {addManual.isPending ? "Adding..." : "Add Page"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
-      {showAdd && (
-        <Card>
-          <CardContent className="pt-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Facebook Page ID</Label>
-                <Input
-                  value={form.pageId}
-                  onChange={(e) => setForm((f) => ({ ...f, pageId: e.target.value }))}
-                  placeholder="123456789012345"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Page Name (optional)</Label>
-                <Input
-                  value={form.pageName}
-                  onChange={(e) => setForm((f) => ({ ...f, pageName: e.target.value }))}
-                  placeholder="My Shop"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Page Access Token</Label>
-              <Input
-                type="password"
-                value={form.accessToken}
-                onChange={(e) => setForm((f) => ({ ...f, accessToken: e.target.value }))}
-                placeholder="Paste your page access token here"
-              />
-              <p className="text-xs text-muted-foreground">Get this from Facebook Developer App → Your Page → Generate Token</p>
-            </div>
-            <Button onClick={() => addPage.mutate()} disabled={addPage.isPending}>
-              {addPage.isPending ? "Connecting..." : "Connect Page"}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {isLoading ? (
-        <div className="space-y-3">
-          {[1, 2].map((i) => <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />)}
-        </div>
-      ) : !pages?.length ? (
-        <Card className="p-8 text-center">
-          <Globe className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-          <h3 className="font-semibold">No pages connected</h3>
-          <p className="text-sm text-muted-foreground mt-1">Add your Facebook Page to start using the bot.</p>
-        </Card>
-      ) : (
-        <div className="space-y-3">
-          {pages.map((page: any) => (
-            <Card key={page.id} className={!page.is_active ? "opacity-60" : ""}>
-              <CardContent className="py-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Globe className="h-4 w-4 text-primary" />
-                      <span className="font-medium text-sm">{page.page_name || "Unnamed Page"}</span>
-                      <Badge variant={page.is_active ? "default" : "secondary"} className="text-[10px]">
-                        {page.is_active ? "Active" : "Inactive"}
-                      </Badge>
+      {/* Page picker modal */}
+      <Dialog open={pickerOpen} onOpenChange={(o) => { setPickerOpen(o); if (!o) { setSessionToken(null); setSelectedPage(null); } }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Select a Facebook Page</DialogTitle>
+            <DialogDescription>Choose the page Fast Rep should manage. You can connect more later.</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-80 overflow-y-auto -mx-1 px-1 space-y-2">
+            {loadingSession ? (
+              <div className="flex items-center justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+            ) : !sessionPages?.length ? (
+              <p className="text-sm text-muted-foreground text-center py-8">No pages found on this Facebook account.</p>
+            ) : (
+              sessionPages.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setSelectedPage(p.id)}
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 text-left transition-colors ${selectedPage === p.id ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"}`}
+                >
+                  {p.picture_url ? (
+                    <img src={p.picture_url} alt="" className="h-10 w-10 rounded-full object-cover" />
+                  ) : (
+                    <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: FB_BLUE }}>
+                      <Facebook className="h-5 w-5 text-white" />
                     </div>
-                    <p className="text-xs text-muted-foreground font-mono">ID: {page.fb_page_id}</p>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium truncate">{p.name}</p>
+                    {p.category && <p className="text-xs text-muted-foreground truncate">{p.category}</p>}
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Switch
-                      checked={page.is_active}
-                      onCheckedChange={(checked) => togglePage.mutate({ id: page.id, is_active: checked })}
-                    />
-                    <Button variant="ghost" size="icon" onClick={() => deletePage.mutate(page.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </div>
-                {page.verify_token && (
-                  <div className="bg-muted/50 rounded-md px-3 py-2">
-                    <p className="text-xs text-muted-foreground mb-1">Verify Token (use in Facebook webhook settings):</p>
-                    <code className="text-xs font-mono select-all">{page.verify_token}</code>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+                  {selectedPage === p.id && <Check className="h-4 w-4 text-primary" />}
+                </button>
+              ))
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPickerOpen(false)}>Cancel</Button>
+            <Button
+              disabled={!selectedPage || connectPage.isPending}
+              onClick={() => selectedPage && connectPage.mutate(selectedPage)}
+              className="text-white"
+              style={{ backgroundColor: FB_BLUE }}
+            >
+              {connectPage.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Connect Page
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Disconnect confirm */}
+      <AlertDialog open={!!disconnectId} onOpenChange={(o) => !o && setDisconnectId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Disconnect this page?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The bot will stop replying on this page. You can reconnect anytime with one click.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => disconnectId && disconnect.mutate(disconnectId)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Disconnect
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

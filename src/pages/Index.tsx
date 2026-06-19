@@ -37,7 +37,13 @@ const tabs: Record<string, React.ComponentType> = {
 };
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState("analytics");
+  const initialTab = (() => {
+    if (typeof window === "undefined") return "analytics";
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("fb_session") || url.searchParams.get("fb_error") || url.hash === "#fb-pages") return "fb-pages";
+    return "analytics";
+  })();
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const ActiveComponent = tabs[activeTab] || AnalyticsDashboard;
 
