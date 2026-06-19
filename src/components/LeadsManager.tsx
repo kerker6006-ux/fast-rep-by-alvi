@@ -56,7 +56,7 @@ const LeadsManager = () => {
   const update = useMutation({
     mutationFn: async (patch: Partial<Lead> & { id: string }) => {
       const { id, ...rest } = patch;
-      const { error } = await supabase.from("leads").update(rest).eq("id", id);
+      const { error } = await supabase.from("leads").update(rest as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
