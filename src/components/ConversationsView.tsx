@@ -29,6 +29,8 @@ type Message = {
 const ConversationsView = () => {
   const { t } = useTranslation();
   const [selectedConvo, setSelectedConvo] = useState<string | null>(null);
+  const [trainOpen, setTrainOpen] = useState(false);
+  const [trainData, setTrainData] = useState<{ customer: string; wrong: string }>({ customer: "", wrong: "" });
 
   const { data: conversations, isLoading } = useQuery({
     queryKey: ["conversations"],
