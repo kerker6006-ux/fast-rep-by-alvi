@@ -1,55 +1,48 @@
-# Auth hardening + per-user data isolation
+## Goal
+Make the Products → "Add Product" dialog fully translated and remove leftover Bangla example text (replace with neutral examples like "t-shirt", "Red", "M, L, XL"). Texts must switch live with the language switcher.
 
-## 1. Signup: confirm password
-In `src/pages/Auth.tsx`, add a "Confirm password" field to the signup form. Validate with zod:
-- password: min 8 chars
-- confirmPassword: must match password
-Show inline error if mismatch; block submit until they match.
+## Problem
+`src/components/ProductsManager.tsx` currently hardcodes English labels and uses Bangla examples in placeholders/hints (e.g. `"Red, মেরুন"`, `"M, L, XL"`, `"hijab, scarf, হিজাব"`, `"e.g. Hijab, Sharee"`, `"e.g. Cream, Pink, কালো"`, `"Color / রং"`, plus help text such as "Bot sends the exact color image customer asks for"). These never change when switching languages.
 
-## 2. Forgot password flow
-- On `src/pages/Auth.tsx` (sign-in tab): add a "Forgot password?" link that opens a small dialog/section asking for email, then calls:
-  ```ts
-  supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/reset-password`
-  })
-  ```
-- Create new page `src/pages/ResetPassword.tsx` (public route in `src/App.tsx`):
-  - Detects Supabase recovery session from the URL
-  - Form: new password + confirm new password (zod validation)
-  - Calls `supabase.auth.updateUser({ password })`
-  - On success redirects to `/dashboard`
-- Add `/reset-password` route to `App.tsx` (unprotected).
+## Changes
 
-## 3. Change password (any logged-in user)
-In the existing Settings/Account area (or a new "Security" card in Settings), add a "Change password" form:
-- Current password (re-auth via `signInWithPassword` using current email)
-- New password + confirm
-- Calls `supabase.auth.updateUser({ password })`
+### 1. `src/components/ProductsManager.tsx`
+Replace every hardcoded English/Bangla string in the component with `t("products.form.<key>")` calls. Specifically:
 
-## 4. Admin: reset a user's password
-In the Admin Users page, add a "Send password reset" action per user. This triggers `resetPasswordForEmail` for that user's email (no admin-set password — Supabase does not allow setting another user's password from the client). The user receives the reset email and uses `/reset-password`.
+- Dialog title: "Edit Product" / "Add New Product"
+- Section labels: Category, Names (English / alternate), Price, Color, Size, Material
+- All placeholders — strip Bangla examples and use neutral ones:
+  - Category new input: `"e.g. T-shirt, Hijab"` → translated, no Bangla
+  - Name: `"Product name"` → translated, e.g. "T-shirt"
+  - Color: `"Red, Blue"` (remove `মেরুন`)
+  - Size: `"M, L, XL"` (translated label, same example)
+  - Material: `"Cotton"`
+  - Keywords: `"t-shirt, cotton, summer"` (remove `হিজাব`)
+  - Color variant name: `"e.g. Cream, Pink, Black"` (remove Bangla)
+  - Size variant: `"50ml / 100ml / 250g"` (keep, neutral)
+- AI section: "AI-Powered Descriptions", "Generate", "Click Generate or type manually..."
+- Variants: "🎨 Color Variants", helper text, "Add Color", "No color variants yet.", example hint, color-name uppercase label, photo label, the "⚠️ Important" hint
+- Size/ML Variants section + empty state
+- Active toggle label "Active (Bot will show this)"
+- Save button states already use `t("common.*")` — keep
+- Stats: "Total Products", "Active", "Inactive", "Categories"
+- Search placeholder, view-mode tooltips, "All", "Uncategorized" pill
+- Empty state: "No products yet", description, "Add Your First Product"
+- Preview modal: "Color Variants", "Size Options", "Active"/"Inactive", "Edit", "Delete"
+- Toasts (keep English or translate — translate the user-facing ones: "Enter product name first", "AI description generated!", "AI generation failed", "Product updated!", "Product added!", "Product deleted!", "Product details filled by AI! Review and save.")
 
-> Note: directly setting another user's password requires the service role key, which is not exposed on Lovable Cloud. The reset-email approach is the supported pattern.
+### 2. Locale JSON files
+Add a `products.form.*` namespace (and reuse existing `products.*` where present) in all four locale files with full translations:
 
-## 5. Per-user data isolation audit (RLS)
-Review every user-owned table and ensure RLS policies scope every SELECT/INSERT/UPDATE/DELETE to `auth.uid() = user_id` (or via `fb_pages.user_id` for child rows). Tables to verify:
-`profiles, user_credits, credit_transactions, fb_pages, conversations, messages, products, pending_products, product_suggestions, orders, leads, complaints, auto_reply_rules, bot_settings, scheduled_messages, services, website_knowledge, announcements, ai_usage, app_settings`.
+- `src/i18n/locales/en.json`
+- `src/i18n/locales/bn.json`
+- `src/i18n/locales/ko.json`
+- `src/i18n/locales/es.json`
 
-I will run `supabase--read_query` to dump current policies, then write a single migration that:
-- Drops any overly permissive policies
-- Recreates strict per-user policies
-- Keeps admin overrides via `has_role(auth.uid(), 'admin')`
-- Ensures GRANTs are correct
+Each new key gets a translation in all four languages. Examples will use generic items (T-shirt, Hijab, Cotton, Red, M/L/XL) — no embedded Bangla in the English/Korean/Spanish placeholders.
 
-Nothing in the UI changes for data isolation — it's a backend correctness pass.
+### 3. No logic changes
+Database fields, mutations, AI wizard wiring, image upload — all unchanged. Pure i18n + placeholder cleanup.
 
-## 6. Email templates (optional, recommended)
-The password reset link is sent via Supabase auth email. Default template works. If you want it branded as LeadPilot, I can scaffold custom auth email templates after a sender domain is configured — say the word and I'll add it.
-
-## Files touched
-- edit: `src/pages/Auth.tsx` (confirm password, forgot password link)
-- create: `src/pages/ResetPassword.tsx`
-- edit: `src/App.tsx` (add `/reset-password` route)
-- edit: Settings page (add change-password card)
-- edit: Admin Users page (add "Send reset email" button)
-- new migration: tighten RLS policies for per-user isolation
+## Out of scope
+Other pages (Orders, Leads, Bot Settings, etc.) — only the Products page was reported. If more Bangla leftovers exist elsewhere, please point them out and I will sweep them next.
