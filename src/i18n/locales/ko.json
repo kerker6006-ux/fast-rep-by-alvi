@@ -1,58 +1,82 @@
 {
-  "app": {
-    "name": "Fast Rep",
-    "tagline": "AI 기반 메신저 자동 응답 봇"
+  "app": { "name": "Fast Rep", "tagline": "AI 기반 메신저 자동 응답 봇" },
+  "common": {
+    "cancel": "취소", "confirm": "확인", "save": "저장", "delete": "삭제", "deleted": "삭제됨",
+    "edit": "편집", "loading": "불러오는 중...", "search": "검색", "signOut": "로그아웃"
   },
   "auth": {
-    "signIn": "로그인",
-    "signUp": "계정 만들기",
-    "signInTitle": "다시 오신 것을 환영합니다",
-    "signUpTitle": "Fast Rep 시작하기",
-    "signInSubtitle": "대시보드에 접속하려면 자격 증명을 입력하세요",
+    "signIn": "로그인", "signUp": "계정 만들기",
+    "signInTitle": "다시 오신 것을 환영합니다", "signUpTitle": "Fast Rep 시작하기",
+    "signInSubtitle": "대시보드에 접속하려면 정보를 입력하세요",
     "signUpSubtitle": "몇 초 만에 계정을 만드세요. 승인이 필요 없습니다.",
-    "displayName": "이름",
-    "email": "이메일",
-    "password": "비밀번호",
-    "signInBtn": "로그인",
-    "signUpBtn": "계정 만들기",
-    "noAccount": "계정이 없으신가요?",
-    "haveAccount": "이미 계정이 있으신가요?",
-    "welcomeBack": "다시 오신 것을 환영합니다!",
-    "accountCreated": "계정이 생성되었습니다 — 환영합니다!"
+    "displayName": "이름", "email": "이메일", "password": "비밀번호",
+    "signInBtn": "로그인", "signUpBtn": "계정 만들기",
+    "noAccount": "계정이 없으신가요?", "haveAccount": "이미 계정이 있으신가요?",
+    "welcomeBack": "환영합니다!", "accountCreated": "계정이 생성되었습니다 — 환영합니다!"
   },
   "nav": {
-    "analytics": "분석",
-    "credits": "크레딧",
-    "aiUsage": "AI 사용량",
-    "aiTraining": "AI 학습",
-    "products": "제품",
-    "autoImport": "자동 가져오기",
-    "suggestions": "추천",
-    "websiteImport": "웹사이트 가져오기",
-    "orders": "주문",
-    "complaints": "불만",
-    "chats": "채팅",
-    "autoReply": "자동 응답",
-    "scheduled": "예약",
-    "fbPages": "FB 페이지",
-    "settings": "설정",
-    "admin": "관리자",
-    "signOut": "로그아웃",
-    "collapse": "접기",
-    "language": "언어"
+    "analytics": "분석", "credits": "크레딧", "aiUsage": "AI 사용량", "aiTraining": "AI 학습",
+    "products": "상품", "autoImport": "자동 가져오기", "suggestions": "제안", "websiteImport": "웹사이트 가져오기",
+    "orders": "주문", "complaints": "불만", "chats": "채팅", "autoReply": "자동 응답",
+    "scheduled": "예약", "fbPages": "FB 페이지", "settings": "설정",
+    "admin": "관리자 패널", "signOut": "로그아웃", "collapse": "접기", "language": "언어"
   },
+  "settings": { "language": "언어" },
   "analytics": {
-    "title": "대시보드",
-    "subtitle": "오늘 봇의 상황입니다.",
-    "totalConversations": "대화",
-    "totalMessages": "총 메시지",
-    "todayMessages": "오늘",
-    "totalOrders": "주문",
-    "deliveredOrders": "배송 완료",
-    "totalRevenue": "매출",
-    "recentConversations": "최근 대화",
-    "last7Days": "지난 7일",
-    "noRecent": "최근 대화가 없습니다.",
-    "customer": "고객"
+    "title": "대시보드", "subtitle": "오늘 봇 활동 요약입니다.",
+    "totalConversations": "대화", "totalMessages": "총 메시지", "todayMessages": "오늘",
+    "totalOrders": "주문", "deliveredOrders": "배송 완료", "totalRevenue": "매출",
+    "recentConversations": "최근 대화", "last7Days": "최근 7일", "noRecent": "최근 대화가 없습니다.", "customer": "고객"
+  },
+  "fb": { "testConnection": "연결 테스트", "testOk": "페이지 토큰이 유효합니다 ✓", "testFail": "토큰 테스트 실패" },
+  "admin": {
+    "console": "관리 콘솔",
+    "nav": {
+      "overview": "개요", "users": "사용자", "recharges": "충전 내역", "payments": "결제",
+      "pricing": "가격", "fbPages": "Facebook 페이지", "announcements": "공지", "analytics": "분석", "settings": "설정"
+    },
+    "stats": {
+      "users": "총 사용자", "fbPages": "FB 페이지", "products": "상품",
+      "orders": "주문", "conversations": "대화", "totalCredits": "크레딧 합계"
+    },
+    "overview": { "title": "플랫폼 개요", "subtitle": "Fast Rep 플랫폼의 실시간 현황.", "signups14d": "가입 (최근 14일)" },
+    "users": {
+      "title": "사용자 관리", "subtitle": "사용자 검색, 크레딧 조정, 정지 또는 삭제.",
+      "searchPlaceholder": "이름이나 사용자 ID로 검색…",
+      "unnamed": "이름 없는 사용자", "suspended": "정지됨", "joined": "가입일", "balance": "잔액",
+      "addCredits": "크레딧 추가", "removeCredits": "크레딧 차감",
+      "amount": "금액 (৳)", "notePlaceholder": "사유 / 메모 (예: bKash 거래ID)",
+      "suspend": "정지", "unsuspend": "정지 해제",
+      "creditsUpdated": "크레딧이 업데이트되었습니다", "updated": "사용자 업데이트됨", "deleted": "사용자 삭제됨",
+      "deleteConfirmTitle": "이 사용자를 영구 삭제하시겠습니까?",
+      "deleteConfirmDesc": "사용자와 모든 데이터(상품, 주문, 페이지, 크레딧)를 삭제합니다. 되돌릴 수 없습니다.",
+      "deletePermanently": "영구 삭제", "empty": "검색 결과가 없습니다."
+    },
+    "recharges": {
+      "title": "크레딧 거래내역", "subtitle": "모든 사용자의 크레딧 이동 내역.",
+      "date": "날짜", "user": "사용자", "type": "유형", "amount": "금액", "note": "메모", "empty": "아직 거래내역이 없습니다."
+    },
+    "payments": {
+      "title": "결제", "subtitle": "Stripe 결제를 통해 봇을 판매하세요 — 한 번만 설정하면 됩니다.",
+      "stripeTitle": "Stripe 결제",
+      "stripeDesc": "전 세계에서 카드 결제를 받으세요. 준비되면 Stripe 계정을 연결하면 구독과 크레딧 충전이 자동으로 연결됩니다.",
+      "connect": "Stripe 연결", "willEnableLater": "나중에 활성화할 수 있습니다 — 지금은 그대로 두세요."
+    },
+    "pricing": {
+      "title": "가격 및 플랜", "subtitle": "모든 봇 응답에 적용되는 글로벌 요율.",
+      "textCost": "텍스트 응답당 비용 (৳)", "textCostHint": "봇이 텍스트 메시지를 보낼 때 차감됩니다.",
+      "imageCost": "이미지 응답당 비용 (৳)", "imageCostHint": "봇이 상품 이미지를 능동적으로 보낼 때 차감됩니다.",
+      "signupBonus": "가입 보너스 (৳)", "signupBonusHint": "새 사용자에게 자동으로 부여되는 크레딧.",
+      "save": "가격 저장", "saved": "가격이 저장되었습니다"
+    },
+    "fbPages": { "title": "모든 Facebook 페이지", "subtitle": "모든 사용자가 연결한 페이지.", "empty": "아직 연결된 페이지가 없습니다." },
+    "announcements": {
+      "title": "공지", "subtitle": "모든 사용자에게 메시지를 전송합니다.",
+      "titleField": "제목", "titlePlaceholder": "오늘 밤 점검 예정",
+      "bodyField": "내용", "bodyPlaceholder": "오늘 밤 11시에 시스템을 업그레이드합니다…",
+      "send": "공지 전송", "sent": "공지가 전송되었습니다"
+    },
+    "analytics": { "title": "심층 분석", "subtitle": "AI 비용 및 사용 패턴.", "topSpenders": "AI 지출 상위 사용자 10명 (৳)" },
+    "settings": { "title": "관리자 설정", "subtitle": "관리자 계정.", "adminAccount": "관리자 계정" }
   }
 }

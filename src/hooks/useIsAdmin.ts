@@ -3,23 +3,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 export const useIsAdmin = () => {
-  const { user } = useAuth();
-
-  const { data: isAdmin = false, isLoading } = useQuery({
+  const { user, loading: authLoading } = useAuth();
+  const { data, isLoading } = useQuery({
     queryKey: ["is-admin", user?.id],
+    enabled: !!user,
     queryFn: async () => {
-      if (!user?.id) return false;
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", user.id)
+        .eq("user_id", user!.id)
         .eq("role", "admin")
         .maybeSingle();
       if (error) return false;
       return !!data;
     },
-    enabled: !!user?.id,
   });
-
-  return { isAdmin, isLoading };
+  return { isAdmin: !!data, loading: authLoading || isLoading };
 };

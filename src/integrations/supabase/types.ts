@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          admin_id: string
+          created_at: string
+          id: string
+          payload: Json | null
+          target_user: string | null
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          created_at?: string
+          id?: string
+          payload?: Json | null
+          target_user?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          created_at?: string
+          id?: string
+          payload?: Json | null
+          target_user?: string | null
+        }
+        Relationships: []
+      }
       ai_usage: {
         Row: {
           call_type: string
@@ -38,6 +65,51 @@ export type Database = {
           id?: string
           model?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      announcements: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          title: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          title: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
         }
         Relationships: []
       }
@@ -564,6 +636,7 @@ export type Database = {
           display_name: string | null
           id: string
           is_approved: boolean
+          suspended: boolean
           updated_at: string
         }
         Insert: {
@@ -572,6 +645,7 @@ export type Database = {
           display_name?: string | null
           id: string
           is_approved?: boolean
+          suspended?: boolean
           updated_at?: string
         }
         Update: {
@@ -580,6 +654,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           is_approved?: boolean
+          suspended?: boolean
           updated_at?: string
         }
         Relationships: []

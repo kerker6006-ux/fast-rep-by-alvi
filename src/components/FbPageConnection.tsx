@@ -13,8 +13,9 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Globe, Plus, Trash2, Copy, Check, RefreshCw, Loader2, Facebook, ChevronRight } from "lucide-react";
+import { Globe, Plus, Trash2, Copy, Check, RefreshCw, Loader2, Facebook, ChevronRight, Activity } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 type FbPage = {
   id: string;
@@ -36,6 +37,7 @@ const FB_BLUE = "#1877F2";
 const FbPageConnection = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [showManual, setShowManual] = useState(false);
   const [copied, setCopied] = useState(false);
   const [form, setForm] = useState({ pageId: "", pageName: "", accessToken: "" });
@@ -140,6 +142,19 @@ const FbPageConnection = () => {
       toast.success("Synced");
     },
     onError: (e: any) => toast.error(e.message),
+  });
+
+  const testConn = useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabase.functions.invoke("fb-test-connection", { body: { id } });
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: (data: any) => {
+      if (data?.ok) toast.success(t("fb.testOk") + (data.page?.name ? ` (${data.page.name})` : ""));
+      else toast.error(`${t("fb.testFail")}: ${data?.error ?? "unknown"}`);
+    },
+    onError: (e: any) => toast.error(`${t("fb.testFail")}: ${e.message}`),
   });
 
   const addManual = useMutation({
@@ -254,13 +269,17 @@ const FbPageConnection = () => {
                     {page.connected_at && <p>Connected: {formatDistanceToNow(new Date(page.connected_at), { addSuffix: true })}</p>}
                   </div>
 
-                  <div className="flex items-center gap-2 pt-2 border-t">
-                    <Button variant="outline" size="sm" className="flex-1" disabled={sync.isPending} onClick={() => sync.mutate(page.id)}>
-                      <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${sync.isPending ? "animate-spin" : ""}`} />
+                  <div className="grid grid-cols-3 gap-2 pt-2 border-t">
+                    <Button variant="outline" size="sm" disabled={sync.isPending} onClick={() => sync.mutate(page.id)}>
+                      <RefreshCw className={`h-3.5 w-3.5 mr-1 ${sync.isPending ? "animate-spin" : ""}`} />
                       Sync
                     </Button>
-                    <Button variant="outline" size="sm" className="flex-1 text-destructive hover:text-destructive" onClick={() => setDisconnectId(page.id)}>
-                      <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                    <Button variant="outline" size="sm" disabled={testConn.isPending} onClick={() => testConn.mutate(page.id)}>
+                      {testConn.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Activity className="h-3.5 w-3.5 mr-1" />}
+                      {t("fb.testConnection")}
+                    </Button>
+                    <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDisconnectId(page.id)}>
+                      <Trash2 className="h-3.5 w-3.5 mr-1" />
                       Disconnect
                     </Button>
                   </div>

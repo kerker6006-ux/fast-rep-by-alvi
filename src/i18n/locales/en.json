@@ -3,6 +3,17 @@
     "name": "Fast Rep",
     "tagline": "AI-powered Messenger auto-reply bot"
   },
+  "common": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "deleted": "Deleted",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "search": "Search",
+    "signOut": "Sign Out"
+  },
   "auth": {
     "signIn": "Sign in",
     "signUp": "Create account",
@@ -36,9 +47,12 @@
     "scheduled": "Scheduled",
     "fbPages": "FB Pages",
     "settings": "Settings",
-    "admin": "Admin",
+    "admin": "Admin Panel",
     "signOut": "Sign Out",
     "collapse": "Collapse",
+    "language": "Language"
+  },
+  "settings": {
     "language": "Language"
   },
   "analytics": {
@@ -54,5 +68,114 @@
     "last7Days": "Last 7 days",
     "noRecent": "No recent conversations.",
     "customer": "Customer"
+  },
+  "fb": {
+    "testConnection": "Test Connection",
+    "testOk": "Page token is valid ✓",
+    "testFail": "Token test failed"
+  },
+  "admin": {
+    "console": "Admin Console",
+    "nav": {
+      "overview": "Overview",
+      "users": "Users",
+      "recharges": "Recharges",
+      "payments": "Payments",
+      "pricing": "Pricing",
+      "fbPages": "Facebook Pages",
+      "announcements": "Announcements",
+      "analytics": "Analytics",
+      "settings": "Settings"
+    },
+    "stats": {
+      "users": "Total Users",
+      "fbPages": "FB Pages",
+      "products": "Products",
+      "orders": "Orders",
+      "conversations": "Conversations",
+      "totalCredits": "Credit Pool"
+    },
+    "overview": {
+      "title": "Platform Overview",
+      "subtitle": "Real-time snapshot of your Fast Rep platform.",
+      "signups14d": "Signups (last 14 days)"
+    },
+    "users": {
+      "title": "User Management",
+      "subtitle": "Search, adjust credits, suspend, or remove users.",
+      "searchPlaceholder": "Search by name or user ID…",
+      "unnamed": "Unnamed user",
+      "suspended": "Suspended",
+      "joined": "Joined",
+      "balance": "Balance",
+      "addCredits": "Add Credits",
+      "removeCredits": "Remove Credits",
+      "amount": "Amount (৳)",
+      "notePlaceholder": "Reason / note (e.g., bKash TrxID)",
+      "suspend": "Suspend",
+      "unsuspend": "Unsuspend",
+      "creditsUpdated": "Credits updated",
+      "updated": "User updated",
+      "deleted": "User deleted",
+      "deleteConfirmTitle": "Delete this user permanently?",
+      "deleteConfirmDesc": "This removes the user and ALL their data (products, orders, pages, credits). This cannot be undone.",
+      "deletePermanently": "Delete permanently",
+      "empty": "No users match your search."
+    },
+    "recharges": {
+      "title": "Credit Transactions",
+      "subtitle": "All credit movements across users.",
+      "date": "Date",
+      "user": "User",
+      "type": "Type",
+      "amount": "Amount",
+      "note": "Note",
+      "empty": "No transactions yet."
+    },
+    "payments": {
+      "title": "Payments",
+      "subtitle": "Sell the bot via Stripe checkout — set up once.",
+      "stripeTitle": "Stripe Payments",
+      "stripeDesc": "Accept card payments globally. When you're ready, connect your Stripe account and we'll wire up subscriptions and credit top-ups automatically.",
+      "connect": "Connect Stripe",
+      "willEnableLater": "You can enable this later — leave it for now."
+    },
+    "pricing": {
+      "title": "Pricing & Plans",
+      "subtitle": "Global rates applied to every bot reply.",
+      "textCost": "Cost per text reply (৳)",
+      "textCostHint": "Charged when the bot sends a text-only message.",
+      "imageCost": "Cost per image reply (৳)",
+      "imageCostHint": "Charged when the bot proactively sends a product image.",
+      "signupBonus": "Signup bonus (৳)",
+      "signupBonusHint": "Credits automatically granted to every new user on signup.",
+      "save": "Save pricing",
+      "saved": "Pricing saved"
+    },
+    "fbPages": {
+      "title": "All Facebook Pages",
+      "subtitle": "Every page connected across all users.",
+      "empty": "No pages connected yet."
+    },
+    "announcements": {
+      "title": "Announcements",
+      "subtitle": "Broadcast a message to all users.",
+      "titleField": "Title",
+      "titlePlaceholder": "Maintenance window tonight",
+      "bodyField": "Message",
+      "bodyPlaceholder": "We're upgrading the system tonight at 11pm…",
+      "send": "Send announcement",
+      "sent": "Announcement sent"
+    },
+    "analytics": {
+      "title": "Deep Analytics",
+      "subtitle": "AI cost & usage patterns.",
+      "topSpenders": "Top 10 Users by AI Spend (৳)"
+    },
+    "settings": {
+      "title": "Admin Settings",
+      "subtitle": "Your admin account.",
+      "adminAccount": "Admin account"
+    }
   }
 }

@@ -7,6 +7,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useNavigate } from "react-router-dom";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 type NavItem = { id: string; labelKey: string; icon: React.ElementType; adminOnly?: boolean };
@@ -41,6 +42,7 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
   const { t } = useTranslation();
   const { signOut, user } = useAuth();
   const { isAdmin } = useIsAdmin();
+  const navigate = useNavigate();
 
   const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
@@ -72,7 +74,7 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
           const button = (
             <button
               key={item.id}
-              onClick={() => onTabChange(item.id)}
+              onClick={() => item.id === "admin" ? navigate("/admin") : onTabChange(item.id)}
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
                 "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
