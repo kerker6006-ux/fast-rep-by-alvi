@@ -87,7 +87,8 @@
     "collapse": "Collapse",
     "language": "Language",
     "services": "Services",
-    "leads": "Leads"
+    "leads": "Leads",
+    "appointments": "Appointments"
   },
   "settings": {
     "language": "Language"
@@ -259,7 +260,83 @@
     "replyAlt": "Reply (alternate language, optional)",
     "replyPrimaryPh": "Please inbox us 📩",
     "replyAltPh": "Alternate language reply…",
-    "saveAll": "Save All Changes"
+    "saveAll": "Save All Changes",
+    "titleByCat": {
+      "ecommerce": "AI Shopkeeper Training",
+      "dental": "AI Receptionist Training",
+      "hvac": "AI Dispatcher Training",
+      "salon": "AI Receptionist Training"
+    },
+    "subtitleByCat": {
+      "ecommerce": "Train your store assistant to answer about products, delivery and payments.",
+      "dental": "Train your clinic receptionist to answer patients and book appointments.",
+      "hvac": "Train your dispatcher to qualify jobs and book service calls.",
+      "salon": "Train your front-desk to answer clients and book appointments."
+    },
+    "kbTitle": {
+      "ecommerce": "Shop Knowledge",
+      "dental": "Clinic Knowledge",
+      "hvac": "Company Knowledge",
+      "salon": "Salon Knowledge"
+    },
+    "kbDesc": {
+      "ecommerce": "Shipping, payment and return information your bot will use.",
+      "dental": "Hours, address, insurance and emergency policy your bot will use.",
+      "hvac": "Service area, hours, emergency and pricing policy your bot will use.",
+      "salon": "Hours, address, cancellation and deposit policy your bot will use."
+    },
+    "returnPolicy": "Return Policy",
+    "returnPolicyPh": "Returns accepted within 7 days…",
+    "operatingHours": "Operating Hours",
+    "operatingHoursPh": "Mon–Fri 9am–6pm, Sat 10am–4pm",
+    "address": "Address",
+    "addressPh": "123 Main St, City",
+    "insurance": "Insurance Accepted",
+    "insurancePh": "Delta Dental, MetLife, Cigna…",
+    "emergencyPolicy": "Emergency Policy",
+    "emergencyPolicyPh": "For dental emergencies call (555) 123-4567 anytime.",
+    "cancellationPolicy": "Cancellation Policy",
+    "cancellationPolicyPh": "Please cancel at least 24 hours in advance.",
+    "serviceArea": "Service Area / ZIP codes",
+    "serviceAreaPh": "Dallas, TX and 25-mile radius. 75201, 75202…",
+    "emergencyAvailability": "Emergency Availability",
+    "emergencyAvailabilityPh": "24/7 emergency service available, surcharge after hours.",
+    "pricingPolicy": "Pricing / Estimate Policy",
+    "pricingPolicyPh": "Free estimates. Diagnostic fee waived on repair.",
+    "depositPolicy": "Booking Deposit Policy",
+    "depositPolicyPh": "20% deposit required for color services.",
+    "qa": {
+      "dental": {
+        "hours": "What are your hours?",
+        "hoursA": "We're open Mon–Fri 9am–6pm and Sat 10am–4pm.",
+        "insurance": "Do you accept my insurance?",
+        "insuranceA": "We accept most major plans. Share your provider and we'll confirm.",
+        "emergency": "I have a dental emergency.",
+        "emergencyA": "Please call our emergency line at (555) 123-4567 right away.",
+        "book": "Can I book an appointment?",
+        "bookA": "Of course — share your name, phone and a preferred day/time."
+      },
+      "hvac": {
+        "area": "Do you service my area?",
+        "areaA": "Share your ZIP code and we'll confirm right away.",
+        "emergency": "I need emergency service.",
+        "emergencyA": "We offer 24/7 emergency service. Share your address and we'll dispatch a tech.",
+        "estimate": "Can I get a free estimate?",
+        "estimateA": "Yes — estimates are free. Share the issue and your address to book a visit.",
+        "hours": "What are your hours?",
+        "hoursA": "We're open Mon–Sat 8am–7pm; emergency line 24/7."
+      },
+      "salon": {
+        "book": "I'd like to book an appointment.",
+        "bookA": "Happy to help — share your name, phone, service and a preferred day/time.",
+        "cancel": "What's your cancellation policy?",
+        "cancelA": "Please cancel at least 24 hours in advance to avoid a fee.",
+        "hours": "What are your hours?",
+        "hoursA": "We're open Tue–Sat 10am–8pm.",
+        "deposit": "Do I need to pay a deposit?",
+        "depositA": "A 20% deposit is required to confirm color and longer services."
+      }
+    }
   },
   "autoReply": {
     "title": "Auto-Reply Rules",
@@ -560,7 +637,13 @@
     "presetsAdded": "Starter services added",
     "empty": "No services yet. Add one or load the starter list.",
     "nameRequired": "Name is required",
-    "notForEcommerce": "This page is for service businesses. E-commerce uses the Products page."
+    "notForEcommerce": "This page is for service businesses. E-commerce uses the Products page.",
+    "titleByCat": {
+      "ecommerce": "Services",
+      "dental": "Treatments & Appointments",
+      "hvac": "Services & Job Bookings",
+      "salon": "Treatments & Bookings"
+    }
   },
   "leads": {
     "title": "Leads",
@@ -584,5 +667,9 @@
       "booked": "Booked",
       "closed": "Closed"
     }
+  },
+  "appointments": {
+    "title": "Appointments",
+    "subtitle": "Bookings captured by your AI Receptionist."
   }
 }
