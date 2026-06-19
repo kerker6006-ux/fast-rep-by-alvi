@@ -1,58 +1,82 @@
 {
-  "app": {
-    "name": "Fast Rep",
-    "tagline": "Bot de auto-respuesta de Messenger con IA"
+  "app": { "name": "Fast Rep", "tagline": "Bot de autorespuesta de Messenger con IA" },
+  "common": {
+    "cancel": "Cancelar", "confirm": "Confirmar", "save": "Guardar", "delete": "Eliminar", "deleted": "Eliminado",
+    "edit": "Editar", "loading": "Cargando...", "search": "Buscar", "signOut": "Cerrar sesión"
   },
   "auth": {
-    "signIn": "Iniciar sesión",
-    "signUp": "Crear cuenta",
-    "signInTitle": "Bienvenido de nuevo",
-    "signUpTitle": "Empieza con Fast Rep",
-    "signInSubtitle": "Ingresa tus credenciales para acceder al panel",
+    "signIn": "Iniciar sesión", "signUp": "Crear cuenta",
+    "signInTitle": "Bienvenido de nuevo", "signUpTitle": "Comienza con Fast Rep",
+    "signInSubtitle": "Ingresa tus credenciales para acceder",
     "signUpSubtitle": "Crea tu cuenta en segundos. Sin aprobación.",
-    "displayName": "Tu nombre",
-    "email": "Correo",
-    "password": "Contraseña",
-    "signInBtn": "Iniciar sesión",
-    "signUpBtn": "Crear cuenta",
-    "noAccount": "¿No tienes cuenta?",
-    "haveAccount": "¿Ya tienes cuenta?",
-    "welcomeBack": "¡Bienvenido de nuevo!",
-    "accountCreated": "¡Cuenta creada — bienvenido!"
+    "displayName": "Tu nombre", "email": "Correo", "password": "Contraseña",
+    "signInBtn": "Entrar", "signUpBtn": "Crear cuenta",
+    "noAccount": "¿No tienes cuenta?", "haveAccount": "¿Ya tienes cuenta?",
+    "welcomeBack": "¡Bienvenido!", "accountCreated": "Cuenta creada — ¡bienvenido!"
   },
   "nav": {
-    "analytics": "Analítica",
-    "credits": "Créditos",
-    "aiUsage": "Uso de IA",
-    "aiTraining": "Entrenamiento IA",
-    "products": "Productos",
-    "autoImport": "Importación automática",
-    "suggestions": "Sugerencias",
-    "websiteImport": "Importar web",
-    "orders": "Pedidos",
-    "complaints": "Quejas",
-    "chats": "Chats",
-    "autoReply": "Auto-respuesta",
-    "scheduled": "Programados",
-    "fbPages": "Páginas FB",
-    "settings": "Ajustes",
-    "admin": "Admin",
-    "signOut": "Cerrar sesión",
-    "collapse": "Colapsar",
-    "language": "Idioma"
+    "analytics": "Analíticas", "credits": "Créditos", "aiUsage": "Uso IA", "aiTraining": "Entrenar IA",
+    "products": "Productos", "autoImport": "Auto-importar", "suggestions": "Sugerencias", "websiteImport": "Importar web",
+    "orders": "Pedidos", "complaints": "Quejas", "chats": "Chats", "autoReply": "Auto-respuesta",
+    "scheduled": "Programados", "fbPages": "Páginas FB", "settings": "Ajustes",
+    "admin": "Panel Admin", "signOut": "Cerrar sesión", "collapse": "Contraer", "language": "Idioma"
   },
+  "settings": { "language": "Idioma" },
   "analytics": {
-    "title": "Panel",
-    "subtitle": "Esto es lo que está pasando con tu bot hoy.",
-    "totalConversations": "Conversaciones",
-    "totalMessages": "Mensajes totales",
-    "todayMessages": "Hoy",
-    "totalOrders": "Pedidos",
-    "deliveredOrders": "Entregados",
-    "totalRevenue": "Ingresos",
-    "recentConversations": "Conversaciones recientes",
-    "last7Days": "Últimos 7 días",
-    "noRecent": "Sin conversaciones recientes.",
-    "customer": "Cliente"
+    "title": "Panel", "subtitle": "Esto es lo que pasa con tu bot hoy.",
+    "totalConversations": "Conversaciones", "totalMessages": "Mensajes totales", "todayMessages": "Hoy",
+    "totalOrders": "Pedidos", "deliveredOrders": "Entregados", "totalRevenue": "Ingresos",
+    "recentConversations": "Conversaciones recientes", "last7Days": "Últimos 7 días", "noRecent": "Sin conversaciones recientes.", "customer": "Cliente"
+  },
+  "fb": { "testConnection": "Probar conexión", "testOk": "El token de la página es válido ✓", "testFail": "Prueba del token fallida" },
+  "admin": {
+    "console": "Consola de administración",
+    "nav": {
+      "overview": "Resumen", "users": "Usuarios", "recharges": "Recargas", "payments": "Pagos",
+      "pricing": "Precios", "fbPages": "Páginas Facebook", "announcements": "Anuncios", "analytics": "Analíticas", "settings": "Ajustes"
+    },
+    "stats": {
+      "users": "Usuarios totales", "fbPages": "Páginas FB", "products": "Productos",
+      "orders": "Pedidos", "conversations": "Conversaciones", "totalCredits": "Créditos totales"
+    },
+    "overview": { "title": "Resumen de plataforma", "subtitle": "Estado en tiempo real de Fast Rep.", "signups14d": "Registros (últimos 14 días)" },
+    "users": {
+      "title": "Gestión de usuarios", "subtitle": "Busca, ajusta créditos, suspende o elimina usuarios.",
+      "searchPlaceholder": "Buscar por nombre o ID…",
+      "unnamed": "Usuario sin nombre", "suspended": "Suspendido", "joined": "Registrado", "balance": "Saldo",
+      "addCredits": "Añadir créditos", "removeCredits": "Quitar créditos",
+      "amount": "Cantidad (৳)", "notePlaceholder": "Motivo / nota (ej.: bKash TrxID)",
+      "suspend": "Suspender", "unsuspend": "Reactivar",
+      "creditsUpdated": "Créditos actualizados", "updated": "Usuario actualizado", "deleted": "Usuario eliminado",
+      "deleteConfirmTitle": "¿Eliminar este usuario permanentemente?",
+      "deleteConfirmDesc": "Elimina al usuario y TODOS sus datos. No se puede deshacer.",
+      "deletePermanently": "Eliminar permanentemente", "empty": "Sin coincidencias."
+    },
+    "recharges": {
+      "title": "Transacciones de créditos", "subtitle": "Todos los movimientos.",
+      "date": "Fecha", "user": "Usuario", "type": "Tipo", "amount": "Cantidad", "note": "Nota", "empty": "Sin transacciones aún."
+    },
+    "payments": {
+      "title": "Pagos", "subtitle": "Vende el bot vía Stripe checkout — configura una vez.",
+      "stripeTitle": "Pagos Stripe",
+      "stripeDesc": "Acepta pagos con tarjeta globalmente. Cuando estés listo, conecta tu cuenta Stripe.",
+      "connect": "Conectar Stripe", "willEnableLater": "Puedes activarlo luego — déjalo así."
+    },
+    "pricing": {
+      "title": "Precios y planes", "subtitle": "Tarifas globales aplicadas a cada respuesta.",
+      "textCost": "Costo por respuesta de texto (৳)", "textCostHint": "Se cobra cuando el bot envía un mensaje de texto.",
+      "imageCost": "Costo por respuesta con imagen (৳)", "imageCostHint": "Se cobra cuando el bot envía proactivamente una imagen.",
+      "signupBonus": "Bono de registro (৳)", "signupBonusHint": "Créditos otorgados automáticamente a nuevos usuarios.",
+      "save": "Guardar precios", "saved": "Precios guardados"
+    },
+    "fbPages": { "title": "Todas las páginas de Facebook", "subtitle": "Páginas conectadas por todos los usuarios.", "empty": "Sin páginas conectadas aún." },
+    "announcements": {
+      "title": "Anuncios", "subtitle": "Envía un mensaje a todos los usuarios.",
+      "titleField": "Título", "titlePlaceholder": "Mantenimiento esta noche",
+      "bodyField": "Mensaje", "bodyPlaceholder": "Vamos a actualizar el sistema esta noche a las 11pm…",
+      "send": "Enviar anuncio", "sent": "Anuncio enviado"
+    },
+    "analytics": { "title": "Analíticas profundas", "subtitle": "Costos y patrones de uso de IA.", "topSpenders": "Top 10 usuarios por gasto en IA (৳)" },
+    "settings": { "title": "Ajustes de admin", "subtitle": "Tu cuenta de admin.", "adminAccount": "Cuenta de admin" }
   }
 }
