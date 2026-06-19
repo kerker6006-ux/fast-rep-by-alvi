@@ -138,7 +138,7 @@ const ProductsManager = () => {
   };
 
   const generateAiDescription = async (language: "en" | "bn") => {
-    if (!form.name) { toast.error("Enter product name first"); return; }
+    if (!form.name) { toast.error(t("products.toastEnterName")); return; }
     language === "en" ? setAiGenerating(true) : setAiGeneratingBn(true);
     try {
       const { data, error } = await supabase.functions.invoke("ai-product-details", {
@@ -155,9 +155,9 @@ const ProductsManager = () => {
       } else {
         setForm(f => ({ ...f, description_bn: data.description || f.description_bn }));
       }
-      toast.success(`AI description generated!`);
+      toast.success(t("products.toastAiOk"));
     } catch (e: any) {
-      toast.error(e.message || "AI generation failed");
+      toast.error(e.message || t("products.toastAiFail"));
     } finally {
       language === "en" ? setAiGenerating(false) : setAiGeneratingBn(false);
     }
@@ -207,7 +207,7 @@ const ProductsManager = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast.success(editingProduct ? "Product updated!" : "Product added!");
+      toast.success(editingProduct ? t("products.updated") : t("products.added"));
       resetForm();
     },
     onError: (e) => toast.error(e.message),
@@ -220,7 +220,7 @@ const ProductsManager = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast.success("Product deleted!");
+      toast.success(t("products.deleted"));
     },
   });
 
@@ -281,12 +281,12 @@ const ProductsManager = () => {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 border rounded-lg px-3 py-1.5 bg-muted/50">
             <Bot className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium">{t("aiTraining.wizardTab")}</span>
+            <span className="text-sm font-medium">{t("products.aiWizard")}</span>
             <Switch checked={aiWizardEnabled} onCheckedChange={setAiWizardEnabled} />
           </div>
           {aiWizardEnabled && (
             <Button variant="outline" className="gap-2 shadow-lg border-primary/30 text-primary hover:bg-primary/10" onClick={() => setWizardOpen(true)}>
-              <Sparkles className="h-4 w-4" /> {t("aiTraining.wizardTab")}
+              <Sparkles className="h-4 w-4" /> {t("products.aiWizard")}
             </Button>
           )}
           <Dialog open={isOpen} onOpenChange={(v) => { if (!v) resetForm(); setIsOpen(v); }}>
@@ -297,28 +297,28 @@ const ProductsManager = () => {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 {editingProduct ? <Pencil className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
-                {editingProduct ? "Edit Product" : "Add New Product"}
+                {editingProduct ? t("products.editTitle") : t("products.addTitle")}
               </DialogTitle>
             </DialogHeader>
             <div className="grid gap-5 py-4">
               {/* Category */}
               <div className="space-y-2 p-4 rounded-xl border-2 border-dashed border-primary/20 bg-accent/30">
                 <Label className="text-sm font-semibold flex items-center gap-2">
-                  <FolderOpen className="h-4 w-4 text-primary" /> Category
+                  <FolderOpen className="h-4 w-4 text-primary" /> {t("products.category")}
                 </Label>
                 <Select value={showNewCategory ? "__new__" : (form.category || undefined)} onValueChange={handleCategorySelect}>
-                  <SelectTrigger><SelectValue placeholder="Select or create category" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("products.categoryPh")} /></SelectTrigger>
                   <SelectContent>
                     {categories.map(cat => (
                       <SelectItem key={cat} value={cat}>{cat} ({categoryProductCounts[cat] || 0})</SelectItem>
                     ))}
-                    <SelectItem value="__new__">➕ Create new category</SelectItem>
+                    <SelectItem value="__new__">{t("products.createNew")}</SelectItem>
                   </SelectContent>
                 </Select>
                 {showNewCategory && (
                   <div className="flex gap-2">
-                    <Input value={newCategory} onChange={e => setNewCategory(e.target.value)} placeholder="e.g. Hijab, Sharee" onKeyDown={e => e.key === "Enter" && handleAddNewCategory()} />
-                    <Button size="sm" onClick={handleAddNewCategory} disabled={!newCategory.trim()}>Add</Button>
+                    <Input value={newCategory} onChange={e => setNewCategory(e.target.value)} placeholder={t("products.newCatPh")} onKeyDown={e => e.key === "Enter" && handleAddNewCategory()} />
+                    <Button size="sm" onClick={handleAddNewCategory} disabled={!newCategory.trim()}>{t("products.addBtn")}</Button>
                   </div>
                 )}
                 {form.category && !showNewCategory && (
@@ -329,73 +329,73 @@ const ProductsManager = () => {
               {/* Names */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Name (English) *</Label>
-                  <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Product name" />
+                  <Label>{t("products.nameEnLabel")}</Label>
+                  <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder={t("products.namePh")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Name (alternate language, optional)</Label>
-                  <Input value={form.name_bn} onChange={e => setForm(f => ({ ...f, name_bn: e.target.value }))} placeholder="Product name in a second language" />
+                  <Label>{t("products.nameAlt")}</Label>
+                  <Input value={form.name_bn} onChange={e => setForm(f => ({ ...f, name_bn: e.target.value }))} placeholder={t("products.nameAltPh")} />
                 </div>
               </div>
 
               {/* Attributes row */}
               <div className="grid grid-cols-4 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Price ($)</Label>
+                  <Label className="text-xs">{t("products.price")}</Label>
                   <Input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="0" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Color / রং</Label>
-                  <Input value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} placeholder="Red, মেরুন" />
+                  <Label className="text-xs">{t("products.color")}</Label>
+                  <Input value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} placeholder={t("products.colorPh")} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Size</Label>
-                  <Input value={form.size} onChange={e => setForm(f => ({ ...f, size: e.target.value }))} placeholder="M, L, XL" />
+                  <Label className="text-xs">{t("products.size")}</Label>
+                  <Input value={form.size} onChange={e => setForm(f => ({ ...f, size: e.target.value }))} placeholder={t("products.sizePh")} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Material</Label>
-                  <Input value={form.material} onChange={e => setForm(f => ({ ...f, material: e.target.value }))} placeholder="Cotton" />
+                  <Label className="text-xs">{t("products.material")}</Label>
+                  <Input value={form.material} onChange={e => setForm(f => ({ ...f, material: e.target.value }))} placeholder={t("products.materialPh")} />
                 </div>
               </div>
 
               {/* AI Descriptions */}
               <div className="space-y-3 p-4 rounded-xl bg-gradient-to-br from-accent/40 to-primary/5 border border-primary/10">
                 <div className="flex items-center gap-2 text-sm font-semibold text-primary">
-                  <Sparkles className="h-4 w-4" /> AI-Powered Descriptions
+                  <Sparkles className="h-4 w-4" /> {t("products.aiDescTitle")}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs">Description (English)</Label>
+                      <Label className="text-xs">{t("products.descLabelEn")}</Label>
                       <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10" onClick={() => generateAiDescription("en")} disabled={aiGenerating || !form.name}>
                         {aiGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                        Generate
+                        {t("products.generate")}
                       </Button>
                     </div>
-                    <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Click Generate or type manually..." rows={3} />
+                    <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder={t("products.descriptionPh")} rows={3} />
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs">Description (alternate language, optional)</Label>
+                      <Label className="text-xs">{t("products.descriptionAlt")}</Label>
                       <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10" onClick={() => generateAiDescription("bn")} disabled={aiGeneratingBn || !form.name}>
                         {aiGeneratingBn ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                        Generate
+                        {t("products.generate")}
                       </Button>
                     </div>
-                    <Textarea value={form.description_bn} onChange={e => setForm(f => ({ ...f, description_bn: e.target.value }))} placeholder="Click Generate or type manually..." rows={3} />
+                    <Textarea value={form.description_bn} onChange={e => setForm(f => ({ ...f, description_bn: e.target.value }))} placeholder={t("products.descriptionPh")} rows={3} />
                   </div>
                 </div>
               </div>
 
               {/* Keywords */}
               <div className="space-y-2">
-                <Label className="text-xs flex items-center gap-1">Keywords <span className="text-muted-foreground">(auto-filled by AI or add manually)</span></Label>
-                <Input value={form.keywords} onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))} placeholder="hijab, scarf, হিজাব" />
+                <Label className="text-xs flex items-center gap-1">{t("products.keywords")} <span className="text-muted-foreground">{t("products.keywordsHint")}</span></Label>
+                <Input value={form.keywords} onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))} placeholder={t("products.keywordsPh")} />
               </div>
 
               {/* Main Product Image */}
               <div className="space-y-2">
-                <Label>Main Product Image</Label>
+                <Label>{t("products.mainImage")}</Label>
                 <div className="flex items-center gap-4">
                   {(editingProduct?.image_url || imageFile) && (
                     <img src={imageFile ? URL.createObjectURL(imageFile) : editingProduct?.image_url || ""} alt="Preview" className="h-20 w-20 rounded-xl object-cover border-2 border-border shadow-sm" />
@@ -410,17 +410,17 @@ const ProductsManager = () => {
               <div className="space-y-3 p-4 rounded-xl border-2 border-primary/30 bg-gradient-to-br from-accent/40 to-primary/5">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-semibold flex items-center gap-2">
-                    🎨 Color Variants
-                    <span className="text-xs font-normal text-muted-foreground">(Bot sends the exact color image customer asks for)</span>
+                    🎨 {t("products.colorVariants")}
+                    <span className="text-xs font-normal text-muted-foreground">{t("products.colorVariantsHint")}</span>
                   </Label>
                   <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10" onClick={() => setVariants(v => [...v, {color: "", file: null, image_url: ""}])}>
-                    <Plus className="h-3 w-3" /> Add Color
+                    <Plus className="h-3 w-3" /> {t("products.addColor")}
                   </Button>
                 </div>
                 {variants.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-[11px] text-primary/70 bg-primary/5 px-3 py-1.5 rounded-lg border border-primary/10">
-                      ⚠️ <strong>Important:</strong> Write color name clearly (e.g. "Cream", "Pink", "কালো"). The bot matches this name to send the correct image.
+                      ⚠️ {t("products.variantsImportant")}
                     </p>
                     <div className="grid gap-3">
                       {variants.map((v, i) => (
@@ -441,11 +441,11 @@ const ProductsManager = () => {
                           </div>
                           <div className="flex-1 space-y-2">
                             <div className="space-y-1">
-                              <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Color Name (Bot reads this)</Label>
-                              <Input value={v.color} onChange={e => setVariants(vs => vs.map((vv, ii) => ii === i ? {...vv, color: e.target.value} : vv))} placeholder="e.g. Cream, Pink, মেরুন, কালো" className="h-8 text-sm font-medium border-primary/20 focus:border-primary" />
+                              <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("products.variantNameLabel")}</Label>
+                              <Input value={v.color} onChange={e => setVariants(vs => vs.map((vv, ii) => ii === i ? {...vv, color: e.target.value} : vv))} placeholder={t("products.variantNamePh")} className="h-8 text-sm font-medium border-primary/20 focus:border-primary" />
                             </div>
                             <div className="space-y-1">
-                              <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Photo for this color</Label>
+                              <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("products.variantPhotoLabel")}</Label>
                               <Input type="file" accept="image/*" className="h-8 text-xs" onChange={e => setVariants(vs => vs.map((vv, ii) => ii === i ? {...vv, file: e.target.files?.[0] || null} : vv))} />
                             </div>
                           </div>
@@ -459,8 +459,8 @@ const ProductsManager = () => {
                 )}
                 {variants.length === 0 && (
                   <div className="text-center py-4 space-y-2">
-                    <p className="text-xs text-muted-foreground">No color variants yet.</p>
-                    <p className="text-[11px] text-muted-foreground/70">Example: Add "Cream" with cream hijab photo, "Pink" with pink hijab photo — bot sends the right one!</p>
+                    <p className="text-xs text-muted-foreground">{t("products.noVariants")}</p>
+                    <p className="text-[11px] text-muted-foreground/70">{t("products.variantsExample")}</p>
                   </div>
                 )}
               </div>
@@ -469,19 +469,19 @@ const ProductsManager = () => {
               <div className="space-y-3 p-4 rounded-xl border-2 border-primary/30 bg-gradient-to-br from-accent/40 to-primary/5">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-semibold flex items-center gap-2">
-                    📏 Size / ML Variants
-                    <span className="text-xs font-normal text-muted-foreground">(e.g. 50ml = 100$, 100ml = 200$)</span>
+                    📏 {t("products.sizeMl")}
+                    <span className="text-xs font-normal text-muted-foreground">{t("products.sizeMlHint")}</span>
                   </Label>
                   <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10" onClick={() => setSizeVariants(s => [...s, { size: "", price: 0 }])}>
-                    <Plus className="h-3 w-3" /> Add Size
+                    <Plus className="h-3 w-3" /> {t("products.addSize")}
                   </Button>
                 </div>
                 {sizeVariants.length > 0 ? (
                   <div className="grid gap-2">
                     {sizeVariants.map((s, i) => (
                       <div key={i} className="flex items-center gap-2 bg-background rounded-lg p-2 border">
-                        <Input value={s.size} placeholder="50ml / 100ml / 250g" className="h-9 flex-1" onChange={e => setSizeVariants(arr => arr.map((it, ii) => ii === i ? { ...it, size: e.target.value } : it))} />
-                        <Input type="number" value={s.price || ""} placeholder="Price $" className="h-9 w-32" onChange={e => setSizeVariants(arr => arr.map((it, ii) => ii === i ? { ...it, price: parseFloat(e.target.value) || 0 } : it))} />
+                        <Input value={s.size} placeholder={t("products.sizeUnitPh")} className="h-9 flex-1" onChange={e => setSizeVariants(arr => arr.map((it, ii) => ii === i ? { ...it, size: e.target.value } : it))} />
+                        <Input type="number" value={s.price || ""} placeholder={t("products.priceShort")} className="h-9 w-32" onChange={e => setSizeVariants(arr => arr.map((it, ii) => ii === i ? { ...it, price: parseFloat(e.target.value) || 0 } : it))} />
                         <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => setSizeVariants(arr => arr.filter((_, ii) => ii !== i))}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -489,7 +489,7 @@ const ProductsManager = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-muted-foreground text-center py-2">No size options yet. Add e.g. "50ml" → 100$, "100ml" → 200$</p>
+                  <p className="text-xs text-muted-foreground text-center py-2">{t("products.noSizeOptions")}</p>
                 )}
               </div>
 
@@ -497,7 +497,7 @@ const ProductsManager = () => {
               <div className="flex items-center justify-between pt-2">
                 <div className="flex items-center gap-2">
                   <Switch checked={form.is_active} onCheckedChange={v => setForm(f => ({ ...f, is_active: v }))} />
-                  <Label className="text-sm">Active (Bot will show this)</Label>
+                  <Label className="text-sm">{t("products.activeBot")}</Label>
                 </div>
                 <Button onClick={() => saveMutation.mutate()} disabled={!form.name || saveMutation.isPending} className="px-6 gap-2 shadow-md">
                   {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
@@ -531,9 +531,9 @@ const ProductsManager = () => {
               })));
             }
             setIsOpen(true);
-            toast.success("Product details filled by AI! Review and save.");
+            toast.success(t("products.toastFilledByAi"));
           } else if (data.action === "add_variant" && data.variant) {
-            toast.info(`Variant "${data.variant.color}" ready — find "${data.variant.product_name}" and add it.`);
+            toast.info(t("products.toastVariantReady", { color: data.variant.color, product: data.variant.product_name }));
           }
         }}
       />}
@@ -541,10 +541,10 @@ const ProductsManager = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Total Products", value: stats.total, color: "text-primary" },
-          { label: "Active", value: stats.active, color: "text-[hsl(var(--success))]" },
-          { label: "Inactive", value: stats.inactive, color: "text-destructive" },
-          { label: "Categories", value: stats.categories, color: "text-accent-foreground" },
+          { label: t("products.statTotal"), value: stats.total, color: "text-primary" },
+          { label: t("products.statActive"), value: stats.active, color: "text-[hsl(var(--success))]" },
+          { label: t("products.statInactive"), value: stats.inactive, color: "text-destructive" },
+          { label: t("products.statCategories"), value: stats.categories, color: "text-accent-foreground" },
         ].map(s => (
           <Card key={s.label} className="border-border/50">
             <CardContent className="p-4 text-center">
@@ -560,7 +560,7 @@ const ProductsManager = () => {
         <div className="flex items-center gap-3">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search by name, color, material..." className="pl-9" />
+            <Input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder={t("products.searchPh2")} className="pl-9" />
           </div>
           <div className="flex items-center gap-1 border rounded-lg p-0.5 bg-muted/50">
             <button onClick={() => setViewMode("grid")} className={`p-1.5 rounded-md transition-colors ${viewMode === "grid" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"}`}>
@@ -574,7 +574,7 @@ const ProductsManager = () => {
         {categories.length > 0 && (
           <div className="flex flex-wrap gap-2">
             <button onClick={() => setFilterCategory("all")} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${filterCategory === "all" ? "bg-primary text-primary-foreground shadow-md" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
-              All ({categoryProductCounts.all || 0})
+              {t("products.allLabel")} ({categoryProductCounts.all || 0})
             </button>
             {categories.map(cat => (
               <button key={cat} onClick={() => setFilterCategory(cat)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${filterCategory === cat ? "bg-primary text-primary-foreground shadow-md" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
@@ -583,7 +583,7 @@ const ProductsManager = () => {
             ))}
             {(categoryProductCounts.uncategorized || 0) > 0 && (
               <button onClick={() => setFilterCategory("uncategorized")} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${filterCategory === "uncategorized" ? "bg-primary text-primary-foreground shadow-md" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
-                Uncategorized ({categoryProductCounts.uncategorized})
+                {t("products.uncategorized")} ({categoryProductCounts.uncategorized})
               </button>
             )}
           </div>
@@ -605,7 +605,7 @@ const ProductsManager = () => {
                 {/* Variant images */}
                 {previewProduct.variants && previewProduct.variants.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-xs font-semibold text-muted-foreground">🎨 Color Variants</p>
+                    <p className="text-xs font-semibold text-muted-foreground">🎨 {t("products.previewColorVariants")}</p>
                     <div className="flex gap-2 flex-wrap">
                       {previewProduct.variants.map((v, i) => (
                         <div key={i} className="text-center">
@@ -618,11 +618,11 @@ const ProductsManager = () => {
                 )}
                 <div className="flex items-center justify-between">
                   <span className="text-2xl font-bold text-primary">${previewProduct.price}</span>
-                  <Badge variant={previewProduct.is_active ? "default" : "destructive"}>{previewProduct.is_active ? "Active" : "Inactive"}</Badge>
+                  <Badge variant={previewProduct.is_active ? "default" : "destructive"}>{previewProduct.is_active ? t("products.previewActive") : t("products.previewInactive")}</Badge>
                 </div>
                 {((previewProduct as any).size_variants?.length > 0) && (
                   <div className="space-y-1">
-                    <p className="text-xs font-semibold text-muted-foreground">📏 Size Options</p>
+                    <p className="text-xs font-semibold text-muted-foreground">📏 {t("products.previewSizeOptions")}</p>
                     <div className="flex flex-wrap gap-2">
                       {(previewProduct as any).size_variants.map((s: SizeVariant, i: number) => (
                         <Badge key={i} variant="secondary">{s.size} — ${s.price}</Badge>
@@ -648,10 +648,10 @@ const ProductsManager = () => {
                 )}
                 <div className="flex gap-2 pt-2">
                   <Button variant="outline" className="flex-1 gap-1" onClick={() => { setPreviewProduct(null); openEdit(previewProduct); }}>
-                    <Pencil className="h-3 w-3" /> Edit
+                    <Pencil className="h-3 w-3" /> {t("products.previewEdit")}
                   </Button>
                   <Button variant="destructive" className="gap-1" onClick={() => { deleteMutation.mutate(previewProduct.id); setPreviewProduct(null); }}>
-                    <Trash2 className="h-3 w-3" /> Delete
+                    <Trash2 className="h-3 w-3" /> {t("products.previewDelete")}
                   </Button>
                 </div>
               </div>
@@ -668,11 +668,11 @@ const ProductsManager = () => {
       ) : filteredProducts.length === 0 ? (
         <Card className="p-12 text-center border-dashed">
           <Package className="h-14 w-14 mx-auto text-muted-foreground/30 mb-4" />
-          <h3 className="text-lg font-semibold">No products {filterCategory !== "all" ? `in "${filterCategory}"` : "yet"}</h3>
+          <h3 className="text-lg font-semibold">{filterCategory !== "all" ? t("products.emptyInCat", { cat: filterCategory }) : t("products.noProducts")}</h3>
           <p className="text-muted-foreground mt-1 text-sm max-w-md mx-auto">
-            Add products with images, categories, and let AI generate perfect descriptions for your bot.
+            {t("products.emptyDesc")}
           </p>
-          <Button className="mt-4 gap-2" onClick={() => setIsOpen(true)}><Plus className="h-4 w-4" /> Add Your First Product</Button>
+          <Button className="mt-4 gap-2" onClick={() => setIsOpen(true)}><Plus className="h-4 w-4" /> {t("products.emptyCta")}</Button>
         </Card>
       ) : (
         <div className="space-y-8">
@@ -681,7 +681,7 @@ const ProductsManager = () => {
               <div className="flex items-center gap-3 mb-4">
                 <div className="h-8 w-1 rounded-full bg-primary" />
                 <h3 className="text-lg font-bold text-foreground">{category}</h3>
-                <Badge variant="secondary" className="text-xs font-normal">{prods.length} {prods.length === 1 ? "item" : "items"}</Badge>
+                <Badge variant="secondary" className="text-xs font-normal">{prods.length} {prods.length === 1 ? t("products.itemSingular") : t("products.itemPlural")}</Badge>
               </div>
 
               {viewMode === "grid" ? (
@@ -697,12 +697,12 @@ const ProductsManager = () => {
                           </div>
                         )}
                         {!p.is_active && (
-                          <div className="absolute top-2 left-2"><Badge variant="destructive" className="text-[10px] shadow-md"><EyeOff className="h-3 w-3 mr-0.5" /> Hidden</Badge></div>
+                          <div className="absolute top-2 left-2"><Badge variant="destructive" className="text-[10px] shadow-md"><EyeOff className="h-3 w-3 mr-0.5" /> {t("products.hidden")}</Badge></div>
                         )}
                         {/* Quick actions on hover */}
                         <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
                           <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); openEdit(p); }} className="h-7 text-xs gap-1 shadow-lg">
-                            <Pencil className="h-3 w-3" /> Edit
+                            <Pencil className="h-3 w-3" /> {t("products.previewEdit")}
                           </Button>
                           <Button size="sm" variant="destructive" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(p.id); }} className="h-7 text-xs gap-1 shadow-lg">
                             <Trash2 className="h-3 w-3" />
@@ -750,7 +750,7 @@ const ProductsManager = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="font-semibold text-sm truncate">{p.name}</p>
-                            {!p.is_active && <Badge variant="destructive" className="text-[9px]">Hidden</Badge>}
+                            {!p.is_active && <Badge variant="destructive" className="text-[9px]">{t("products.hidden")}</Badge>}
                           </div>
                           {p.description && <p className="text-xs text-muted-foreground truncate mt-0.5">{p.description}</p>}
                           <div className="flex flex-wrap gap-1 mt-1">
