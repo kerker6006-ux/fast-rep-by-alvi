@@ -27,7 +27,7 @@ const Auth = () => {
       if (error) toast.error(error.message);
       else {
         toast.success(t("auth.welcomeBack"));
-        navigate("/");
+        navigate("/dashboard");
       }
     } else {
       const { error } = await supabase.auth.signUp({
@@ -41,7 +41,7 @@ const Auth = () => {
       if (error) toast.error(error.message);
       else {
         toast.success(t("auth.accountCreated"));
-        navigate("/");
+        navigate("/dashboard");
       }
     }
     setLoading(false);
