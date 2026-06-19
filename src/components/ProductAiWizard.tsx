@@ -213,10 +213,10 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
             <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
               <Bot className="h-4 w-4 text-primary-foreground" />
             </div>
-            Product AI Assistant
+            {t("products.wTitle")}
             <Sparkles className="h-4 w-4 text-primary animate-pulse" />
           </DialogTitle>
-          <p className="text-xs text-muted-foreground">Upload images, chat, and I'll set up your product</p>
+          <p className="text-xs text-muted-foreground">{t("products.wSubtitle")}</p>
         </DialogHeader>
 
         {/* Chat Messages */}
