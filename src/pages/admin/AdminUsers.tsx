@@ -10,7 +10,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Search, Plus, Minus, Trash2, Ban, CheckCircle2, Coins, Globe, Package, ShoppingCart, MessageSquare, KeyRound } from "lucide-react";
+import { Search, Plus, Minus, Trash2, Ban, CheckCircle2, Coins, Globe, Package, ShoppingCart, MessageSquare, KeyRound, Facebook } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -81,6 +81,16 @@ const AdminUsers = () => {
         .from("profiles")
         .select("id, display_name, created_at, suspended")
         .order("created_at", { ascending: false });
+
+      // Fetch emails via admin edge function
+      let emails: Record<string, string> = {};
+      try {
+        const { data: emailRes } = await supabase.functions.invoke("admin-list-users");
+        emails = emailRes?.emails ?? {};
+      } catch {
+        // non-fatal
+      }
+
       const enriched = await Promise.all((profiles ?? []).map(async (p: any) => {
         const [credits, products, orders, conversations, pages] = await Promise.all([
           supabase.from("user_credits").select("balance").eq("user_id", p.id).maybeSingle(),
@@ -91,6 +101,7 @@ const AdminUsers = () => {
         ]);
         return {
           ...p,
+          email: emails[p.id] ?? null,
           balance: Number(credits.data?.balance ?? 0),
           productCount: products.count ?? 0,
           orderCount: orders.count ?? 0,
@@ -135,7 +146,11 @@ const AdminUsers = () => {
   const refresh = () => qc.invalidateQueries({ queryKey: ["admin-users-full"] });
 
   const filtered = (users ?? []).filter((u: any) =>
-    !q || u.display_name?.toLowerCase().includes(q.toLowerCase()) || u.id.toLowerCase().includes(q.toLowerCase())
+    !q ||
+    u.display_name?.toLowerCase().includes(q.toLowerCase()) ||
+    u.email?.toLowerCase().includes(q.toLowerCase()) ||
+    u.id.toLowerCase().includes(q.toLowerCase()) ||
+    u.pages?.some((pg: any) => pg.page_name?.toLowerCase().includes(q.toLowerCase()))
   );
 
   return (
@@ -163,8 +178,18 @@ const AdminUsers = () => {
                       <h3 className="font-display font-semibold text-lg truncate">{u.display_name || t("admin.users.unnamed")}</h3>
                       {u.suspended && <Badge variant="destructive">{t("admin.users.suspended")}</Badge>}
                     </div>
-                    <p className="text-xs text-slate-500 font-mono mt-1 truncate">{u.id}</p>
+                    {u.email && <p className="text-sm text-blue-700 mt-0.5 truncate">{u.email}</p>}
+                    <p className="text-xs text-slate-400 font-mono mt-1 truncate">{u.id}</p>
                     <p className="text-xs text-slate-500 mt-0.5">{t("admin.users.joined")}: {new Date(u.created_at).toLocaleDateString()}</p>
+                    {u.pages?.length > 0 && (
+                      <div className="flex gap-1.5 flex-wrap mt-2">
+                        {u.pages.map((pg: any, i: number) => (
+                          <Badge key={i} variant="secondary" className="gap-1 text-xs">
+                            <Facebook className="h-3 w-3" />{pg.page_name || "Unnamed"}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                     <div className="flex gap-4 mt-3 text-xs text-slate-600 flex-wrap">
                       <span className="flex items-center gap-1"><Package className="h-3 w-3" />{u.productCount}</span>
                       <span className="flex items-center gap-1"><ShoppingCart className="h-3 w-3" />{u.orderCount}</span>
@@ -181,8 +206,8 @@ const AdminUsers = () => {
                   </div>
 
                   <div className="flex gap-2 flex-wrap">
-                    <AdjustCreditsDialog userId={u.id} displayName={u.display_name || "User"} mode="add" onDone={refresh} />
-                    <AdjustCreditsDialog userId={u.id} displayName={u.display_name || "User"} mode="remove" onDone={refresh} />
+                    <AdjustCreditsDialog userId={u.id} displayName={u.display_name || u.email || "User"} mode="add" onDone={refresh} />
+                    <AdjustCreditsDialog userId={u.id} displayName={u.display_name || u.email || "User"} mode="remove" onDone={refresh} />
                     <Button size="sm" variant="outline" onClick={() => suspend.mutate({ userId: u.id, suspended: !u.suspended })}>
                       {u.suspended
                         ? <><CheckCircle2 className="h-3.5 w-3.5 mr-1" />{t("admin.users.unsuspend")}</>

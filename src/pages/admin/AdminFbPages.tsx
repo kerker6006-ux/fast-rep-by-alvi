@@ -7,16 +7,27 @@ import { useTranslation } from "react-i18next";
 
 const AdminFbPages = () => {
   const { t } = useTranslation();
-  const { data: pages, isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["admin-all-fb-pages"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("fb_pages")
-        .select("id, fb_page_id, page_name, page_picture_url, is_active, subscription_status, user_id, connected_at, last_sync_at")
-        .order("created_at", { ascending: false });
-      return data ?? [];
+      const [{ data: pages }, { data: emailRes }, { data: profiles }] = await Promise.all([
+        supabase
+          .from("fb_pages")
+          .select("id, fb_page_id, page_name, page_picture_url, is_active, subscription_status, user_id, connected_at, last_sync_at")
+          .order("created_at", { ascending: false }),
+        supabase.functions.invoke("admin-list-users").then((r) => ({ data: r.data })).catch(() => ({ data: { emails: {} } })),
+        supabase.from("profiles").select("id, display_name"),
+      ]);
+      const emails: Record<string, string> = emailRes?.emails ?? {};
+      const names: Record<string, string> = Object.fromEntries((profiles ?? []).map((p: any) => [p.id, p.display_name]));
+      return (pages ?? []).map((p: any) => ({
+        ...p,
+        owner_email: emails[p.user_id] ?? null,
+        owner_name: names[p.user_id] ?? null,
+      }));
     },
   });
+  const pages = data;
 
   return (
     <div className="space-y-6">
@@ -48,7 +59,11 @@ const AdminFbPages = () => {
                     {p.subscription_status || (p.is_active ? "active" : "pending")}
                   </Badge>
                 </div>
-                <p className="text-xs text-slate-500">Owner: <span className="font-mono">{p.user_id?.slice(0, 8)}…</span></p>
+                <div className="space-y-0.5 pt-1 border-t">
+                  {p.owner_email && <p className="text-xs text-blue-700 truncate">📧 {p.owner_email}</p>}
+                  {p.owner_name && <p className="text-xs text-slate-600 truncate">👤 {p.owner_name}</p>}
+                  <p className="text-[10px] text-slate-400 font-mono truncate">{p.user_id}</p>
+                </div>
               </CardContent>
             </Card>
           ))}
