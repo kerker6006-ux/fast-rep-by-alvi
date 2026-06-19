@@ -220,6 +220,7 @@ const AiTraining = () => {
         body: {
           messages: [{ role: "user", content: "Hi, I want to set up my bot. Help me." }],
           settings,
+          category: cat,
         },
       });
       if (error) throw error;
