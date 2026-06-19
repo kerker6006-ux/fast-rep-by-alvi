@@ -379,7 +379,14 @@ const FbPageConnection = () => {
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="font-medium truncate">{p.name}</p>
-                    {p.category && <p className="text-xs text-muted-foreground truncate">{p.category}</p>}
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      {p.category && <span className="truncate">{p.category}</span>}
+                      {p.ig_username && (
+                        <span className="flex items-center gap-1 text-fuchsia-600">
+                          <Instagram className="h-3 w-3" /> @{p.ig_username}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   {selectedPage === p.id && <Check className="h-4 w-4 text-primary" />}
                 </button>
