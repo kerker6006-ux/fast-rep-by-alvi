@@ -184,7 +184,6 @@ const FbPageConnection = () => {
   const webhookUrl = `${supabaseUrl}/functions/v1/fb-webhook`;
   const oauthRedirectUri = `${supabaseUrl}/functions/v1/fb-oauth-callback`;
   const backendHost = (() => { try { return new URL(supabaseUrl).host; } catch { return supabaseUrl; } })();
-  const frontendHost = typeof window !== "undefined" ? window.location.host : "";
 
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const copyText = (val: string, key: string) => {
