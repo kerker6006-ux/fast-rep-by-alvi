@@ -176,6 +176,36 @@ const BotSettings = () => {
                 onCheckedChange={(v) => update("auto_import_products", v ? "true" : "false")}
               />
             </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>{t("botSettings.autoCreateOrders")}</Label>
+                <p className="text-xs text-muted-foreground">{t("botSettings.autoCreateOrdersDesc")}</p>
+              </div>
+              <Switch
+                checked={settings.auto_create_orders !== "false"}
+                onCheckedChange={(v) => update("auto_create_orders", v ? "true" : "false")}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>{t("botSettings.autoCreateComplaints")}</Label>
+                <p className="text-xs text-muted-foreground">{t("botSettings.autoCreateComplaintsDesc")}</p>
+              </div>
+              <Switch
+                checked={settings.auto_create_complaints !== "false"}
+                onCheckedChange={(v) => update("auto_create_complaints", v ? "true" : "false")}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>{t("botSettings.autoCreateLeads")}</Label>
+                <p className="text-xs text-muted-foreground">{t("botSettings.autoCreateLeadsDesc")}</p>
+              </div>
+              <Switch
+                checked={settings.auto_create_leads !== "false"}
+                onCheckedChange={(v) => update("auto_create_leads", v ? "true" : "false")}
+              />
+            </div>
           </CardContent>
         </Card>
 
