@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,6 +15,7 @@ import FbPostsBrowser from "./FbPostsBrowser";
 import FbPageAiAnalyzer from "./FbPageAiAnalyzer";
 
 const PendingProducts = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -104,13 +106,12 @@ const PendingProducts = () => {
   ) : !pending?.length ? (
     <Card className="p-8 text-center">
       <Package className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-      <h3 className="font-semibold">No pending products</h3>
-      <p className="text-sm text-muted-foreground mt-1">When you post a photo on your Facebook Page, it will appear here for review.</p>
+      <h3 className="font-semibold">{t("pendingProducts.empty")}</h3>
     </Card>
   ) : (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <Badge variant="secondary" className="text-xs">{pending.length} pending</Badge>
+        <Badge variant="secondary" className="text-xs">{pending.length}</Badge>
       </div>
       {pending.map((item: any) => (
         <Card key={item.id} className="overflow-hidden">
@@ -127,27 +128,27 @@ const PendingProducts = () => {
                 {editingId === item.id ? (
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <Label className="text-xs">Name</Label>
+                      <Label className="text-xs">{t("pendingProducts.name")}</Label>
                       <Input value={editForm.ai_name || ""} onChange={e => setEditForm(f => ({ ...f, ai_name: e.target.value }))} className="h-8 text-sm" />
                     </div>
                     <div>
-                      <Label className="text-xs">Name (alternate language)</Label>
+                      <Label className="text-xs">{t("pendingProducts.nameAlt")}</Label>
                       <Input value={editForm.ai_name_bn || ""} onChange={e => setEditForm(f => ({ ...f, ai_name_bn: e.target.value }))} className="h-8 text-sm" />
                     </div>
                     <div>
-                      <Label className="text-xs">Category</Label>
+                      <Label className="text-xs">{t("pendingProducts.category")}</Label>
                       <Input value={editForm.ai_category || ""} onChange={e => setEditForm(f => ({ ...f, ai_category: e.target.value }))} className="h-8 text-sm" />
                     </div>
                     <div>
-                      <Label className="text-xs">Color</Label>
+                      <Label className="text-xs">{t("pendingProducts.color")}</Label>
                       <Input value={editForm.ai_color || ""} onChange={e => setEditForm(f => ({ ...f, ai_color: e.target.value }))} className="h-8 text-sm" />
                     </div>
                     <div>
-                      <Label className="text-xs">Price ($)</Label>
+                      <Label className="text-xs">{t("pendingProducts.price")}</Label>
                       <Input type="number" value={editForm.ai_price || 0} onChange={e => setEditForm(f => ({ ...f, ai_price: Number(e.target.value) }))} className="h-8 text-sm" />
                     </div>
                     <div>
-                      <Label className="text-xs">Material</Label>
+                      <Label className="text-xs">{t("products.material")}</Label>
                       <Input value={editForm.ai_material || ""} onChange={e => setEditForm(f => ({ ...f, ai_material: e.target.value }))} className="h-8 text-sm" />
                     </div>
                   </div>
@@ -171,14 +172,14 @@ const PendingProducts = () => {
               <div className="flex flex-col gap-2 shrink-0">
                 {editingId === item.id ? (
                   <>
-                    <Button size="sm" onClick={() => saveEdit(item)} className="gap-1"><Check className="h-3 w-3" /> Save & Add</Button>
-                    <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>Cancel</Button>
+                    <Button size="sm" onClick={() => saveEdit(item)} className="gap-1"><Check className="h-3 w-3" /> {t("common.save")}</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>{t("common.cancel")}</Button>
                   </>
                 ) : (
                   <>
-                    <Button size="sm" onClick={() => approveMutation.mutate(item)} disabled={approveMutation.isPending} className="gap-1"><Check className="h-3 w-3" /> Approve</Button>
-                    <Button size="sm" variant="outline" onClick={() => startEdit(item)} className="gap-1"><Pencil className="h-3 w-3" /> Edit</Button>
-                    <Button size="sm" variant="ghost" onClick={() => rejectMutation.mutate(item.id)} className="gap-1 text-destructive"><X className="h-3 w-3" /> Reject</Button>
+                    <Button size="sm" onClick={() => approveMutation.mutate(item)} disabled={approveMutation.isPending} className="gap-1"><Check className="h-3 w-3" /> {t("pendingProducts.approve")}</Button>
+                    <Button size="sm" variant="outline" onClick={() => startEdit(item)} className="gap-1"><Pencil className="h-3 w-3" /> {t("pendingProducts.edit")}</Button>
+                    <Button size="sm" variant="ghost" onClick={() => rejectMutation.mutate(item.id)} className="gap-1 text-destructive"><X className="h-3 w-3" /> {t("pendingProducts.reject")}</Button>
                   </>
                 )}
               </div>

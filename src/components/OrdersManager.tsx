@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,15 +24,8 @@ import {
 
 type OrderStatus = "pending" | "confirmed" | "processing" | "delivered" | "cancelled";
 
-const statusConfig: Record<OrderStatus, { label: string; icon: React.ElementType; color: string; bgColor: string }> = {
-  pending: { label: "Pending", icon: Clock, color: "text-amber-600", bgColor: "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800" },
-  confirmed: { label: "Confirmed", icon: CheckCircle, color: "text-primary", bgColor: "bg-primary/5 border-primary/20" },
-  processing: { label: "Processing", icon: Settings2, color: "text-violet-600", bgColor: "bg-violet-50 border-violet-200 dark:bg-violet-950/30 dark:border-violet-800" },
-  delivered: { label: "Delivered", icon: Truck, color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800" },
-  cancelled: { label: "Cancelled", icon: XCircle, color: "text-destructive", bgColor: "bg-destructive/5 border-destructive/20" },
-};
-
 const OrdersManager = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [editingOrder, setEditingOrder] = useState<any>(null);
@@ -39,6 +33,14 @@ const OrdersManager = () => {
   const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusTab, setStatusTab] = useState<string>("all");
+
+  const statusConfig: Record<OrderStatus, { label: string; icon: React.ElementType; color: string; bgColor: string }> = {
+    pending: { label: t("orders.pending"), icon: Clock, color: "text-amber-600", bgColor: "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800" },
+    confirmed: { label: t("orders.confirmed"), icon: CheckCircle, color: "text-primary", bgColor: "bg-primary/5 border-primary/20" },
+    processing: { label: t("orders.shipped"), icon: Settings2, color: "text-violet-600", bgColor: "bg-violet-50 border-violet-200 dark:bg-violet-950/30 dark:border-violet-800" },
+    delivered: { label: t("orders.delivered"), icon: Truck, color: "text-emerald-600", bgColor: "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800" },
+    cancelled: { label: t("orders.cancelled"), icon: XCircle, color: "text-destructive", bgColor: "bg-destructive/5 border-destructive/20" },
+  };
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["orders"],
@@ -146,11 +148,11 @@ const OrdersManager = () => {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Orders</h2>
-          <p className="text-muted-foreground text-sm">Manage orders from Messenger.</p>
+          <h2 className="text-2xl font-bold tracking-tight">{t("orders.title")}</h2>
+          <p className="text-muted-foreground text-sm">{t("orders.subtitle")}</p>
         </div>
         <Button variant="outline" size="sm" className="gap-1.5" onClick={exportCSV}>
-          <Download className="h-3.5 w-3.5" /> Export
+          <Download className="h-3.5 w-3.5" /> {t("orders.export")}
         </Button>
       </div>
 
@@ -182,7 +184,7 @@ const OrdersManager = () => {
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search name or phone..."
+            placeholder={t("orders.searchPh")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-8 h-9"
@@ -192,7 +194,7 @@ const OrdersManager = () => {
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className={cn("gap-1 h-9 shrink-0", dateFilter && "border-primary text-primary")}>
               <CalendarIcon className="h-3.5 w-3.5" />
-              {dateFilter ? format(dateFilter, "dd MMM") : "Date"}
+              {dateFilter ? format(dateFilter, "dd MMM") : t("common.date")}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="end">
