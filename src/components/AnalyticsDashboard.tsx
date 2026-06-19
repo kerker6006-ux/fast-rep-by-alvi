@@ -1,9 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageSquare, Users, ShoppingCart, TrendingUp, Clock } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Card } from "@/components/ui/card";
+import { MessageSquare, Users, ShoppingCart, TrendingUp, Clock, Sparkles, ArrowUpRight } from "lucide-react";
 
 const AnalyticsDashboard = () => {
+  const { t } = useTranslation();
+  const { user } = useAuth();
+
   const { data: stats, isLoading } = useQuery({
     queryKey: ["analytics"],
     queryFn: async () => {
@@ -17,11 +22,11 @@ const AnalyticsDashboard = () => {
         supabase.from("messages").select("id", { count: "exact", head: true }).gte("created_at", today),
         supabase.from("orders").select("id, total, status", { count: "exact" }),
         supabase.from("conversations").select("id, sender_name, fb_sender_id, last_message, last_message_at")
-          .gte("last_message_at", weekAgo).order("last_message_at", { ascending: false }).limit(10),
+          .gte("last_message_at", weekAgo).order("last_message_at", { ascending: false }).limit(8),
       ]);
 
       const orderData = orders.data || [];
-      const totalRevenue = orderData.reduce((sum: number, o: any) => 
+      const totalRevenue = orderData.reduce((sum: number, o: any) =>
         o.status !== "cancelled" ? sum + (Number(o.total) || 0) : sum, 0);
       const deliveredOrders = orderData.filter((o: any) => o.status === "delivered").length;
 
@@ -37,63 +42,128 @@ const AnalyticsDashboard = () => {
     },
   });
 
-  if (isLoading) return <div className="animate-pulse space-y-4">{[1,2,3].map(i => <div key={i} className="h-24 bg-muted rounded-lg" />)}</div>;
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="h-36 bg-muted/40 animate-pulse rounded-2xl" />
+        ))}
+      </div>
+    );
+  }
 
-  const cards = [
-    { title: "Total Conversations", value: stats?.totalConversations || 0, icon: Users, color: "text-blue-600" },
-    { title: "Total Messages", value: stats?.totalMessages || 0, icon: MessageSquare, color: "text-green-600" },
-    { title: "Today's Messages", value: stats?.todayMessages || 0, icon: Clock, color: "text-orange-600" },
-    { title: "Total Orders", value: stats?.totalOrders || 0, icon: ShoppingCart, color: "text-purple-600" },
-    { title: "Delivered Orders", value: stats?.deliveredOrders || 0, icon: TrendingUp, color: "text-emerald-600" },
-    { title: "Total Revenue", value: `৳${stats?.totalRevenue?.toLocaleString() || 0}`, icon: TrendingUp, color: "text-rose-600" },
-  ];
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Good morning";
+    if (h < 18) return "Good afternoon";
+    return "Good evening";
+  })();
+  const firstName = (user?.user_metadata?.display_name || user?.email?.split("@")[0] || "").split(" ")[0];
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Analytics</h2>
-        <p className="text-muted-foreground">Overview of your bot's performance.</p>
+      {/* Hero header */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-primary p-6 sm:p-8 shadow-glow">
+        <div className="absolute -top-12 -right-12 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-12 -left-12 w-64 h-64 bg-primary-glow/30 rounded-full blur-3xl" />
+        <div className="relative">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur text-white/90 text-xs font-medium mb-3">
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>{t("analytics.title")}</span>
+          </div>
+          <h1 className="font-display text-3xl sm:text-4xl font-bold text-white tracking-tight">
+            {greeting}{firstName ? `, ${firstName}` : ""} 👋
+          </h1>
+          <p className="text-white/85 mt-2 text-sm sm:text-base max-w-xl">{t("analytics.subtitle")}</p>
+        </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {cards.map((card) => (
-          <Card key={card.title}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{card.title}</CardTitle>
-              <card.icon className={`h-4 w-4 ${card.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{card.value}</div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Recent Conversations (Last 7 days)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {stats?.recentConversations?.length ? (
-            <div className="space-y-3">
-              {stats.recentConversations.map((c: any) => (
-                <div key={c.id} className="flex items-center justify-between border-b pb-2 last:border-0">
-                  <div>
-                    <p className="font-medium text-sm">{c.sender_name || `Customer ${c.fb_sender_id?.slice(-4) || "?"}`}</p>
-                    <p className="text-xs text-muted-foreground line-clamp-1">{c.last_message}</p>
-                  </div>
-                  <p className="text-xs text-muted-foreground whitespace-nowrap ml-4">
-                    {c.last_message_at ? new Date(c.last_message_at).toLocaleDateString() : ""}
-                  </p>
-                </div>
-              ))}
+      {/* Bento stats grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 auto-rows-[minmax(120px,auto)]">
+        {/* Revenue — big */}
+        <Card className="col-span-2 lg:col-span-2 lg:row-span-2 p-6 rounded-3xl border-border/60 shadow-soft hover:shadow-elevated transition-shadow bg-gradient-soft relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl" />
+          <div className="relative flex flex-col h-full justify-between gap-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("analytics.totalRevenue")}</p>
+                <p className="font-display text-4xl sm:text-5xl font-bold mt-2 text-gradient">৳{stats?.totalRevenue?.toLocaleString() || 0}</p>
+              </div>
+              <div className="h-11 w-11 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-primary" />
+              </div>
             </div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1 text-emerald-600 font-semibold">
+                <ArrowUpRight className="h-3.5 w-3.5" />
+                {stats?.deliveredOrders || 0} {t("analytics.deliveredOrders").toLowerCase()}
+              </span>
+              <span>of {stats?.totalOrders || 0} {t("analytics.totalOrders").toLowerCase()}</span>
+            </div>
+          </div>
+        </Card>
+
+        <StatTile label={t("analytics.totalConversations")} value={stats?.totalConversations || 0} icon={Users} accent="blue" />
+        <StatTile label={t("analytics.todayMessages")} value={stats?.todayMessages || 0} icon={Clock} accent="amber" />
+        <StatTile label={t("analytics.totalMessages")} value={stats?.totalMessages || 0} icon={MessageSquare} accent="emerald" />
+        <StatTile label={t("analytics.totalOrders")} value={stats?.totalOrders || 0} icon={ShoppingCart} accent="purple" />
+      </div>
+
+      {/* Recent conversations */}
+      <Card className="rounded-3xl border-border/60 shadow-soft overflow-hidden">
+        <div className="p-6 border-b border-border/60 flex items-center justify-between">
+          <div>
+            <h3 className="font-display text-lg font-bold">{t("analytics.recentConversations")}</h3>
+            <p className="text-xs text-muted-foreground">{t("analytics.last7Days")}</p>
+          </div>
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <MessageSquare className="h-5 w-5 text-primary" />
+          </div>
+        </div>
+        <div className="divide-y divide-border/60">
+          {stats?.recentConversations?.length ? (
+            stats.recentConversations.map((c: any) => (
+              <div key={c.id} className="flex items-center gap-3 px-6 py-4 hover:bg-accent/40 transition-colors">
+                <div className="h-9 w-9 rounded-full bg-gradient-primary flex items-center justify-center text-white font-semibold text-sm shrink-0">
+                  {(c.sender_name || "C").slice(0, 1).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-sm truncate">{c.sender_name || `${t("analytics.customer")} ${c.fb_sender_id?.slice(-4) || "?"}`}</p>
+                  <p className="text-xs text-muted-foreground truncate">{c.last_message}</p>
+                </div>
+                <p className="text-xs text-muted-foreground whitespace-nowrap">
+                  {c.last_message_at ? new Date(c.last_message_at).toLocaleDateString() : ""}
+                </p>
+              </div>
+            ))
           ) : (
-            <p className="text-sm text-muted-foreground">No recent conversations.</p>
+            <p className="text-sm text-muted-foreground text-center py-10">{t("analytics.noRecent")}</p>
           )}
-        </CardContent>
+        </div>
       </Card>
     </div>
+  );
+};
+
+const accents = {
+  blue: { bg: "bg-blue-500/10", text: "text-blue-600" },
+  amber: { bg: "bg-amber-500/10", text: "text-amber-600" },
+  emerald: { bg: "bg-emerald-500/10", text: "text-emerald-600" },
+  purple: { bg: "bg-purple-500/10", text: "text-purple-600" },
+} as const;
+
+const StatTile = ({ label, value, icon: Icon, accent }: { label: string; value: number | string; icon: React.ElementType; accent: keyof typeof accents }) => {
+  const a = accents[accent];
+  return (
+    <Card className="p-5 rounded-3xl border-border/60 shadow-soft hover:shadow-elevated hover:-translate-y-0.5 transition-all">
+      <div className="flex items-start justify-between mb-3">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
+        <div className={`h-9 w-9 rounded-xl ${a.bg} flex items-center justify-center`}>
+          <Icon className={`h-4 w-4 ${a.text}`} />
+        </div>
+      </div>
+      <p className="font-display text-2xl sm:text-3xl font-bold">{value}</p>
+    </Card>
   );
 };
 

@@ -1,0 +1,58 @@
+{
+  "app": {
+    "name": "Fast Rep",
+    "tagline": "এআই-চালিত মেসেঞ্জার অটো-রিপ্লাই বট"
+  },
+  "auth": {
+    "signIn": "সাইন ইন",
+    "signUp": "অ্যাকাউন্ট তৈরি করুন",
+    "signInTitle": "আবার স্বাগতম",
+    "signUpTitle": "Fast Rep দিয়ে শুরু করুন",
+    "signInSubtitle": "ড্যাশবোর্ডে প্রবেশ করতে আপনার তথ্য দিন",
+    "signUpSubtitle": "কয়েক সেকেন্ডে অ্যাকাউন্ট তৈরি করুন। কোনো অনুমোদন লাগবে না।",
+    "displayName": "আপনার নাম",
+    "email": "ইমেইল",
+    "password": "পাসওয়ার্ড",
+    "signInBtn": "সাইন ইন",
+    "signUpBtn": "অ্যাকাউন্ট তৈরি করুন",
+    "noAccount": "অ্যাকাউন্ট নেই?",
+    "haveAccount": "ইতিমধ্যে অ্যাকাউন্ট আছে?",
+    "welcomeBack": "আবার স্বাগতম!",
+    "accountCreated": "অ্যাকাউন্ট তৈরি হয়েছে — স্বাগতম!"
+  },
+  "nav": {
+    "analytics": "অ্যানালিটিক্স",
+    "credits": "ক্রেডিট",
+    "aiUsage": "এআই ব্যবহার",
+    "aiTraining": "এআই ট্রেনিং",
+    "products": "পণ্য",
+    "autoImport": "অটো-ইমপোর্ট",
+    "suggestions": "পরামর্শ",
+    "websiteImport": "ওয়েবসাইট ইমপোর্ট",
+    "orders": "অর্ডার",
+    "complaints": "অভিযোগ",
+    "chats": "চ্যাট",
+    "autoReply": "অটো-রিপ্লাই",
+    "scheduled": "সিডিউল",
+    "fbPages": "FB পেজ",
+    "settings": "সেটিংস",
+    "admin": "অ্যাডমিন",
+    "signOut": "সাইন আউট",
+    "collapse": "সংকুচিত",
+    "language": "ভাষা"
+  },
+  "analytics": {
+    "title": "ড্যাশবোর্ড",
+    "subtitle": "আজ আপনার বটের অবস্থা।",
+    "totalConversations": "কথোপকথন",
+    "totalMessages": "মোট বার্তা",
+    "todayMessages": "আজকের",
+    "totalOrders": "অর্ডার",
+    "deliveredOrders": "ডেলিভারি",
+    "totalRevenue": "আয়",
+    "recentConversations": "সাম্প্রতিক কথোপকথন",
+    "last7Days": "গত ৭ দিন",
+    "noRecent": "কোনো সাম্প্রতিক কথোপকথন নেই।",
+    "customer": "গ্রাহক"
+  }
+}

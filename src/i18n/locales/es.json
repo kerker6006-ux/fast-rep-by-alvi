@@ -1,0 +1,58 @@
+{
+  "app": {
+    "name": "Fast Rep",
+    "tagline": "Bot de auto-respuesta de Messenger con IA"
+  },
+  "auth": {
+    "signIn": "Iniciar sesión",
+    "signUp": "Crear cuenta",
+    "signInTitle": "Bienvenido de nuevo",
+    "signUpTitle": "Empieza con Fast Rep",
+    "signInSubtitle": "Ingresa tus credenciales para acceder al panel",
+    "signUpSubtitle": "Crea tu cuenta en segundos. Sin aprobación.",
+    "displayName": "Tu nombre",
+    "email": "Correo",
+    "password": "Contraseña",
+    "signInBtn": "Iniciar sesión",
+    "signUpBtn": "Crear cuenta",
+    "noAccount": "¿No tienes cuenta?",
+    "haveAccount": "¿Ya tienes cuenta?",
+    "welcomeBack": "¡Bienvenido de nuevo!",
+    "accountCreated": "¡Cuenta creada — bienvenido!"
+  },
+  "nav": {
+    "analytics": "Analítica",
+    "credits": "Créditos",
+    "aiUsage": "Uso de IA",
+    "aiTraining": "Entrenamiento IA",
+    "products": "Productos",
+    "autoImport": "Importación automática",
+    "suggestions": "Sugerencias",
+    "websiteImport": "Importar web",
+    "orders": "Pedidos",
+    "complaints": "Quejas",
+    "chats": "Chats",
+    "autoReply": "Auto-respuesta",
+    "scheduled": "Programados",
+    "fbPages": "Páginas FB",
+    "settings": "Ajustes",
+    "admin": "Admin",
+    "signOut": "Cerrar sesión",
+    "collapse": "Colapsar",
+    "language": "Idioma"
+  },
+  "analytics": {
+    "title": "Panel",
+    "subtitle": "Esto es lo que está pasando con tu bot hoy.",
+    "totalConversations": "Conversaciones",
+    "totalMessages": "Mensajes totales",
+    "todayMessages": "Hoy",
+    "totalOrders": "Pedidos",
+    "deliveredOrders": "Entregados",
+    "totalRevenue": "Ingresos",
+    "recentConversations": "Conversaciones recientes",
+    "last7Days": "Últimos 7 días",
+    "noRecent": "Sin conversaciones recientes.",
+    "customer": "Cliente"
+  }
+}

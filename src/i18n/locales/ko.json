@@ -1,0 +1,58 @@
+{
+  "app": {
+    "name": "Fast Rep",
+    "tagline": "AI 기반 메신저 자동 응답 봇"
+  },
+  "auth": {
+    "signIn": "로그인",
+    "signUp": "계정 만들기",
+    "signInTitle": "다시 오신 것을 환영합니다",
+    "signUpTitle": "Fast Rep 시작하기",
+    "signInSubtitle": "대시보드에 접속하려면 자격 증명을 입력하세요",
+    "signUpSubtitle": "몇 초 만에 계정을 만드세요. 승인이 필요 없습니다.",
+    "displayName": "이름",
+    "email": "이메일",
+    "password": "비밀번호",
+    "signInBtn": "로그인",
+    "signUpBtn": "계정 만들기",
+    "noAccount": "계정이 없으신가요?",
+    "haveAccount": "이미 계정이 있으신가요?",
+    "welcomeBack": "다시 오신 것을 환영합니다!",
+    "accountCreated": "계정이 생성되었습니다 — 환영합니다!"
+  },
+  "nav": {
+    "analytics": "분석",
+    "credits": "크레딧",
+    "aiUsage": "AI 사용량",
+    "aiTraining": "AI 학습",
+    "products": "제품",
+    "autoImport": "자동 가져오기",
+    "suggestions": "추천",
+    "websiteImport": "웹사이트 가져오기",
+    "orders": "주문",
+    "complaints": "불만",
+    "chats": "채팅",
+    "autoReply": "자동 응답",
+    "scheduled": "예약",
+    "fbPages": "FB 페이지",
+    "settings": "설정",
+    "admin": "관리자",
+    "signOut": "로그아웃",
+    "collapse": "접기",
+    "language": "언어"
+  },
+  "analytics": {
+    "title": "대시보드",
+    "subtitle": "오늘 봇의 상황입니다.",
+    "totalConversations": "대화",
+    "totalMessages": "총 메시지",
+    "todayMessages": "오늘",
+    "totalOrders": "주문",
+    "deliveredOrders": "배송 완료",
+    "totalRevenue": "매출",
+    "recentConversations": "최근 대화",
+    "last7Days": "지난 7일",
+    "noRecent": "최근 대화가 없습니다.",
+    "customer": "고객"
+  }
+}
