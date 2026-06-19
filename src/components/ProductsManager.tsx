@@ -605,7 +605,7 @@ const ProductsManager = () => {
                 {/* Variant images */}
                 {previewProduct.variants && previewProduct.variants.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-xs font-semibold text-muted-foreground">🎨 Color Variants</p>
+                    <p className="text-xs font-semibold text-muted-foreground">🎨 {t("products.previewColorVariants")}</p>
                     <div className="flex gap-2 flex-wrap">
                       {previewProduct.variants.map((v, i) => (
                         <div key={i} className="text-center">
