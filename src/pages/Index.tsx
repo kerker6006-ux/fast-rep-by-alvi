@@ -16,6 +16,9 @@ import CreditDashboard from "@/components/CreditDashboard";
 import PendingProducts from "@/components/PendingProducts";
 import WebsiteImport from "@/components/WebsiteImport";
 import ProductSuggestions from "@/components/ProductSuggestions";
+import ServicesManager from "@/components/ServicesManager";
+import LeadsManager from "@/components/LeadsManager";
+import CategoryOnboarding from "@/components/CategoryOnboarding";
 
 const tabs: Record<string, React.ComponentType> = {
   analytics: AnalyticsDashboard,
@@ -23,6 +26,8 @@ const tabs: Record<string, React.ComponentType> = {
   "ai-usage": AiUsageDashboard,
   "ai-training": AiTraining,
   products: ProductsManager,
+  services: ServicesManager,
+  leads: LeadsManager,
   "pending-products": PendingProducts,
   suggestions: ProductSuggestions,
   "website-import": WebsiteImport,
@@ -49,6 +54,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <CategoryOnboarding />
       <DashboardSidebar
         activeTab={activeTab}
         onTabChange={setActiveTab}
