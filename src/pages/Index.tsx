@@ -1,24 +1,26 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import DashboardSidebar from "@/components/DashboardSidebar";
-import ProductsManager from "@/components/ProductsManager";
-import ConversationsView from "@/components/ConversationsView";
-import BotSettings from "@/components/BotSettings";
-import OrdersManager from "@/components/OrdersManager";
-import ComplaintsManager from "@/components/ComplaintsManager";
-import AutoReplyRules from "@/components/AutoReplyRules";
-import AnalyticsDashboard from "@/components/AnalyticsDashboard";
-import ScheduledMessages from "@/components/ScheduledMessages";
-import AiTraining from "@/components/AiTraining";
-import AdminPanel from "@/components/AdminPanel";
-import FbPageConnection from "@/components/FbPageConnection";
-import AiUsageDashboard from "@/components/AiUsageDashboard";
-import CreditDashboard from "@/components/CreditDashboard";
-import PendingProducts from "@/components/PendingProducts";
-import WebsiteImport from "@/components/WebsiteImport";
-import ProductSuggestions from "@/components/ProductSuggestions";
-import ServicesManager from "@/components/ServicesManager";
-import LeadsManager from "@/components/LeadsManager";
 import CategoryOnboarding from "@/components/CategoryOnboarding";
+
+// Lazy-load every dashboard tab — only the active one downloads.
+const AnalyticsDashboard = lazy(() => import("@/components/AnalyticsDashboard"));
+const CreditDashboard = lazy(() => import("@/components/CreditDashboard"));
+const AiUsageDashboard = lazy(() => import("@/components/AiUsageDashboard"));
+const AiTraining = lazy(() => import("@/components/AiTraining"));
+const ProductsManager = lazy(() => import("@/components/ProductsManager"));
+const ServicesManager = lazy(() => import("@/components/ServicesManager"));
+const LeadsManager = lazy(() => import("@/components/LeadsManager"));
+const PendingProducts = lazy(() => import("@/components/PendingProducts"));
+const ProductSuggestions = lazy(() => import("@/components/ProductSuggestions"));
+const WebsiteImport = lazy(() => import("@/components/WebsiteImport"));
+const OrdersManager = lazy(() => import("@/components/OrdersManager"));
+const ComplaintsManager = lazy(() => import("@/components/ComplaintsManager"));
+const ConversationsView = lazy(() => import("@/components/ConversationsView"));
+const AutoReplyRules = lazy(() => import("@/components/AutoReplyRules"));
+const ScheduledMessages = lazy(() => import("@/components/ScheduledMessages"));
+const FbPageConnection = lazy(() => import("@/components/FbPageConnection"));
+const BotSettings = lazy(() => import("@/components/BotSettings"));
+const AdminPanel = lazy(() => import("@/components/AdminPanel"));
 
 const tabs: Record<string, React.ComponentType> = {
   analytics: AnalyticsDashboard,
@@ -40,6 +42,12 @@ const tabs: Record<string, React.ComponentType> = {
   settings: BotSettings,
   admin: AdminPanel,
 };
+
+const TabFallback = () => (
+  <div className="flex items-center justify-center py-20">
+    <div className="h-8 w-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+  </div>
+);
 
 const Index = () => {
   const initialTab = (() => {
@@ -66,7 +74,9 @@ const Index = () => {
         style={{ marginLeft: sidebarCollapsed ? 72 : 240 }}
       >
         <div className="max-w-6xl mx-auto px-6 lg:px-8 py-8">
-          <ActiveComponent />
+          <Suspense fallback={<TabFallback />}>
+            <ActiveComponent />
+          </Suspense>
         </div>
       </main>
     </div>
