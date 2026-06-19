@@ -90,17 +90,13 @@ const BotSettings = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><MessageCircle className="h-5 w-5" /> Welcome Messages</CardTitle>
-            <CardDescription>The first message customers receive when they message your page.</CardDescription>
+            <CardTitle className="flex items-center gap-2"><MessageCircle className="h-5 w-5" /> Welcome Message</CardTitle>
+            <CardDescription>The first message customers receive when they message your page. Write it in the language you want the bot to use.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Welcome Message (বাংলা)</Label>
-              <Textarea value={settings.welcome_message || ""} onChange={e => update("welcome_message", e.target.value)} placeholder="আসসালামু আলাইকুম!" />
-            </div>
-            <div className="space-y-2">
-              <Label>Welcome Message (English)</Label>
-              <Textarea value={settings.welcome_message_en || ""} onChange={e => update("welcome_message_en", e.target.value)} placeholder="Welcome!" />
+              <Label>Welcome Message</Label>
+              <Textarea value={settings.welcome_message || ""} onChange={e => update("welcome_message", e.target.value)} placeholder="Type your welcome message…" />
             </div>
             <div className="space-y-2">
               <Label>Out of Stock Message</Label>
