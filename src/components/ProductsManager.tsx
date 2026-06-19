@@ -541,10 +541,10 @@ const ProductsManager = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Total Products", value: stats.total, color: "text-primary" },
-          { label: "Active", value: stats.active, color: "text-[hsl(var(--success))]" },
-          { label: "Inactive", value: stats.inactive, color: "text-destructive" },
-          { label: "Categories", value: stats.categories, color: "text-accent-foreground" },
+          { label: t("products.statTotal"), value: stats.total, color: "text-primary" },
+          { label: t("products.statActive"), value: stats.active, color: "text-[hsl(var(--success))]" },
+          { label: t("products.statInactive"), value: stats.inactive, color: "text-destructive" },
+          { label: t("products.statCategories"), value: stats.categories, color: "text-accent-foreground" },
         ].map(s => (
           <Card key={s.label} className="border-border/50">
             <CardContent className="p-4 text-center">
