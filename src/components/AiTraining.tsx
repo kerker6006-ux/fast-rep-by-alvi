@@ -207,6 +207,30 @@ const AiTraining = () => {
     setHasChanges(true);
   };
 
+  const loadStarterTemplate = async () => {
+    const preset = PRESET_TEMPLATES[cat];
+    let filled = 0;
+    const next: SettingsMap = { ...settings };
+    for (const [k, v] of Object.entries(preset)) {
+      if (!next[k] || !String(next[k]).trim()) {
+        next[k] = v;
+        filled++;
+      }
+    }
+    if (filled === 0) {
+      toast.info(t("aiTraining.templateAllSet"));
+      return;
+    }
+    setSettings(next);
+    setHasChanges(true);
+    try {
+      await persistSettings(next, t("aiTraining.templateLoaded", { count: filled }));
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save template");
+    }
+  };
+
+
   const faqList = parseSettingsJson<{ q: string; a: string }[]>(settings.faq_list, []);
   const neverSayList = parseSettingsJson<string[]>(settings.never_say_list, []);
 
