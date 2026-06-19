@@ -21,17 +21,15 @@ export const IG_SUBSCRIBED_FIELDS = [
   "message_reactions",
 ];
 
+// Only request scopes that are added to your Meta app via Use Cases.
+// Extra scopes (instagram_*, leads_retrieval, pages_manage_engagement) must
+// be added in App Dashboard → Use Cases → Customize before re-enabling here.
 export const OAUTH_SCOPES = [
   "pages_show_list",
   "pages_manage_metadata",
   "pages_messaging",
   "pages_read_engagement",
-  "pages_manage_engagement",
   "pages_read_user_content",
-  "leads_retrieval",
-  "instagram_basic",
-  "instagram_manage_messages",
-  "instagram_manage_comments",
 ];
 
 const enc = new TextEncoder();
