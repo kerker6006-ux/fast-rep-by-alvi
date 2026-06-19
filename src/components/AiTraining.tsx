@@ -686,12 +686,8 @@ const AiTraining = () => {
                   <Sparkles className="h-3 w-3" /> {t("aiTraining.quickAdd")}
                 </p>
                 <div className="grid gap-1.5">
-                  {[
-                    { q: t("autoReply.deliveryInfo"), a: settings.delivery_info || t("autoReply.deliveryResp") },
-                    { q: t("autoReply.paymentMethods"), a: settings.payment_methods || t("autoReply.paymentResp") },
-                    { q: t("autoReply.returnPolicy"), a: t("autoReply.returnResp") },
-                    { q: t("autoReply.businessHours"), a: t("autoReply.hoursResp") },
-                  ]
+                  {quickAdd
+                    .map(({ qKey, aKey }) => ({ q: t(qKey), a: t(aKey) }))
                     .filter((s) => !faqList.some((f: any) => f.q === s.q))
                     .map((s, i) => (
                       <button
