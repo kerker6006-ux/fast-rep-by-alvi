@@ -8,18 +8,28 @@ import { toast } from "sonner";
 import { Bot, Mail, Lock, User, ArrowRight, Loader2, Sparkles, Zap, Globe } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const Auth = () => {
   const { t } = useTranslation();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!isLogin) {
+      if (password.length < 8) return toast.error("Password must be at least 8 characters");
+      if (password !== confirmPassword) return toast.error("Passwords do not match");
+    }
     setLoading(true);
 
     if (isLogin) {
@@ -35,7 +45,7 @@ const Auth = () => {
         password,
         options: {
           data: { display_name: displayName },
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: `${window.location.origin}/dashboard`,
         },
       });
       if (error) toast.error(error.message);
@@ -45,6 +55,22 @@ const Auth = () => {
       }
     }
     setLoading(false);
+  };
+
+  const sendReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail) return;
+    setForgotLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setForgotLoading(false);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Reset email sent — check your inbox");
+      setForgotOpen(false);
+      setForgotEmail("");
+    }
   };
 
   return (
@@ -144,9 +170,27 @@ const Auth = () => {
                   <Label htmlFor="password" className="text-xs font-medium">{t("auth.password")}</Label>
                   <div className="relative">
                     <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="pl-10 h-11 rounded-xl" minLength={6} required />
+                    <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="pl-10 h-11 rounded-xl" minLength={isLogin ? 6 : 8} required />
                   </div>
                 </div>
+
+                {!isLogin && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="confirm" className="text-xs font-medium">Confirm password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input id="confirm" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" className="pl-10 h-11 rounded-xl" minLength={8} required />
+                    </div>
+                  </div>
+                )}
+
+                {isLogin && (
+                  <div className="text-right">
+                    <button type="button" onClick={() => { setForgotEmail(email); setForgotOpen(true); }} className="text-xs text-primary hover:underline">
+                      Forgot password?
+                    </button>
+                  </div>
+                )}
 
                 <Button type="submit" className="w-full h-11 rounded-xl gap-2 bg-gradient-primary hover:opacity-95 shadow-glow text-base font-medium" disabled={loading}>
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
@@ -160,6 +204,21 @@ const Auth = () => {
                   {isLogin ? t("auth.signUp") : t("auth.signIn")}
                 </button>
               </div>
+
+              <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+                <DialogContent>
+                  <DialogHeader><DialogTitle>Reset your password</DialogTitle></DialogHeader>
+                  <form onSubmit={sendReset} className="space-y-3 pt-2">
+                    <p className="text-sm text-muted-foreground">
+                      We'll email you a link to set a new password.
+                    </p>
+                    <Input type="email" placeholder="you@example.com" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} required />
+                    <Button type="submit" className="w-full" disabled={forgotLoading}>
+                      {forgotLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send reset link"}
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </div>
