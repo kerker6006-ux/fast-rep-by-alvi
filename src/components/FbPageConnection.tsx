@@ -275,11 +275,15 @@ const FbPageConnection = () => {
           </div>
           <div>
             <p className="font-medium mb-1">3. Site URL (Settings → Basic → + Add Platform → Website)</p>
-            <div className="flex items-center gap-2 bg-background rounded-md border px-3 py-2 font-mono text-xs">
-              <span className="flex-1 truncate">https://{frontendHost || "leadpilot.life"}</span>
-              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => copyText(`https://${frontendHost || "leadpilot.life"}`, "site")}>
-                {copiedField === "site" ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-              </Button>
+            <div className="space-y-1.5">
+              {["https://leadpilot.life", "https://www.leadpilot.life"].map((url) => (
+                <div key={url} className="flex items-center gap-2 bg-background rounded-md border px-3 py-2 font-mono text-xs">
+                  <span className="flex-1 truncate">{url}</span>
+                  <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => copyText(url, `site-${url}`)}>
+                    {copiedField === `site-${url}` ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                  </Button>
+                </div>
+              ))}
             </div>
           </div>
           <div className="pt-1">
