@@ -28,6 +28,7 @@ type OrderStatus = "pending" | "confirmed" | "processing" | "delivered" | "cance
 const OrdersManager = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [editingOrder, setEditingOrder] = useState<any>(null);
   const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
