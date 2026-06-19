@@ -1602,3 +1602,75 @@ async function detectAndCreateComplaint(
     console.error("Complaint detection error:", e);
   }
 }
+
+// ---- AI Receptionist: lead extraction ----
+async function extractAndSaveLead(supabase: any, apiKey: string, conversationId: string, userId: string | null) {
+  if (!userId || !apiKey) return;
+  try {
+    const { data: prof } = await supabase
+      .from("profiles").select("business_category").eq("id", userId).maybeSingle();
+    const category = prof?.business_category;
+    if (!category) return;
+
+    const { data: msgs } = await supabase
+      .from("messages").select("direction, content")
+      .eq("conversation_id", conversationId).order("created_at", { ascending: true }).limit(50);
+    if (!msgs?.length) return;
+
+    const transcript = msgs.map((m: any) => `${m.direction === "incoming" ? "Customer" : "Bot"}: ${m.content || ""}`).join("\n");
+
+    const fields = category === "ecommerce"
+      ? ["name", "phone", "service_or_product"]
+      : category === "hvac"
+      ? ["name", "phone", "address", "service_or_product", "preferred_date"]
+      : ["name", "phone", "service_or_product", "preferred_date"];
+
+    const sysPrompt = `Extract lead information from this Facebook Messenger conversation. Return ONLY a JSON object with these fields (null if not stated): ${fields.join(", ")}. Use null for missing values. Do not invent data.`;
+
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-lite",
+        messages: [
+          { role: "system", content: sysPrompt },
+          { role: "user", content: transcript.slice(-4000) },
+        ],
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const raw = data.choices?.[0]?.message?.content || "{}";
+    let parsed: any = {};
+    try { parsed = JSON.parse(raw); } catch { return; }
+
+    // Require at least name OR phone
+    if (!parsed.name && !parsed.phone) return;
+
+    // Upsert: one lead per conversation
+    const { data: existing } = await supabase
+      .from("leads").select("id").eq("conversation_id", conversationId).maybeSingle();
+
+    const payload: any = {
+      user_id: userId,
+      category,
+      conversation_id: conversationId,
+      source: "facebook",
+      name: parsed.name || null,
+      phone: parsed.phone || null,
+      address: parsed.address || null,
+      service_or_product: parsed.service_or_product || null,
+      preferred_date: parsed.preferred_date || null,
+    };
+
+    if (existing) {
+      await supabase.from("leads").update(payload).eq("id", existing.id);
+    } else {
+      await supabase.from("leads").insert(payload);
+    }
+    console.log("Lead saved for conversation:", conversationId);
+  } catch (e) {
+    console.error("Lead extraction error:", e);
+  }
+}
