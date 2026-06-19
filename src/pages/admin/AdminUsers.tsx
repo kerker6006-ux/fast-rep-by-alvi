@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -14,13 +14,65 @@ import { Search, Plus, Minus, Trash2, Ban, CheckCircle2, Coins, Globe, Package, 
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
+type AdjustMode = "add" | "remove";
+
+const AdjustCreditsDialog = ({ userId, displayName, mode, onDone }: { userId: string; displayName: string; mode: AdjustMode; onDone: () => void }) => {
+  const { t } = useTranslation();
+  const [amount, setAmount] = useState("");
+  const [note, setNote] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const mutate = useMutation({
+    mutationFn: async () => {
+      const value = mode === "add" ? Number(amount) : -Number(amount);
+      const { data, error } = await supabase.functions.invoke("admin-adjust-credits", {
+        body: { user_id: userId, amount: value, note },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      toast.success(t("admin.users.creditsUpdated"));
+      setAmount(""); setNote(""); setOpen(false);
+      onDone();
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className={mode === "remove" ? "text-amber-700 border-amber-300" : ""}>
+          {mode === "add" ? <Plus className="h-3.5 w-3.5 mr-1" /> : <Minus className="h-3.5 w-3.5 mr-1" />}
+          {mode === "add" ? t("admin.users.addCredits") : t("admin.users.removeCredits")}
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {mode === "add" ? t("admin.users.addCredits") : t("admin.users.removeCredits")} — {displayName}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 pt-2">
+          <Input type="number" placeholder={t("admin.users.amount")} value={amount} onChange={(e) => setAmount(e.target.value)} />
+          <Input placeholder={t("admin.users.notePlaceholder")} value={note} onChange={(e) => setNote(e.target.value)} />
+          <Button
+            className="w-full"
+            disabled={!amount || Number(amount) <= 0 || mutate.isPending}
+            onClick={() => mutate.mutate()}
+          >
+            {mode === "add" ? `+ ৳${amount || 0}` : `− ৳${amount || 0}`}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const AdminUsers = () => {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const [q, setQ] = useState("");
-  const [amount, setAmount] = useState("");
-  const [note, setNote] = useState("");
-  const [mode, setMode] = useState<"add" | "remove">("add");
 
   const { data: users, isLoading } = useQuery({
     queryKey: ["admin-users-full"],
@@ -29,7 +81,7 @@ const AdminUsers = () => {
         .from("profiles")
         .select("id, display_name, created_at, suspended")
         .order("created_at", { ascending: false });
-      const enriched = await Promise.all((profiles ?? []).map(async (p) => {
+      const enriched = await Promise.all((profiles ?? []).map(async (p: any) => {
         const [credits, products, orders, conversations, pages] = await Promise.all([
           supabase.from("user_credits").select("balance").eq("user_id", p.id).maybeSingle(),
           supabase.from("products").select("id", { count: "exact", head: true }).eq("user_id", p.id),
@@ -48,22 +100,6 @@ const AdminUsers = () => {
       }));
       return enriched;
     },
-  });
-
-  const adjust = useMutation({
-    mutationFn: async ({ userId, value }: { userId: string; value: number }) => {
-      const { data, error } = await supabase.functions.invoke("admin-adjust-credits", {
-        body: { user_id: userId, amount: value, note },
-      });
-      if (error) throw new Error(error.message);
-      if (data?.error) throw new Error(data.error);
-    },
-    onSuccess: () => {
-      toast.success(t("admin.users.creditsUpdated"));
-      qc.invalidateQueries({ queryKey: ["admin-users-full"] });
-      setAmount(""); setNote("");
-    },
-    onError: (e: any) => toast.error(e.message),
   });
 
   const suspend = useMutation({
@@ -86,7 +122,9 @@ const AdminUsers = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const filtered = (users ?? []).filter(u =>
+  const refresh = () => qc.invalidateQueries({ queryKey: ["admin-users-full"] });
+
+  const filtered = (users ?? []).filter((u: any) =>
     !q || u.display_name?.toLowerCase().includes(q.toLowerCase()) || u.id.toLowerCase().includes(q.toLowerCase())
   );
 
@@ -106,7 +144,7 @@ const AdminUsers = () => {
         <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-28 bg-slate-100 animate-pulse rounded-xl" />)}</div>
       ) : (
         <div className="grid gap-4">
-          {filtered.map((u) => (
+          {filtered.map((u: any) => (
             <Card key={u.id} className="border-0 shadow-soft hover:shadow-elevated transition-all">
               <CardContent className="p-5">
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4">
@@ -117,7 +155,6 @@ const AdminUsers = () => {
                     </div>
                     <p className="text-xs text-slate-500 font-mono mt-1 truncate">{u.id}</p>
                     <p className="text-xs text-slate-500 mt-0.5">{t("admin.users.joined")}: {new Date(u.created_at).toLocaleDateString()}</p>
-
                     <div className="flex gap-4 mt-3 text-xs text-slate-600 flex-wrap">
                       <span className="flex items-center gap-1"><Package className="h-3 w-3" />{u.productCount}</span>
                       <span className="flex items-center gap-1"><ShoppingCart className="h-3 w-3" />{u.orderCount}</span>
@@ -126,52 +163,21 @@ const AdminUsers = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <p className="text-[10px] uppercase text-slate-500 tracking-wide">{t("admin.users.balance")}</p>
-                      <p className="font-display text-2xl font-bold text-amber-600 flex items-center gap-1">
-                        <Coins className="h-5 w-5" /> ৳{u.balance.toLocaleString()}
-                      </p>
-                    </div>
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase text-slate-500 tracking-wide">{t("admin.users.balance")}</p>
+                    <p className="font-display text-2xl font-bold text-amber-600 flex items-center gap-1 justify-end">
+                      <Coins className="h-5 w-5" /> ৳{u.balance.toLocaleString()}
+                    </p>
                   </div>
 
                   <div className="flex gap-2 flex-wrap">
-                    <Dialog>
-                      <Button asChild size="sm" variant="outline">
-                        <span onClick={() => setMode("add")}><Plus className="h-3.5 w-3.5 mr-1" />{t("admin.users.addCredits")}</span>
-                      </Button>
-                    </Dialog>
-                    <Dialog>
-                      <DialogContent>
-                        <DialogHeader><DialogTitle>{mode === "add" ? t("admin.users.addCredits") : t("admin.users.removeCredits")}</DialogTitle></DialogHeader>
-                        <div className="space-y-3 pt-2">
-                          <Input type="number" placeholder={t("admin.users.amount")} value={amount} onChange={(e) => setAmount(e.target.value)} />
-                          <Input placeholder={t("admin.users.notePlaceholder")} value={note} onChange={(e) => setNote(e.target.value)} />
-                          <DialogClose asChild>
-                            <Button className="w-full" disabled={!amount || Number(amount) <= 0}
-                              onClick={() => adjust.mutate({ userId: u.id, value: mode === "add" ? Number(amount) : -Number(amount) })}>
-                              {mode === "add" ? `+ ৳${amount || 0}` : `- ৳${amount || 0}`}
-                            </Button>
-                          </DialogClose>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-
-                    <CreditDialog
-                      mode="add"
-                      onSubmit={(v, n) => adjust.mutate({ userId: u.id, value: v })}
-                      amount={amount} setAmount={setAmount} note={note} setNote={setNote}
-                    />
-                    <CreditDialog
-                      mode="remove"
-                      onSubmit={(v, n) => adjust.mutate({ userId: u.id, value: -v })}
-                      amount={amount} setAmount={setAmount} note={note} setNote={setNote}
-                    />
-
+                    <AdjustCreditsDialog userId={u.id} displayName={u.display_name || "User"} mode="add" onDone={refresh} />
+                    <AdjustCreditsDialog userId={u.id} displayName={u.display_name || "User"} mode="remove" onDone={refresh} />
                     <Button size="sm" variant="outline" onClick={() => suspend.mutate({ userId: u.id, suspended: !u.suspended })}>
-                      {u.suspended ? <><CheckCircle2 className="h-3.5 w-3.5 mr-1" />{t("admin.users.unsuspend")}</> : <><Ban className="h-3.5 w-3.5 mr-1" />{t("admin.users.suspend")}</>}
+                      {u.suspended
+                        ? <><CheckCircle2 className="h-3.5 w-3.5 mr-1" />{t("admin.users.unsuspend")}</>
+                        : <><Ban className="h-3.5 w-3.5 mr-1" />{t("admin.users.suspend")}</>}
                     </Button>
-
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button size="sm" variant="ghost" className="text-destructive hover:bg-destructive/10"><Trash2 className="h-3.5 w-3.5" /></Button>
@@ -198,30 +204,6 @@ const AdminUsers = () => {
         </div>
       )}
     </div>
-  );
-};
-
-// Simple credit dialog component
-const CreditDialog = ({ mode, onSubmit, amount, setAmount, note, setNote }: any) => {
-  const { t } = useTranslation();
-  return (
-    <Dialog>
-      <Button asChild size="sm" variant="outline" className={mode === "remove" ? "text-amber-700" : ""}>
-        <span>{mode === "add" ? <><Plus className="h-3.5 w-3.5 mr-1" />{t("admin.users.addCredits")}</> : <><Minus className="h-3.5 w-3.5 mr-1" />{t("admin.users.removeCredits")}</>}</span>
-      </Button>
-      <DialogContent>
-        <DialogHeader><DialogTitle>{mode === "add" ? t("admin.users.addCredits") : t("admin.users.removeCredits")}</DialogTitle></DialogHeader>
-        <div className="space-y-3 pt-2">
-          <Input type="number" placeholder={t("admin.users.amount")} value={amount} onChange={(e: any) => setAmount(e.target.value)} />
-          <Input placeholder={t("admin.users.notePlaceholder")} value={note} onChange={(e: any) => setNote(e.target.value)} />
-          <DialogClose asChild>
-            <Button className="w-full" disabled={!amount || Number(amount) <= 0} onClick={() => onSubmit(Number(amount), note)}>
-              {t("common.confirm")}
-            </Button>
-          </DialogClose>
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 };
 
