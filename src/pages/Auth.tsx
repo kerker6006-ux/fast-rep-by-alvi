@@ -66,7 +66,7 @@ const Auth = () => {
             <div className="h-11 w-11 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-glow">
               <Bot className="h-6 w-6 text-white" />
             </div>
-            <span className="font-display text-xl font-bold">Fast Rep</span>
+            <span className="font-display text-xl font-bold">LeadPilot</span>
           </div>
 
           <div className="space-y-8 max-w-lg">
@@ -108,7 +108,7 @@ const Auth = () => {
               <div className="h-11 w-11 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-glow">
                 <Bot className="h-6 w-6 text-white" />
               </div>
-              <span className="font-display text-xl font-bold">Fast Rep</span>
+              <span className="font-display text-xl font-bold">LeadPilot</span>
             </div>
 
             <div className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-8 shadow-elevated">

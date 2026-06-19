@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Fast Rep",
+    "name": "LeadPilot",
     "tagline": "AI Receptionist for Messenger"
   },
   "common": {
@@ -45,7 +45,7 @@
     "signIn": "Sign in",
     "signUp": "Create account",
     "signInTitle": "Welcome back",
-    "signUpTitle": "Get started with Fast Rep",
+    "signUpTitle": "Get started with LeadPilot",
     "signInSubtitle": "Enter your credentials to access your dashboard",
     "signUpSubtitle": "Create your account in seconds. No approval required.",
     "displayName": "Your name",
@@ -64,7 +64,7 @@
     "feature1": "1-click setup",
     "feature2": "4 languages",
     "feature3": "AI replies",
-    "copyright": "© 2026 Fast Rep · All rights reserved"
+    "copyright": "© 2026 LeadPilot · All rights reserved"
   },
   "nav": {
     "analytics": "Analytics",
@@ -535,7 +535,7 @@
     },
     "overview": {
       "title": "Platform Overview",
-      "subtitle": "Real-time snapshot of your Fast Rep platform.",
+      "subtitle": "Real-time snapshot of your LeadPilot platform.",
       "signups14d": "Signups (last 14 days)"
     },
     "users": {

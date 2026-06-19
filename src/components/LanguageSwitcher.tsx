@@ -15,7 +15,7 @@ const LanguageSwitcher = ({ collapsed = false, variant = "sidebar" }: Props) => 
 
   const change = (code: string) => {
     i18n.changeLanguage(code);
-    localStorage.setItem("fastrep_lang", code);
+    localStorage.setItem("leadpilot_lang", code);
   };
 
   if (variant === "floating") {

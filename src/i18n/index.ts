@@ -22,14 +22,14 @@ i18n
     detection: {
       order: ["localStorage", "navigator"],
       caches: ["localStorage"],
-      lookupLocalStorage: "fastrep_lang",
+      lookupLocalStorage: "leadpilot_lang",
     },
   });
 
 // Default to English on first visit (no detection bias)
-if (!localStorage.getItem("fastrep_lang")) {
+if (!localStorage.getItem("leadpilot_lang")) {
   i18n.changeLanguage("en");
-  localStorage.setItem("fastrep_lang", "en");
+  localStorage.setItem("leadpilot_lang", "en");
 }
 
 export default i18n;

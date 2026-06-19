@@ -34,7 +34,7 @@ const AdminLayout = () => {
             <Bot className="h-5 w-5 text-white" />
           </div>
           <div>
-            <p className="font-display font-bold text-base leading-none">Fast Rep</p>
+            <p className="font-display font-bold text-base leading-none">LeadPilot</p>
             <p className="text-[10px] text-slate-400 uppercase tracking-wider mt-0.5">{t("admin.console")}</p>
           </div>
         </div>

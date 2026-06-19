@@ -254,7 +254,7 @@ const FbPageConnection = () => {
           <div>
             <p className="font-medium mb-1">1. Settings → Basic → App Domains (add all of these)</p>
             <div className="space-y-1.5">
-              {[backendHost, frontendHost, "fast-rep-by-alvi.lovable.app"].filter(Boolean).map((d) => (
+              {[backendHost, frontendHost, "leadpilot.life"].filter(Boolean).map((d) => (
                 <div key={d} className="flex items-center gap-2 bg-background rounded-md border px-3 py-2 font-mono text-xs">
                   <span className="flex-1 truncate">{d}</span>
                   <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => copyText(d, `dom-${d}`)}>
@@ -276,8 +276,8 @@ const FbPageConnection = () => {
           <div>
             <p className="font-medium mb-1">3. Site URL (Settings → Basic → + Add Platform → Website)</p>
             <div className="flex items-center gap-2 bg-background rounded-md border px-3 py-2 font-mono text-xs">
-              <span className="flex-1 truncate">https://{frontendHost || "fast-rep-by-alvi.lovable.app"}</span>
-              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => copyText(`https://${frontendHost || "fast-rep-by-alvi.lovable.app"}`, "site")}>
+              <span className="flex-1 truncate">https://{frontendHost || "leadpilot.life"}</span>
+              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => copyText(`https://${frontendHost || "leadpilot.life"}`, "site")}>
                 {copiedField === "site" ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
               </Button>
             </div>
@@ -426,7 +426,7 @@ const FbPageConnection = () => {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Select a Facebook Page</DialogTitle>
-            <DialogDescription>Choose the page Fast Rep should manage. You can connect more later.</DialogDescription>
+            <DialogDescription>Choose the page LeadPilot should manage. You can connect more later.</DialogDescription>
           </DialogHeader>
           <div className="max-h-80 overflow-y-auto -mx-1 px-1 space-y-2">
             {loadingSession ? (

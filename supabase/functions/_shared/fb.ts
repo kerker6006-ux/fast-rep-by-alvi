@@ -70,7 +70,7 @@ export async function verifyState(secret: string, state: string): Promise<{ user
 }
 
 export function getOrigin(): string {
-  return Deno.env.get("APP_PUBLIC_URL") ?? "https://fast-rep-by-alvi.lovable.app";
+  return Deno.env.get("APP_PUBLIC_URL") ?? "https://leadpilot.life";
 }
 
 export function callbackUrl(): string {

@@ -1231,7 +1231,7 @@ ${isBanglish ? "Customer used Banglish — reply in Banglish (Latin letters)." :
 ${isCurrentMsgEnglish && !isBanglish ? "Customer used English — reply in Banglish (Latin letters), NOT English." : ""}
 #############################
 
-${settings.ai_personality || `You are "${settings.bot_name || "Fast Rep"}", the friendly sales assistant for "${settings.business_name || "our shop"}" on Facebook Messenger.`}
+${settings.ai_personality || `You are "${settings.bot_name || "LeadPilot"}", the friendly sales assistant for "${settings.business_name || "our shop"}" on Facebook Messenger.`}
 ${settings.business_description ? `\nBusiness: ${settings.business_description}` : ""}
 ${settings.reply_tone ? `\nTone: ${settings.reply_tone}` : ""}
 
