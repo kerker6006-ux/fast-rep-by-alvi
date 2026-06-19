@@ -13,7 +13,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Globe, Plus, Trash2, Copy, Check, RefreshCw, Loader2, Facebook, ChevronRight, Activity, Instagram } from "lucide-react";
+import { Globe, Plus, Trash2, Copy, Check, RefreshCw, Loader2, Facebook, ChevronRight, Activity, Instagram, AlertTriangle, ExternalLink } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useTranslation } from "react-i18next";
 
@@ -180,7 +180,18 @@ const FbPageConnection = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fb-webhook`;
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+  const webhookUrl = `${supabaseUrl}/functions/v1/fb-webhook`;
+  const oauthRedirectUri = `${supabaseUrl}/functions/v1/fb-oauth-callback`;
+  const backendHost = (() => { try { return new URL(supabaseUrl).host; } catch { return supabaseUrl; } })();
+  const frontendHost = typeof window !== "undefined" ? window.location.host : "";
+
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const copyText = (val: string, key: string) => {
+    navigator.clipboard.writeText(val);
+    setCopiedField(key);
+    setTimeout(() => setCopiedField(null), 1500);
+  };
   const copyWebhook = () => {
     navigator.clipboard.writeText(webhookUrl);
     setCopied(true);
@@ -225,6 +236,65 @@ const FbPageConnection = () => {
             Connect Facebook + Instagram
             <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
+        </CardContent>
+      </Card>
+
+      {/* Meta App configuration helper */}
+      <Card className="border-amber-500/40 bg-amber-50/40 dark:bg-amber-950/10">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            Seeing “domain of this URL isn’t included”? Configure your Meta App
+          </CardTitle>
+          <CardDescription>
+            Facebook blocks the login dialog until your Meta App allows these exact values. Copy and paste them into your Facebook Developer settings, then try Connect again.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm">
+          <div>
+            <p className="font-medium mb-1">1. Settings → Basic → App Domains (add all of these)</p>
+            <div className="space-y-1.5">
+              {[backendHost, frontendHost, "fast-rep-by-alvi.lovable.app"].filter(Boolean).map((d) => (
+                <div key={d} className="flex items-center gap-2 bg-background rounded-md border px-3 py-2 font-mono text-xs">
+                  <span className="flex-1 truncate">{d}</span>
+                  <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => copyText(d, `dom-${d}`)}>
+                    {copiedField === `dom-${d}` ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="font-medium mb-1">2. Use cases → Facebook Login → Settings → Valid OAuth Redirect URIs</p>
+            <div className="flex items-center gap-2 bg-background rounded-md border px-3 py-2 font-mono text-xs">
+              <span className="flex-1 truncate">{oauthRedirectUri}</span>
+              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => copyText(oauthRedirectUri, "redir")}>
+                {copiedField === "redir" ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+              </Button>
+            </div>
+          </div>
+          <div>
+            <p className="font-medium mb-1">3. Site URL (Settings → Basic → + Add Platform → Website)</p>
+            <div className="flex items-center gap-2 bg-background rounded-md border px-3 py-2 font-mono text-xs">
+              <span className="flex-1 truncate">https://{frontendHost || "fast-rep-by-alvi.lovable.app"}</span>
+              <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => copyText(`https://${frontendHost || "fast-rep-by-alvi.lovable.app"}`, "site")}>
+                {copiedField === "site" ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+              </Button>
+            </div>
+          </div>
+          <div className="pt-1">
+            <a
+              href="https://developers.facebook.com/apps/"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-primary hover:underline text-xs font-medium"
+            >
+              Open Facebook Developer Console <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+          <p className="text-xs text-muted-foreground border-t pt-3">
+            Tip: after saving in Meta, wait ~30 seconds, then click Connect again. If your app is still in Development mode, make sure your Facebook account is added under App Roles → Roles/Testers.
+          </p>
         </CardContent>
       </Card>
 
