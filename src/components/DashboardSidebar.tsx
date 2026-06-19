@@ -10,6 +10,7 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useBusinessCategory } from "@/hooks/useBusinessCategory";
 import { useNavigate } from "react-router-dom";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import ChangePasswordDialog from "@/components/ChangePasswordDialog";
 
 type NavItem = { id: string; labelKey: string; icon: React.ElementType; adminOnly?: boolean; show?: (cat: string | null | undefined) => boolean };
 
