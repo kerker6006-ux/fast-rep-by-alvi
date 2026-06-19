@@ -750,7 +750,7 @@ const ProductsManager = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="font-semibold text-sm truncate">{p.name}</p>
-                            {!p.is_active && <Badge variant="destructive" className="text-[9px]">Hidden</Badge>}
+                            {!p.is_active && <Badge variant="destructive" className="text-[9px]">{t("products.hidden")}</Badge>}
                           </div>
                           {p.description && <p className="text-xs text-muted-foreground truncate mt-0.5">{p.description}</p>}
                           <div className="flex flex-wrap gap-1 mt-1">
