@@ -207,7 +207,7 @@ const ProductsManager = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast.success(editingProduct ? "Product updated!" : "Product added!");
+      toast.success(editingProduct ? t("products.updated") : t("products.added"));
       resetForm();
     },
     onError: (e) => toast.error(e.message),
@@ -220,7 +220,7 @@ const ProductsManager = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast.success("Product deleted!");
+      toast.success(t("products.deleted"));
     },
   });
 
