@@ -11,13 +11,13 @@ const AdminAnalytics = () => {
     queryFn: async () => {
       const { data: usage } = await supabase
         .from("ai_usage")
-        .select("user_id, tokens_used, cost, created_at")
+        .select("user_id, estimated_cost, created_at")
         .order("created_at", { ascending: false })
         .limit(2000);
       // Group cost per user
       const perUser: Record<string, number> = {};
       (usage ?? []).forEach((u: any) => {
-        perUser[u.user_id] = (perUser[u.user_id] || 0) + Number(u.cost || 0);
+        perUser[u.user_id] = (perUser[u.user_id] || 0) + Number(u.estimated_cost || 0);
       });
       const top = Object.entries(perUser)
         .sort(([, a], [, b]) => b - a)
