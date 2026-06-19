@@ -681,7 +681,7 @@ const ProductsManager = () => {
               <div className="flex items-center gap-3 mb-4">
                 <div className="h-8 w-1 rounded-full bg-primary" />
                 <h3 className="text-lg font-bold text-foreground">{category}</h3>
-                <Badge variant="secondary" className="text-xs font-normal">{prods.length} {prods.length === 1 ? "item" : "items"}</Badge>
+                <Badge variant="secondary" className="text-xs font-normal">{prods.length} {prods.length === 1 ? t("products.itemSingular") : t("products.itemPlural")}</Badge>
               </div>
 
               {viewMode === "grid" ? (
