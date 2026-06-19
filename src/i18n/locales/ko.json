@@ -88,7 +88,17 @@
     "language": "언어",
     "services": "서비스",
     "leads": "리드",
-    "appointments": "예약"
+    "appointments": "예약",
+    "chatsByCat": {
+      "dental": "환자 대화",
+      "hvac": "고객 대화",
+      "salon": "고객 대화"
+    },
+    "complaintsByCat": {
+      "dental": "환자 이슈",
+      "hvac": "서비스 이슈",
+      "salon": "고객 이슈"
+    }
   },
   "settings": {
     "language": "언어"
