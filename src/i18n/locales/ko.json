@@ -349,7 +349,16 @@
         "deposit": "예약금이 필요한가요?",
         "depositA": "컬러와 긴 시술은 20% 예약금이 필요합니다."
       }
-    }
+    },
+    "profileTitle": "비즈니스 프로필",
+    "profileProgress": "{{total}}개 중 {{filled}}개 완료",
+    "profileComplete": "프로필 완료 — 저장 준비됨",
+    "notSetYet": "아직 설정되지 않음",
+    "askAi": "AI에게 묻기",
+    "askHintPrefix": "다음 항목을 설정해 주세요:",
+    "resetConversation": "대화 초기화",
+    "itemsLabel": "개",
+    "businessName": "비즈니스 이름"
   },
   "autoReply": {
     "title": "자동 응답 규칙",
