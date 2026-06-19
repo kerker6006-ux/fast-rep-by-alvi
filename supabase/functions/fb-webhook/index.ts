@@ -56,31 +56,34 @@ serve(async (req) => {
       const body = await req.json();
       console.log("Received webhook:", JSON.stringify(body).slice(0, 500));
 
-      if (body.object !== "page") {
-        return new Response("Not a page event", { status: 200, headers: corsHeaders });
+      const isInstagram = body.object === "instagram";
+      if (body.object !== "page" && !isInstagram) {
+        return new Response("Not a page/instagram event", { status: 200, headers: corsHeaders });
       }
 
       const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
       for (const entry of body.entry || []) {
-        const pageId = entry.id;
+        const entryId = entry.id;
 
-        // Look up which user owns this FB page
+        // Lookup the owning fb_pages row.
+        // For "page" object: entry.id is the FB Page ID.
+        // For "instagram" object: entry.id is the IG Business Account ID.
+        const lookupColumn = isInstagram ? "ig_business_account_id" : "fb_page_id";
         const { data: fbPage } = await supabase
           .from("fb_pages")
-          .select("user_id, page_access_token, is_active")
-          .eq("fb_page_id", pageId)
+          .select("user_id, page_access_token, is_active, fb_page_id, ig_business_account_id")
+          .eq(lookupColumn, entryId)
           .eq("is_active", true)
           .maybeSingle();
 
         if (!fbPage) {
-          // Fallback to global token for backward compatibility
+          // Fallback to global token for backward compatibility (FB-only)
           const fallbackToken = Deno.env.get("FB_PAGE_ACCESS_TOKEN");
-          if (!fallbackToken) {
-            console.error("No fb_page found for page_id:", pageId, "and no fallback token");
+          if (isInstagram || !fallbackToken) {
+            console.error("No fb_page found for", lookupColumn, entryId);
             continue;
           }
-          // Try to find any active fb_page to get the user_id
           const { data: anyPage } = await supabase
             .from("fb_pages")
             .select("user_id")
@@ -91,13 +94,16 @@ serve(async (req) => {
           const fallbackSettings = fallbackUserId ? await loadSettings(supabase, fallbackUserId) : {};
           console.log("Using fallback token with user_id:", fallbackUserId);
           for (const event of entry.messaging || []) {
-            await handleMessagingEvent(supabase, event, pageId, fallbackToken, LOVABLE_API_KEY, fallbackSettings, fallbackUserId);
+            await handleMessagingEvent(supabase, event, entryId, fallbackToken, LOVABLE_API_KEY, fallbackSettings, fallbackUserId, "facebook");
           }
           continue;
         }
 
         const PAGE_ACCESS_TOKEN = fbPage.page_access_token;
         const userId = fbPage.user_id;
+        const platform: "facebook" | "instagram" = isInstagram ? "instagram" : "facebook";
+        // For IG, use IG account id as "pageId" identity in send helpers
+        const selfId = isInstagram ? fbPage.ig_business_account_id : fbPage.fb_page_id;
 
         // Load user-specific settings
         const settings = await loadSettings(supabase, userId);
@@ -108,19 +114,23 @@ serve(async (req) => {
           continue;
         }
 
-        // Handle messaging events (DMs)
+        // Handle messaging events (DMs) — same shape on FB and IG
         for (const event of entry.messaging || []) {
-          await handleMessagingEvent(supabase, event, pageId, PAGE_ACCESS_TOKEN, LOVABLE_API_KEY, settings, userId);
+          await handleMessagingEvent(supabase, event, selfId, PAGE_ACCESS_TOKEN, LOVABLE_API_KEY, settings, userId, platform);
         }
 
-        // Handle feed/comment events & page post auto-import
+        // Handle changes (FB feed + IG comments)
         for (const change of entry.changes || []) {
-          if (change.field === "feed") {
+          if (isInstagram) {
+            if (change.field === "comments") {
+              await handleIgCommentEvent(supabase, change.value, PAGE_ACCESS_TOKEN, settings, userId, LOVABLE_API_KEY, selfId);
+            }
+            // Future: mentions, message_reactions
+          } else if (change.field === "feed") {
             if (change.value?.item === "comment") {
               await handleCommentEvent(supabase, change.value, PAGE_ACCESS_TOKEN, settings, userId, LOVABLE_API_KEY);
             } else if (change.value?.item === "photo" || change.value?.item === "status") {
-              // Auto-import product from page post
-              await handlePagePostEvent(supabase, change.value, userId, LOVABLE_API_KEY, pageId, settings);
+              await handlePagePostEvent(supabase, change.value, userId, LOVABLE_API_KEY, entryId, settings);
             }
           }
         }
@@ -226,6 +236,76 @@ async function handleCommentEvent(
   }
 }
 
+// ---- Instagram Comment Handler (public reply + DM handoff) ----
+
+async function handleIgCommentEvent(
+  supabase: any, value: any, pageAccessToken: string,
+  settings: Record<string, string>, userId: string | null,
+  lovableApiKey: string | undefined, igUserId: string | null
+) {
+  if (settings.ig_comment_auto_reply === "false") return;
+  const commentId = value?.id;
+  if (!commentId) return;
+  // Skip our own page's comments
+  if (igUserId && value?.from?.id === igUserId) return;
+
+  const commentText = value?.text || "";
+  const isBangla = /[\u0980-\u09FF]/.test(commentText);
+  const lang = isBangla ? "Bangla" : "English";
+
+  // Build short public reply with AI (kept tiny)
+  let publicReply = isBangla
+    ? "ধন্যবাদ! আপনাকে DM করছি 📩"
+    : "Thanks! Check your DMs 📩";
+  if (lovableApiKey && settings.comment_ai_reply !== "false") {
+    try {
+      const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Lovable-API-Key": lovableApiKey },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-lite",
+          messages: [
+            { role: "system", content: `Reply to an Instagram comment in ${lang}. Max 6 words, friendly, tell them to check DMs. ${settings.manual_instructions || ""}` },
+            { role: "user", content: commentText || "(no text)" },
+          ],
+          max_tokens: 40,
+        }),
+      });
+      const j = await aiRes.json();
+      const c = j.choices?.[0]?.message?.content?.trim();
+      if (c) publicReply = c.slice(0, 120);
+    } catch (e) { console.error("IG comment AI error:", e); }
+  }
+
+  // 1) Public reply on the comment
+  try {
+    await fetch(`https://graph.facebook.com/v21.0/${commentId}/replies?access_token=${pageAccessToken}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: publicReply }),
+    });
+  } catch (e) { console.error("IG public reply failed:", e); }
+
+  // 2) Private DM handoff via Private Replies API
+  if (settings.ig_comment_dm_handoff !== "false") {
+    try {
+      const dmText = isBangla
+        ? (settings.ig_dm_handoff_text_bn || "হ্যালো! আপনার কমেন্টের জন্য ধন্যবাদ — কীভাবে সাহায্য করতে পারি? 🙂")
+        : (settings.ig_dm_handoff_text || "Hi! Thanks for your comment — how can I help? 🙂");
+      const res = await fetch(`https://graph.facebook.com/v21.0/me/messages?access_token=${pageAccessToken}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipient: { comment_id: commentId },
+          message: { text: dmText },
+        }),
+      });
+      if (!res.ok) console.error("IG DM handoff error:", res.status, await res.text());
+    } catch (e) { console.error("IG DM handoff failed:", e); }
+  }
+}
+
+
 // ---- Page Post Auto-Import Handler ----
 
 async function handlePagePostEvent(
@@ -317,7 +397,8 @@ async function handlePagePostEvent(
 async function handleMessagingEvent(
   supabase: any, event: any, pageId: string,
   pageAccessToken: string, lovableApiKey: string | undefined,
-  settings: Record<string, string>, userId: string | null
+  settings: Record<string, string>, userId: string | null,
+  platform: "facebook" | "instagram" = "facebook"
 ) {
   const senderId = event.sender?.id;
   if (!senderId) return;
@@ -330,7 +411,7 @@ async function handleMessagingEvent(
   const fbMessageId = event.message?.mid || null;
 
   // Get or create conversation (with user_id)
-  const conversationId = await getOrCreateConversation(supabase, senderId, pageAccessToken, userId);
+  const conversationId = await getOrCreateConversation(supabase, senderId, pageAccessToken, userId, platform);
   if (!conversationId) return;
 
   let imageUrl: string | null = null;
@@ -473,36 +554,40 @@ async function handleMessagingEvent(
 // ---- Helper Functions ----
 
 async function getOrCreateConversation(
-  supabase: any, senderId: string, pageAccessToken: string, userId: string | null
+  supabase: any, senderId: string, pageAccessToken: string, userId: string | null,
+  channel: "facebook" | "instagram" = "facebook"
 ): Promise<string | null> {
   let query = supabase.from("conversations").select("id").eq("fb_sender_id", senderId);
   if (userId) query = query.eq("user_id", userId);
   const { data: existingConvo } = await query.maybeSingle();
 
-  // Always try to fetch sender name from FB profile
+  // Try to fetch sender name. For Instagram, the IG Graph profile endpoint differs
+  // (we get a username via /{igsid}?fields=name,username with the page token).
   let senderName = null;
   try {
+    const fields = channel === "instagram" ? "name,username" : "first_name,last_name";
     const profileRes = await fetch(
-      `https://graph.facebook.com/${senderId}?fields=first_name,last_name&access_token=${pageAccessToken}`
+      `https://graph.facebook.com/v21.0/${senderId}?fields=${fields}&access_token=${pageAccessToken}`
     );
     const profile = await profileRes.json();
-    if (profile.first_name || profile.last_name) {
+    if (channel === "instagram") {
+      senderName = profile.name || profile.username || null;
+    } else if (profile.first_name || profile.last_name) {
       senderName = `${profile.first_name || ""} ${profile.last_name || ""}`.trim();
     }
-    console.log("FB profile for", senderId, ":", JSON.stringify(profile));
+    console.log(`[${channel}] profile for`, senderId, ":", JSON.stringify(profile));
   } catch (e) {
-    console.error("FB profile fetch error:", e);
+    console.error("Profile fetch error:", e);
   }
 
   if (existingConvo) {
-    // Update sender_name if we got one and it's currently missing
     if (senderName) {
-      await supabase.from("conversations").update({ sender_name: senderName }).eq("id", existingConvo.id);
+      await supabase.from("conversations").update({ sender_name: senderName, channel }).eq("id", existingConvo.id);
     }
     return existingConvo.id;
   }
 
-  const insertData: any = { fb_sender_id: senderId, sender_name: senderName };
+  const insertData: any = { fb_sender_id: senderId, sender_name: senderName, channel };
   if (userId) insertData.user_id = userId;
 
   const { data: newConvo, error } = await supabase

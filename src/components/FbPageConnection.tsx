@@ -13,7 +13,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Globe, Plus, Trash2, Copy, Check, RefreshCw, Loader2, Facebook, ChevronRight, Activity } from "lucide-react";
+import { Globe, Plus, Trash2, Copy, Check, RefreshCw, Loader2, Facebook, ChevronRight, Activity, Instagram } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useTranslation } from "react-i18next";
 
@@ -28,9 +28,12 @@ type FbPage = {
   subscription_status?: string | null;
   subscription_error?: string | null;
   verify_token?: string | null;
+  ig_business_account_id?: string | null;
+  ig_username?: string | null;
+  ig_subscription_status?: string | null;
 };
 
-type SessionPage = { id: string; name: string; category: string | null; picture_url: string | null };
+type SessionPage = { id: string; name: string; category: string | null; picture_url: string | null; ig_username?: string | null };
 
 const FB_BLUE = "#1877F2";
 
@@ -207,8 +210,8 @@ const FbPageConnection = () => {
               <Facebook className="h-7 w-7 text-white" />
             </div>
             <div>
-              <h3 className="font-semibold text-lg">Connect with Facebook</h3>
-              <p className="text-sm text-muted-foreground">One click. Pick a page. We handle the rest — webhook, tokens, subscriptions.</p>
+              <h3 className="font-semibold text-lg">Connect Facebook & Instagram</h3>
+              <p className="text-sm text-muted-foreground">One click. Pick a page. We auto-subscribe DMs, comments, feed — and any linked Instagram Business account.</p>
             </div>
           </div>
           <Button
@@ -219,7 +222,7 @@ const FbPageConnection = () => {
             style={{ backgroundColor: FB_BLUE }}
           >
             {startOAuth.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Facebook className="h-4 w-4 mr-2" />}
-            Connect Facebook Page
+            Connect Facebook + Instagram
             <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </CardContent>
@@ -259,6 +262,17 @@ const FbPageConnection = () => {
                     </div>
                     {statusBadge(page.subscription_status, page.is_active)}
                   </div>
+
+                  {page.ig_username && (
+                    <div className="flex items-center gap-2 text-xs bg-gradient-to-r from-fuchsia-500/10 to-orange-400/10 border border-fuchsia-500/20 rounded-md px-2 py-1.5">
+                      <Instagram className="h-3.5 w-3.5 text-fuchsia-600" />
+                      <span className="font-medium">@{page.ig_username}</span>
+                      <span className="text-muted-foreground">·</span>
+                      <span className={page.ig_subscription_status === "active" ? "text-emerald-600" : "text-amber-600"}>
+                        {page.ig_subscription_status === "active" ? "DMs + comments live" : (page.ig_subscription_status || "pending")}
+                      </span>
+                    </div>
+                  )}
 
                   {page.subscription_error && (
                     <p className="text-xs text-destructive bg-destructive/10 rounded-md px-2 py-1">{page.subscription_error}</p>
@@ -365,7 +379,14 @@ const FbPageConnection = () => {
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="font-medium truncate">{p.name}</p>
-                    {p.category && <p className="text-xs text-muted-foreground truncate">{p.category}</p>}
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      {p.category && <span className="truncate">{p.category}</span>}
+                      {p.ig_username && (
+                        <span className="flex items-center gap-1 text-fuchsia-600">
+                          <Instagram className="h-3 w-3" /> @{p.ig_username}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   {selectedPage === p.id && <Check className="h-4 w-4 text-primary" />}
                 </button>
