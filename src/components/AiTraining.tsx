@@ -261,7 +261,31 @@ const AiTraining = () => {
 
   // ---- Chat Functions ----
 
-  const startChat = async () => {
+  const chatLang = settings.training_chat_language || "";
+  const LANG_OPTIONS: { code: string; label: string }[] = [
+    { code: "en", label: "English" },
+    { code: "bn", label: "বাংলা" },
+    { code: "es", label: "Español" },
+    { code: "ko", label: "한국어" },
+  ];
+  const chatLangLabel = LANG_OPTIONS.find((l) => l.code === chatLang)?.label || "";
+
+  const setChatLanguage = async (code: string) => {
+    const next = { ...settings, training_chat_language: code };
+    setSettings(next);
+    try {
+      await upsertSettings({ training_chat_language: code });
+      await queryClient.invalidateQueries({ queryKey: ["bot-settings", user?.id] });
+      const label = LANG_OPTIONS.find((l) => l.code === code)?.label || code;
+      toast.success(t("aiTraining.languageLockedToast", { lang: label }));
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save language");
+    }
+  };
+
+  const startChat = async (overrideLang?: string) => {
+    const lang = overrideLang || chatLang;
+    if (!lang) return; // picker handles this
     setChatStarted(true);
     setIsChatLoading(true);
     try {
@@ -270,6 +294,7 @@ const AiTraining = () => {
           messages: [{ role: "user", content: "Hi, I want to set up my bot. Help me." }],
           settings,
           category: cat,
+          language: lang,
         },
       });
       if (error) throw error;
@@ -298,7 +323,7 @@ const AiTraining = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke("ai-training-chat", {
-        body: { messages: newMessages, settings, category: cat },
+        body: { messages: newMessages, settings, category: cat, language: chatLang },
       });
       if (error) throw error;
       if (data.error) throw new Error(data.error);
@@ -321,7 +346,7 @@ const AiTraining = () => {
     setIsGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke("ai-training-chat", {
-        body: { messages: chatMessages, action: "generate_settings", settings, category: cat },
+        body: { messages: chatMessages, action: "generate_settings", settings, category: cat, language: chatLang },
       });
       if (error) throw error;
       if (data.error) throw new Error(data.error);
@@ -357,6 +382,25 @@ const AiTraining = () => {
       } catch { /* ignore */ }
     }
   };
+
+  const changeChatLanguage = async () => {
+    // Clear language + history, return to picker
+    setChatMessages([]);
+    setChatStarted(false);
+    const next = { ...settings };
+    delete next.training_chat_language;
+    setSettings(next);
+    if (user?.id) {
+      try {
+        await supabase
+          .from("bot_settings")
+          .delete()
+          .eq("user_id", user.id)
+          .in("setting_key", ["training_chat_language", "ai_training_chat_history"]);
+      } catch { /* ignore */ }
+    }
+  };
+
 
 
   // ---- Manual helpers ----
