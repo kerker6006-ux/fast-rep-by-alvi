@@ -189,10 +189,10 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
     setPendingData(null);
     setMessages(prev => [...prev, {
       role: "user",
-      content: "No, let me adjust some details."
+      content: t("products.wAdjustReply"),
     }]);
     // AI will respond to continue the conversation
-    sendToAi([...messages, { role: "user", content: "No, let me adjust some details. What should I change?" }]);
+    sendToAi([...messages, { role: "user", content: t("products.wAdjustReply") }]);
   };
 
   const handleReset = () => {
