@@ -95,8 +95,8 @@ const LeadsManager = () => {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">{t("leads.title")}</h2>
-          <p className="text-muted-foreground">{t("leads.subtitle")}</p>
+          <h2 className="text-2xl font-bold tracking-tight">{t(`${ns}.title`)}</h2>
+          <p className="text-muted-foreground">{t(`${ns}.subtitle`)}</p>
         </div>
         <Button variant="outline" onClick={exportCsv} disabled={filtered.length === 0}>
           <Download className="h-4 w-4 mr-2" />{t("leads.export")}
