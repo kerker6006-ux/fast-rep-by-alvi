@@ -92,6 +92,8 @@ const AiTraining = () => {
   const isEcom = cat === "ecommerce";
   const catFields = CATEGORY_FIELDS[cat];
   const quickAdd = QUICK_ADD_BY_CAT[cat];
+  const [settings, setSettings] = useState<SettingsMap>({});
+  const [hasChanges, setHasChanges] = useState(false);
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
