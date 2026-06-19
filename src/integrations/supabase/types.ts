@@ -220,34 +220,82 @@ export type Database = {
         }
         Relationships: []
       }
-      fb_pages: {
+      fb_oauth_sessions: {
         Row: {
           created_at: string
+          expires_at: string
+          pages: Json
+          session_token: string
+          user_access_token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          pages: Json
+          session_token: string
+          user_access_token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          pages?: Json
+          session_token?: string
+          user_access_token?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      fb_pages: {
+        Row: {
+          connected_at: string | null
+          created_at: string
+          disconnected_at: string | null
           fb_page_id: string
           id: string
           is_active: boolean
+          last_sync_at: string | null
           page_access_token: string
           page_name: string | null
+          page_picture_url: string | null
+          subscribed_fields: string[] | null
+          subscription_error: string | null
+          subscription_status: string | null
           user_id: string
           verify_token: string
         }
         Insert: {
+          connected_at?: string | null
           created_at?: string
+          disconnected_at?: string | null
           fb_page_id: string
           id?: string
           is_active?: boolean
+          last_sync_at?: string | null
           page_access_token: string
           page_name?: string | null
+          page_picture_url?: string | null
+          subscribed_fields?: string[] | null
+          subscription_error?: string | null
+          subscription_status?: string | null
           user_id: string
           verify_token?: string
         }
         Update: {
+          connected_at?: string | null
           created_at?: string
+          disconnected_at?: string | null
           fb_page_id?: string
           id?: string
           is_active?: boolean
+          last_sync_at?: string | null
           page_access_token?: string
           page_name?: string | null
+          page_picture_url?: string | null
+          subscribed_fields?: string[] | null
+          subscription_error?: string | null
+          subscription_status?: string | null
           user_id?: string
           verify_token?: string
         }
