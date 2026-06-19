@@ -32,14 +32,18 @@ Deno.serve(async (req) => {
     }
 
     const state = await signState(appSecret, data.claims.sub);
+    const configId = Deno.env.get("FB_CONFIG_ID") ?? "28436308939291186";
     const params = new URLSearchParams({
       client_id: appId,
       redirect_uri: callbackUrl(),
       state,
-      scope: OAUTH_SCOPES.join(","),
       response_type: "code",
-      auth_type: "rerequest",
+      config_id: configId,
     });
+    if (!configId) {
+      params.set("scope", OAUTH_SCOPES.join(","));
+      params.set("auth_type", "rerequest");
+    }
     const url = `https://www.facebook.com/v21.0/dialog/oauth?${params.toString()}`;
     return new Response(JSON.stringify({ url }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
