@@ -326,6 +326,10 @@ export type Database = {
           disconnected_at: string | null
           fb_page_id: string
           id: string
+          ig_business_account_id: string | null
+          ig_picture_url: string | null
+          ig_subscription_status: string | null
+          ig_username: string | null
           is_active: boolean
           last_sync_at: string | null
           page_access_token: string
@@ -343,6 +347,10 @@ export type Database = {
           disconnected_at?: string | null
           fb_page_id: string
           id?: string
+          ig_business_account_id?: string | null
+          ig_picture_url?: string | null
+          ig_subscription_status?: string | null
+          ig_username?: string | null
           is_active?: boolean
           last_sync_at?: string | null
           page_access_token: string
@@ -360,6 +368,10 @@ export type Database = {
           disconnected_at?: string | null
           fb_page_id?: string
           id?: string
+          ig_business_account_id?: string | null
+          ig_picture_url?: string | null
+          ig_subscription_status?: string | null
+          ig_username?: string | null
           is_active?: boolean
           last_sync_at?: string | null
           page_access_token?: string
