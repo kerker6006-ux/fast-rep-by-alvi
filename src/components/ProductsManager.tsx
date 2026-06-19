@@ -668,11 +668,11 @@ const ProductsManager = () => {
       ) : filteredProducts.length === 0 ? (
         <Card className="p-12 text-center border-dashed">
           <Package className="h-14 w-14 mx-auto text-muted-foreground/30 mb-4" />
-          <h3 className="text-lg font-semibold">No products {filterCategory !== "all" ? `in "${filterCategory}"` : "yet"}</h3>
+          <h3 className="text-lg font-semibold">{filterCategory !== "all" ? t("products.emptyInCat", { cat: filterCategory }) : t("products.noProducts")}</h3>
           <p className="text-muted-foreground mt-1 text-sm max-w-md mx-auto">
-            Add products with images, categories, and let AI generate perfect descriptions for your bot.
+            {t("products.emptyDesc")}
           </p>
-          <Button className="mt-4 gap-2" onClick={() => setIsOpen(true)}><Plus className="h-4 w-4" /> Add Your First Product</Button>
+          <Button className="mt-4 gap-2" onClick={() => setIsOpen(true)}><Plus className="h-4 w-4" /> {t("products.emptyCta")}</Button>
         </Card>
       ) : (
         <div className="space-y-8">
