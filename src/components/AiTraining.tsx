@@ -567,6 +567,9 @@ const AiTraining = () => {
                   )}
                 </div>
               ))}
+            </CardContent>
+          </Card>
+
 
           {/* Welcome */}
           <Card>
