@@ -7,16 +7,27 @@ import { useTranslation } from "react-i18next";
 
 const AdminFbPages = () => {
   const { t } = useTranslation();
-  const { data: pages, isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["admin-all-fb-pages"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("fb_pages")
-        .select("id, fb_page_id, page_name, page_picture_url, is_active, subscription_status, user_id, connected_at, last_sync_at")
-        .order("created_at", { ascending: false });
-      return data ?? [];
+      const [{ data: pages }, { data: emailRes }, { data: profiles }] = await Promise.all([
+        supabase
+          .from("fb_pages")
+          .select("id, fb_page_id, page_name, page_picture_url, is_active, subscription_status, user_id, connected_at, last_sync_at")
+          .order("created_at", { ascending: false }),
+        supabase.functions.invoke("admin-list-users").then((r) => ({ data: r.data })).catch(() => ({ data: { emails: {} } })),
+        supabase.from("profiles").select("id, display_name"),
+      ]);
+      const emails: Record<string, string> = emailRes?.emails ?? {};
+      const names: Record<string, string> = Object.fromEntries((profiles ?? []).map((p: any) => [p.id, p.display_name]));
+      return (pages ?? []).map((p: any) => ({
+        ...p,
+        owner_email: emails[p.user_id] ?? null,
+        owner_name: names[p.user_id] ?? null,
+      }));
     },
   });
+  const pages = data;
 
   return (
     <div className="space-y-6">
