@@ -2,20 +2,23 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBusinessCategory, BUSINESS_CATEGORIES, BusinessCategory } from "@/hooks/useBusinessCategory";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
-import { Save, Globe, MessageCircle, Info } from "lucide-react";
+import { Save, Globe, MessageCircle, Info, Briefcase } from "lucide-react";
 
 const BotSettings = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { category, setCategory } = useBusinessCategory();
   const [settings, setSettings] = useState<Record<string, string>>({});
 
   const { data: dbSettings, isLoading } = useQuery({
