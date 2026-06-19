@@ -302,7 +302,9 @@ const AiTraining = () => {
       });
       if (error) throw error;
       if (data.error) throw new Error(data.error);
-      setChatMessages([...newMessages, { role: "assistant", content: data.reply }]);
+      const finalMsgs = [...newMessages, { role: "assistant" as const, content: data.reply }];
+      setChatMessages(finalMsgs);
+      persistChatHistory(finalMsgs);
     } catch (e: any) {
       toast.error(e.message || "Failed to get response");
       setChatMessages(newMessages);
