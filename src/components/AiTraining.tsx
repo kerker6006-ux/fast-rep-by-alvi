@@ -162,12 +162,37 @@ const AiTraining = () => {
 
   useEffect(() => {
     if (!dbSettings || hasChanges) return;
-    setSettings(buildSettingsMap(dbSettings));
+    const map = buildSettingsMap(dbSettings);
+    setSettings(map);
+    // Hydrate persisted chat history once per settings load
+    const raw = map.ai_training_chat_history;
+    if (raw && chatMessages.length === 0) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setChatMessages(parsed);
+          setChatStarted(true);
+        }
+      } catch { /* ignore */ }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dbSettings, hasChanges]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
+
+  // Persist chat history to bot_settings (best-effort, non-blocking)
+  const persistChatHistory = async (msgs: ChatMessage[]) => {
+    if (!user?.id) return;
+    try {
+      await supabase.from("bot_settings").upsert(
+        [{ user_id: user.id, setting_key: "ai_training_chat_history", setting_value: JSON.stringify(msgs) }] as any,
+        { onConflict: "user_id,setting_key" } as any,
+      );
+    } catch { /* ignore */ }
+  };
+
 
   const upsertSettings = async (nextSettings: SettingsMap) => {
     if (!user?.id) throw new Error("Please log in again.");
