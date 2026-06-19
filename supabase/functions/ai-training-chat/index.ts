@@ -12,7 +12,8 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, action, settings } = await req.json();
+    const { messages, action, settings, category } = await req.json();
+    const cat: string = (category && ["ecommerce", "dental", "hvac", "salon"].includes(category)) ? category : "ecommerce";
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
