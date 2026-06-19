@@ -358,7 +358,11 @@
     "askHintPrefix": "অনুগ্রহ করে সেট করতে সাহায্য করুন:",
     "resetConversation": "কথোপকথন রিসেট",
     "itemsLabel": "টি",
-    "businessName": "ব্যবসার নাম"
+    "businessName": "ব্যবসার নাম",
+    "chooseLanguageTitle": "কোন ভাষায় কথা বলব?",
+    "chooseLanguageDesc": "আপনি পরিবর্তন করতে না বলা পর্যন্ত আমি এই ভাষাতেই উত্তর দেব।",
+    "changeLanguage": "ভাষা পরিবর্তন",
+    "languageLockedToast": "প্রশিক্ষণ চ্যাটের ভাষা সেট হয়েছে: {{lang}}।"
   },
   "autoReply": {
     "title": "অটো-রিপ্লাই নিয়ম",
