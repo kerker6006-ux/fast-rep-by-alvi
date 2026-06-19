@@ -4,6 +4,7 @@ import { ShieldCheck, Loader2, Lock, Mail, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { checkAdminRole } from "@/lib/admin-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,17 +36,8 @@ const AdminLogin = () => {
       });
       if (error) throw error;
 
-      // Verify admin role
-      const uid = data.user?.id;
-      if (!uid) throw new Error("No user");
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", uid)
-        .eq("role", "admin")
-        .maybeSingle();
-
-      if (!roles) {
+      const isAdministrator = await checkAdminRole(data.session);
+      if (!isAdministrator) {
         await supabase.auth.signOut();
         throw new Error("This account is not an administrator.");
       }
