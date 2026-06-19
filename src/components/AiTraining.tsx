@@ -510,6 +510,7 @@ const AiTraining = () => {
               </CardContent>
             </Card>
           ) : (
+            <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
             <Card className="flex flex-col" style={{ height: "calc(100vh - 260px)", minHeight: "400px" }}>
               {/* Chat Header */}
               <CardHeader className="pb-2 pt-3 px-4 flex-row items-center justify-between space-y-0 border-b">
@@ -529,12 +530,10 @@ const AiTraining = () => {
                     {isGenerating ? t("aiTraining.generating") : t("aiTraining.applySettings")}
                   </Button>
                   <Button variant="ghost" size="sm" onClick={resetChat} className="h-7 text-xs gap-1">
-                    <RotateCcw className="h-3 w-3" /> {t("aiTraining.reset")}
+                    <RotateCcw className="h-3 w-3" /> {t("aiTraining.resetConversation")}
                   </Button>
                 </div>
               </CardHeader>
-
-
 
               {/* Chat Messages */}
               <ScrollArea className="flex-1 px-4 py-3">
@@ -596,6 +595,15 @@ const AiTraining = () => {
                 </p>
               </div>
             </Card>
+
+            {/* Live Business Profile Summary */}
+            <ProfileSummaryPanel
+              cat={cat}
+              settings={settings}
+              catFields={catFields}
+              onAsk={(label) => setChatInput(t("aiTraining.askHintPrefix") + " " + label)}
+            />
+            </div>
           )}
         </TabsContent>
 
