@@ -476,7 +476,10 @@
     "toastAiFail": "AI generation failed",
     "toastFilledByAi": "Product details filled by AI! Review and save.",
     "toastVariantReady": "Variant \"{{color}}\" ready — find \"{{product}}\" and add it.",
-    "aiWizard": "AI Wizard"
+    "aiWizard": "AI Wizard",
+    "itemSingular": "item",
+    "itemPlural": "items",
+    "hidden": "Hidden"
   },
   "pendingProducts": {
     "title": "Auto-Import Queue",

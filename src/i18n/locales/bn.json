@@ -476,7 +476,10 @@
     "toastAiFail": "AI তৈরি ব্যর্থ",
     "toastFilledByAi": "AI পণ্যের তথ্য পূরণ করেছে! দেখে সেভ করুন।",
     "toastVariantReady": "ভ্যারিয়েন্ট \"{{color}}\" প্রস্তুত — \"{{product}}\" খুঁজে যোগ করুন।",
-    "aiWizard": "AI উইজার্ড"
+    "aiWizard": "AI উইজার্ড",
+    "itemSingular": "আইটেম",
+    "itemPlural": "আইটেম",
+    "hidden": "লুকানো"
   },
   "pendingProducts": {
     "title": "অটো-ইমপোর্ট কিউ",

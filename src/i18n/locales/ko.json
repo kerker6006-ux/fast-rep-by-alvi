@@ -476,7 +476,10 @@
     "toastAiFail": "AI 생성 실패",
     "toastFilledByAi": "AI가 상품 정보를 채웠습니다! 확인 후 저장하세요.",
     "toastVariantReady": "옵션 \"{{color}}\" 준비 완료 — \"{{product}}\"를 찾아 추가하세요.",
-    "aiWizard": "AI 마법사"
+    "aiWizard": "AI 마법사",
+    "itemSingular": "개",
+    "itemPlural": "개",
+    "hidden": "숨김"
   },
   "pendingProducts": {
     "title": "자동 가져오기 대기열",

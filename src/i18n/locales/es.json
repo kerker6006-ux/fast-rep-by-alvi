@@ -476,7 +476,10 @@
     "toastAiFail": "La generación de IA falló",
     "toastFilledByAi": "¡Detalles del producto rellenados por IA! Revisa y guarda.",
     "toastVariantReady": "Variante \"{{color}}\" lista — busca \"{{product}}\" y añádela.",
-    "aiWizard": "Asistente de IA"
+    "aiWizard": "Asistente de IA",
+    "itemSingular": "artículo",
+    "itemPlural": "artículos",
+    "hidden": "Oculto"
   },
   "pendingProducts": {
     "title": "Cola de auto-importación",
