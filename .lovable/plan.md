@@ -1,58 +1,45 @@
-# Self-Learning AI Training + Chat-Level Corrections
+# Full Project Health Audit
 
-Add two new training capabilities, both scoped per-user (existing RLS already isolates each user's data — no DB users get mixed).
+I checked everything end-to-end: database, RLS, edge functions, admin panel, bot logic, UI lazy-loading, and recent changes. Here's the report.
 
-## 1. Auto-Learn from Real Conversations
+## ✅ What's healthy
 
-A scheduled / on-demand analyzer that reads the user's own past messages, finds patterns + bot mistakes, and proposes settings updates the user must confirm before they apply.
+- **Database**: 5 users, 17 products, 279 conversations, 4,628 messages, 6 orders, 869 recharges, 1,068 AI usage rows. All flowing.
+- **Edge functions**: 21 functions deployed, all booting in 25–450ms, no crash loops.
+- **FB webhook**: Receiving messages on the connected Dipto page, dedup index in place, credit checks active.
+- **Multi-tenant RLS**: 22/23 public tables have policies, all scoped by `user_id` + admin escape hatch.
+- **Recent fixes** (language picker, lazy-loaded routes, admin-list-users edge function, user_roles grants, AdminLogin race fix) — all live and working.
+- **Lazy loading**: App.tsx + Index.tsx now ship per-route and per-tab chunks. Initial JS is tiny.
 
-**New edge function:** `ai-auto-learn`
-- Pulls last N (default 100) messages from `conversations` + `messages` for the calling user only (scoped by `user_id`).
-- Sends them to Gemini with a prompt that extracts:
-  - Recurring customer question patterns → suggested FAQ additions
-  - Bot replies that got negative follow-ups ("না", "wrong", "you didn't understand", repeat questions) → suggested fixes
-  - New product/keyword mentions not yet in catalog → suggested auto-reply rules
-  - Tone/length issues
-- Returns a structured `suggestions[]` array (type, before, after, reason). Nothing is saved yet.
+## ⚠️ Issues found (5)
 
-**New table:** `training_suggestions`
-- Columns: id, user_id, kind (faq | rule | personality | example | never_say), payload (jsonb), reason, status (pending | applied | rejected), created_at.
-- RLS: user can only see/modify their own rows. GRANTs for authenticated + service_role.
+### 1. `fb_oauth_sessions` has RLS enabled but **zero policies** → table is fully locked
+Nothing can read or write it from the client. If FB OAuth ever goes through PostgREST it will silently fail. Need either: a policy, or confirm it's only touched by edge functions (service-role bypasses RLS) and leave it locked.
 
-**New UI in AI Training page:** "Auto-Learn" tab
-- Button: "Analyze my last 100 conversations"
-- Shows each suggestion as a card with Before / After / Why
-- Per-card Approve / Reject buttons
-- Approve → merges into `bot_settings` (FAQ list append, never_say append, personality patch, etc.) and marks suggestion `applied`
-- Reject → marks `rejected`
-- Fully translated (en/bn/ko/es)
+### 2. Public storage bucket `product-images` allows directory listing
+Anyone can list every uploaded image URL. Should restrict `storage.objects` SELECT policy to authenticated owners while keeping individual file URLs public for FB Messenger delivery.
 
-## 2. Per-Chat Bot Correction
+### 3. SECURITY DEFINER functions exposed to anon/authenticated
+3 functions (likely `handle_new_user`, `handle_new_user_credits`, `update_updated_at_column`) are callable by signed-in users. Should `REVOKE EXECUTE ... FROM anon, authenticated` — they only need to run from triggers.
 
-In the Chats view, let the user select an assistant message and tell the bot how it should have replied. This becomes a training example.
+### 4. Leaked-password protection disabled in Auth
+Users can sign up with passwords known to be in breach lists. One-toggle fix in Cloud auth config.
 
-**Changes to `ConversationsView.tsx`:**
-- On each outgoing (bot) message: small "Train" / pencil icon
-- Click opens a dialog: shows the original customer message + bot reply, with a textarea "How should the bot have replied?" and optional "Why was this wrong?"
-- Submit → inserts into `training_suggestions` as kind=`example` with payload `{customer, wrong_reply, correct_reply, reason}`, status=`pending`
-- User then approves it in the Auto-Learn tab (same approval flow), which appends to `bot_settings.reply_examples`
+### 5. Admin sees other users' data in regular dashboard
+You hit this with kerker6006: the "Admins read all products" RLS policy means when an admin opens the normal Products tab they see every tenant's products. Same applies to orders, conversations, etc. Confusing in daily use. **Fix:** scope the normal dashboard queries to `user_id = auth.uid()` explicitly in the client code, so cross-tenant view only happens inside `/admin/*` pages.
 
-**Optional fast path:** an "Apply immediately" checkbox in the dialog that skips the suggestion queue and writes directly to `reply_examples` — still per-user, still RLS-scoped.
+## 📋 Minor observations (not blockers)
 
-## 3. Data Isolation (confirmation, no new work)
+- `leads`, `services`, `training_suggestions`, `admin_audit_log` each have only 1 policy — verify they cover INSERT/UPDATE/DELETE if the app writes to them.
+- `send-scheduled` is being invoked ~every 20s (cron). Healthy, just noisy in logs.
+- No errors in console; only a harmless `RESET_BLANK_CHECK` warning from the Lovable preview shell.
 
-Already enforced — `bot_settings`, `conversations`, `messages`, `training_suggestions` all carry `user_id` with RLS `auth.uid() = user_id`. The new function uses the caller's JWT and never reads cross-user. No shared storage between accounts.
+## Proposed implementation order
 
-## Files
+1. **Migration**: revoke EXECUTE on 3 SECURITY DEFINER functions; add a deny-all policy or service-role policy on `fb_oauth_sessions`.
+2. **Migration**: tighten `storage.objects` SELECT policy on `product-images` bucket (keep file URLs publicly fetchable, block bucket listing).
+3. **Frontend**: in `ProductsManager`, `OrdersManager`, `ConversationsView`, `ComplaintsManager` etc., add `.eq("user_id", user.id)` filters so admins see only their own data in the regular dashboard. Admin cross-tenant view stays under `/admin/*`.
+4. **Auth config**: enable leaked-password protection in Lovable Cloud auth settings.
+5. Verify with a fresh login as kerker6006 and as abraralvi to confirm each one sees only their own products in `/dashboard` while admin panel still shows everything.
 
-- New: `supabase/functions/ai-auto-learn/index.ts`
-- New migration: `training_suggestions` table + RLS + GRANTs
-- New: `src/components/AutoLearnPanel.tsx` (suggestions list + approve/reject)
-- New: `src/components/TrainBotDialog.tsx` (per-message correction dialog)
-- Edit: `src/components/AiTraining.tsx` — add "Auto-Learn" tab
-- Edit: `src/components/ConversationsView.tsx` — add Train button on bot messages
-- Edit: `src/i18n/locales/{en,bn,ko,es}.json` — new keys
-
-## Out of scope
-- No automatic background cron — user clicks "Analyze" (cheaper, predictable). Can add cron later if requested.
-- No model retraining; we update bot settings/examples that the existing reply pipeline already reads.
+Approve and I'll ship all 5 fixes.
