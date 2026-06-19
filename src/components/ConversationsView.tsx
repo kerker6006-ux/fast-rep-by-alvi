@@ -178,6 +178,7 @@ const ConversationsView = () => {
           )}
         </Card>
       </div>
+      <TrainBotDialog open={trainOpen} onOpenChange={setTrainOpen} customerMessage={trainData.customer} wrongReply={trainData.wrong} />
     </div>
   );
 };
