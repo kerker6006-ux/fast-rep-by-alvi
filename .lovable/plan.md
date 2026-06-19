@@ -1,54 +1,44 @@
-## What's happening
+## Goal
+Eliminate all language mixing in the Credits section and Welcome Message settings, and display all pricing in US dollars/cents with clear per-message and per-image calculations.
 
-Facebook is rejecting the login dialog because your **redirect URI's domain isn't whitelisted** in the Facebook App settings. This is a config change inside developers.facebook.com — no code change can fix it.
+## Changes
 
-Our OAuth callback URL is:
-```
-https://urtpathqupraeokaigzz.supabase.co/functions/v1/fb-oauth-callback
-```
+### 1. `src/components/CreditDashboard.tsx` — English only, USD only
+- Remove the Bangla/English `Tabs` entirely. Keep one English version of the pricing card, recharge card, and "How the AI Bot Works" card.
+- Replace every `৳` symbol with `$` and reformat numbers (e.g. `$0.003 / message`, `$0.015 / image`).
+- Subtitle: "Your credit balance and recharge info" (no Bangla).
+- Balance label: "Current Balance" only.
+- Transaction History title: "Transaction History" only. Transaction type label: "Recharge" only (drop "রিচার্জ").
+- Recharge section: rename "Recharge via bKash" → "Recharge" with a generic instruction ("Contact admin to add credits to your account"), since bKash/Taka context no longer fits a USD UI. (If you prefer to keep bKash wording, say so and I'll keep it in English only.)
+- Add a small "What you get" helper block under the pricing card:
+  ```
+  $0.10 (10¢) gets you approximately:
+   • ~33 AI text replies   (at $0.003 each)
+   • ~6 AI image replies   (at $0.015 each)
+  ```
 
-And users return to your app at:
-```
-https://fast-rep-by-alvi.lovable.app
-https://id-preview--8dfc4fd9-3e32-491b-b4d5-e6f5960d40f3.lovable.app
-```
+### 2. Pricing rates (USD)
+Default rates stored in `bot_settings` switch from Taka to dollars:
+- `credit_cost_text`: **$0.003** per text reply (0.3¢)
+- `credit_cost_image`: **$0.015** per image reply (1.5¢)
 
-## Fix (do this in Facebook Developer Console)
+So per 10¢:
+- Text messages: 10 / 0.3 ≈ **33 messages**
+- Image replies: 10 / 1.5 ≈ **6 images** (1 image = **1.5¢**)
 
-### 1. App Domains
-**Settings → Basic → App Domains** — add all three:
-```
-urtpathqupraeokaigzz.supabase.co
-fast-rep-by-alvi.lovable.app
-lovable.app
-```
-Then click **Save Changes** at the bottom.
+These are the defaults shown when a user has no override. Existing DB values are left untouched (no migration), so anyone with custom rates keeps them; only the displayed currency symbol and the fallback defaults change.
 
-### 2. Site URL
-Same page, scroll down → **+ Add Platform → Website → Site URL**:
-```
-https://fast-rep-by-alvi.lovable.app
-```
-Save.
+### 3. Welcome message — single field
+Remove the dual Bangla + English welcome inputs in both places. The user picks ONE welcome message in their chosen language.
 
-### 3. Valid OAuth Redirect URI
-**Use cases → Customize → Facebook Login for Business → Settings** (or the product where your Configuration ID `28436308939291186` lives) → **Valid OAuth Redirect URIs** — add:
-```
-https://urtpathqupraeokaigzz.supabase.co/functions/v1/fb-oauth-callback
-```
-Save changes.
+- `src/components/BotSettings.tsx` (lines ~93–105): remove the "Welcome Message (English)" textarea and `welcome_message_en` field. Keep a single "Welcome Message" textarea bound to `welcome_message` with a neutral placeholder ("Type your welcome message…").
+- `src/components/AiTraining.tsx` (lines ~488–505): same — remove the `welcome_message_en` input, keep only `welcome_message` with neutral placeholder.
+- The webhook/bot runtime already reads `welcome_message`; the `_en` field simply stops being written. No backend change required.
 
-### 4. App Mode
-Top bar of the app dashboard — if it says **"In development"**, only listed test users / admins can log in. Either:
-- Add the testing FB account under **App roles → Roles → Add People → Testers**, OR
-- Switch the app to **Live** mode (requires a privacy policy URL in Settings → Basic).
+### 4. Out of scope (not touched)
+- Product prices (`ProductsManager`, `OrdersManager`, `AnalyticsDashboard`, admin recharge views) still use ৳ because those are merchant-facing local-currency sales numbers, not platform billing. Tell me if you want those switched to $ too.
+- No DB migration; no edge function changes.
 
-## After saving
-
-Wait ~30 seconds, then click **Connect Facebook Page** again. The dialog should load instead of showing the domain error.
-
-If it still fails, send a screenshot of the new error — most likely it will be a different message (permissions, app mode, or business verification) and I'll walk you through that next.
-
-## No code changes in this plan
-
-Everything above is Facebook dashboard config. Approve this plan only as confirmation you've read it — there's nothing for me to build until you report back what happens after updating the FB settings.
+## Technical notes
+- Default fallbacks in `CreditDashboard.tsx` change: `Number(settingsMap.credit_cost_text) || 0.003` and `… || 0.015`.
+- Format helper: show `$${cost.toFixed(3)}` for text and `$${cost.toFixed(3)}` for image so sub-cent values render correctly.
