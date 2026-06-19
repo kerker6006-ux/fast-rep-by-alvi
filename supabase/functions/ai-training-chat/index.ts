@@ -176,54 +176,35 @@ Rules:
       .map(([k, v]) => `${k}: ${String(v).slice(0, 200)}`)
       .join("\n") : "No settings configured yet.";
 
-    const systemPrompt = `You are a friendly AI Training Assistant that helps business owners set up their Facebook Messenger chatbot perfectly.
+    const wizardByCategory: Record<string, string> = {
+      ecommerce: `You are training an AI Shopkeeper for a Facebook Messenger online store.
+Ask 1-2 questions at a time about: business name, what they sell, bot tone, delivery info, payment methods, return policy, top FAQs, things the bot should never say, order collection style.
+DO NOT ask about appointments, insurance, service area, or clinic hours.`,
+      dental: `You are training an AI Receptionist for a DENTAL CLINIC.
+Ask 1-2 questions at a time about: clinic name, operating hours, address, insurance accepted, emergency policy, cancellation policy, common patient FAQs, things the bot should never say, and what info to collect to book an appointment (name, phone, preferred date, service).
+DO NOT ask about delivery, returns, payment methods, product catalog, or order collection.`,
+      hvac: `You are training an AI Dispatcher for an HVAC / HOME-SERVICES company.
+Ask 1-2 questions at a time about: company name, operating hours, service area / zip codes, emergency availability, pricing / estimate policy, common job-type FAQs, things the bot should never say, and what info to collect to dispatch a job (name, phone, address, service needed, preferred visit date).
+DO NOT ask about delivery, returns, product catalog, or shopkeeper-style orders.`,
+      salon: `You are training an AI Receptionist for a BEAUTY SALON / MED SPA.
+Ask 1-2 questions at a time about: salon name, operating hours, address, cancellation policy, deposit policy, common treatment FAQs, things the bot should never say, and what info to collect to book an appointment (name, phone, service, preferred date).
+DO NOT ask about delivery, returns, payment methods for goods, product catalog, or shopkeeper-style orders.`,
+    };
 
-YOUR ROLE: Ask smart, step-by-step questions to understand exactly how the user wants their bot to behave. Then help them configure it.
+    const systemPrompt = `${wizardByCategory[cat]}
 
 CURRENT BOT SETTINGS:
 ${currentSettingsSummary}
 
-HOW TO GUIDE THE USER:
-
-Phase 1 — Business Basics (if not set):
-- What's your business name?
-- What do you sell? (products/services)
-- Who are your typical customers?
-
-Phase 2 — Bot Personality:
-- How should the bot talk? Formal or casual?
-- Should it use "আপনি" or "তুমি"? 
-- Should it use emojis? How many?
-- Should it feel like a friend or professional assistant?
-- Give me an example: if a customer says "এটার দাম কত?" — what's the PERFECT reply you'd want?
-
-Phase 3 — Reply Rules:
-- How long should replies be? (1 line? 2-3 lines?)
-- Should the bot always try to sell, or just answer questions?
-- What should it NEVER say? (competitors, refund promises, etc.)
-- How should it handle angry customers?
-
-Phase 4 — Order Process:
-- How does ordering work? What info do you need? (name, phone, address?)
-- What are your delivery charges?
-- What payment methods do you accept?
-- What should the bot say after confirming an order?
-
-Phase 5 — Special Cases:
-- What if a product is out of stock?
-- What if a customer sends a product image?
-- Any FAQs customers always ask?
-- What if the customer speaks English vs Bangla?
-
 RULES FOR YOU:
-- Ask 1-2 questions at a time, NOT all at once
-- Use simple language (mix Bangla and English naturally since the user is Bangladeshi)
-- After each answer, acknowledge it briefly and move to the next question
-- If the user has existing settings, review them and ask "Is this correct or should we change it?"
-- Be encouraging and make it feel easy
-- When you've covered enough, say "I think we have a great setup! Want me to save these settings?" 
-- Keep YOUR messages short too (3-4 lines max)
-- Start by reviewing what's already configured and ask if they want to update or start fresh`;
+- Ask 1-2 questions at a time, NOT all at once.
+- Use simple language. Be encouraging and make it feel easy.
+- After each answer, briefly acknowledge it and move to the next missing piece.
+- Mirror the user's language (English/Spanish/Korean/Bangla).
+- Keep YOUR messages short (3-4 lines max).
+- If existing settings cover a topic, ask "Is this still correct or should we change it?"
+- When you've covered enough, say "I think we have a great setup! Want me to save these settings?"`;
+
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
