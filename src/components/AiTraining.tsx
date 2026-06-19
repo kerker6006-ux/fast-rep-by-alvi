@@ -246,7 +246,7 @@ const AiTraining = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke("ai-training-chat", {
-        body: { messages: newMessages, settings },
+        body: { messages: newMessages, settings, category: cat },
       });
       if (error) throw error;
       if (data.error) throw new Error(data.error);
@@ -267,7 +267,7 @@ const AiTraining = () => {
     setIsGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke("ai-training-chat", {
-        body: { messages: chatMessages, action: "generate_settings", settings },
+        body: { messages: chatMessages, action: "generate_settings", settings, category: cat },
       });
       if (error) throw error;
       if (data.error) throw new Error(data.error);
