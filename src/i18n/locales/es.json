@@ -772,5 +772,46 @@
   "appointments": {
     "title": "Citas",
     "subtitle": "Reservas capturadas por tu Recepcionista IA."
+  },
+  "autoLearn": {
+    "tab": "Auto-aprendizaje",
+    "title": "Auto-aprendizaje",
+    "desc": "El bot analiza tus conversaciones recientes y sugiere mejoras. Nada se aplica sin tu aprobación.",
+    "analyzeBtn": "Analizar últimas 100 conversaciones",
+    "analyzing": "Analizando...",
+    "analyzedOk": "{{n}} sugerencias encontradas",
+    "pending": "Sugerencias pendientes",
+    "pendingDesc": "Aprueba para aplicar al bot.",
+    "empty": "Sin sugerencias todavía.",
+    "approve": "Aplicar",
+    "reject": "Rechazar",
+    "applied": "Aplicado",
+    "rejected": "Rechazado",
+    "customerSaid": "El cliente dijo",
+    "wrongReply": "Respuesta incorrecta",
+    "correctReply": "Respuesta correcta",
+    "keyword": "Palabra clave",
+    "response": "Respuesta",
+    "fromChat": "Desde chat",
+    "fromAuto": "Auto-aprendido",
+    "kind": {
+      "faq": "FAQ",
+      "rule": "Auto-respuesta",
+      "personality": "Personalidad",
+      "example": "Respuesta ejemplo",
+      "never_say": "Nunca decir"
+    }
+  },
+  "trainBot": {
+    "button": "Entrenar",
+    "title": "Entrenar al bot",
+    "desc": "Dile al bot cómo debería haber respondido. Se guarda para tu aprobación.",
+    "customer": "Mensaje del cliente",
+    "wrong": "El bot respondió",
+    "correct": "Cómo debería responder",
+    "correctPh": "Escribe la mejor respuesta...",
+    "reason": "¿Por qué fue incorrecto?",
+    "submit": "Guardar para entrenar",
+    "saved": "Guardado. Apruébalo en Entrenamiento IA → Auto-aprendizaje."
   }
 }
