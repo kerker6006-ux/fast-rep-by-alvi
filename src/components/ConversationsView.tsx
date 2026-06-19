@@ -141,7 +141,9 @@ const ConversationsView = () => {
               </div>
               <ScrollArea className="flex-1 p-4">
                 <div className="space-y-3">
-                  {messages?.map(m => (
+                  {messages?.map((m, idx) => {
+                    const prevIncoming = [...(messages ?? [])].slice(0, idx).reverse().find(x => x.direction === "incoming");
+                    return (
                     <div key={m.id} className={`flex ${m.direction === "outgoing" ? "justify-end" : "justify-start"}`}>
                       <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
                         m.direction === "outgoing"
@@ -152,12 +154,24 @@ const ConversationsView = () => {
                           <img src={m.image_url} alt="" className="rounded-lg max-w-[200px] mb-2" />
                         )}
                         {m.content && <p className="text-sm whitespace-pre-wrap">{m.content}</p>}
-                        <p className={`text-xs mt-1 ${m.direction === "outgoing" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                          {m.direction === "outgoing" ? "🤖 Bot" : "👤 Customer"} · {new Date(m.created_at).toLocaleTimeString()}
-                        </p>
+                        <div className="flex items-center justify-between gap-2 mt-1">
+                          <p className={`text-xs ${m.direction === "outgoing" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                            {m.direction === "outgoing" ? "🤖 Bot" : "👤 Customer"} · {new Date(m.created_at).toLocaleTimeString()}
+                          </p>
+                          {m.direction === "outgoing" && (
+                            <button
+                              onClick={() => { setTrainData({ customer: prevIncoming?.content ?? "", wrong: m.content ?? "" }); setTrainOpen(true); }}
+                              className="text-[10px] underline opacity-80 hover:opacity-100 flex items-center gap-0.5"
+                              title={t("trainBot.title")}
+                            >
+                              <GraduationCap className="h-3 w-3" /> {t("trainBot.button")}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </ScrollArea>
             </>
