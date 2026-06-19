@@ -195,8 +195,8 @@ const FbPageConnection = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Facebook Connections</h2>
-        <p className="text-muted-foreground">Connect your Facebook Pages so Fast Rep can auto-reply on Messenger and capture leads.</p>
+        <h2 className="text-2xl font-bold tracking-tight">{t("fbPages.title")}</h2>
+        <p className="text-muted-foreground">{t("fbPages.subtitle")}</p>
       </div>
 
       {/* Connect CTA */}

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ type Suggestion = {
 };
 
 const ProductSuggestions = () => {
+  const { t } = useTranslation();
   const qc = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -64,10 +66,10 @@ const ProductSuggestions = () => {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <Lightbulb className="h-6 w-6 text-primary" /> Product Suggestions
+          <Lightbulb className="h-6 w-6 text-primary" /> {t("suggestions.title")}
         </h2>
         <p className="text-muted-foreground">
-          Products customers asked for that you don't sell yet. Sorted by demand.
+          {t("suggestions.subtitle")}
         </p>
       </div>
 
