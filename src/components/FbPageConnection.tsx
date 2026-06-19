@@ -13,7 +13,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Globe, Plus, Trash2, Copy, Check, RefreshCw, Loader2, Facebook, ChevronRight, Activity } from "lucide-react";
+import { Globe, Plus, Trash2, Copy, Check, RefreshCw, Loader2, Facebook, ChevronRight, Activity, Instagram } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useTranslation } from "react-i18next";
 
@@ -28,6 +28,9 @@ type FbPage = {
   subscription_status?: string | null;
   subscription_error?: string | null;
   verify_token?: string | null;
+  ig_business_account_id?: string | null;
+  ig_username?: string | null;
+  ig_subscription_status?: string | null;
 };
 
 type SessionPage = { id: string; name: string; category: string | null; picture_url: string | null };
