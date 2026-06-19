@@ -210,8 +210,8 @@ const FbPageConnection = () => {
               <Facebook className="h-7 w-7 text-white" />
             </div>
             <div>
-              <h3 className="font-semibold text-lg">Connect with Facebook</h3>
-              <p className="text-sm text-muted-foreground">One click. Pick a page. We handle the rest — webhook, tokens, subscriptions.</p>
+              <h3 className="font-semibold text-lg">Connect Facebook & Instagram</h3>
+              <p className="text-sm text-muted-foreground">One click. Pick a page. We auto-subscribe DMs, comments, feed — and any linked Instagram Business account.</p>
             </div>
           </div>
           <Button
@@ -222,7 +222,7 @@ const FbPageConnection = () => {
             style={{ backgroundColor: FB_BLUE }}
           >
             {startOAuth.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Facebook className="h-4 w-4 mr-2" />}
-            Connect Facebook Page
+            Connect Facebook + Instagram
             <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </CardContent>
