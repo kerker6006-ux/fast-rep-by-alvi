@@ -272,8 +272,6 @@ const ProductsManager = () => {
         <div>
           <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <Package className="h-6 w-6 text-primary" />
-          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Package className="h-6 w-6 text-primary" />
             {t("products.title")}
           </h2>
           <p className="text-muted-foreground text-sm mt-1">
