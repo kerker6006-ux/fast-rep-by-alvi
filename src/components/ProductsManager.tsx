@@ -138,7 +138,7 @@ const ProductsManager = () => {
   };
 
   const generateAiDescription = async (language: "en" | "bn") => {
-    if (!form.name) { toast.error("Enter product name first"); return; }
+    if (!form.name) { toast.error(t("products.toastEnterName")); return; }
     language === "en" ? setAiGenerating(true) : setAiGeneratingBn(true);
     try {
       const { data, error } = await supabase.functions.invoke("ai-product-details", {
@@ -155,9 +155,9 @@ const ProductsManager = () => {
       } else {
         setForm(f => ({ ...f, description_bn: data.description || f.description_bn }));
       }
-      toast.success(`AI description generated!`);
+      toast.success(t("products.toastAiOk"));
     } catch (e: any) {
-      toast.error(e.message || "AI generation failed");
+      toast.error(e.message || t("products.toastAiFail"));
     } finally {
       language === "en" ? setAiGenerating(false) : setAiGeneratingBn(false);
     }
