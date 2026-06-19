@@ -56,31 +56,34 @@ serve(async (req) => {
       const body = await req.json();
       console.log("Received webhook:", JSON.stringify(body).slice(0, 500));
 
-      if (body.object !== "page") {
-        return new Response("Not a page event", { status: 200, headers: corsHeaders });
+      const isInstagram = body.object === "instagram";
+      if (body.object !== "page" && !isInstagram) {
+        return new Response("Not a page/instagram event", { status: 200, headers: corsHeaders });
       }
 
       const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
       for (const entry of body.entry || []) {
-        const pageId = entry.id;
+        const entryId = entry.id;
 
-        // Look up which user owns this FB page
+        // Lookup the owning fb_pages row.
+        // For "page" object: entry.id is the FB Page ID.
+        // For "instagram" object: entry.id is the IG Business Account ID.
+        const lookupColumn = isInstagram ? "ig_business_account_id" : "fb_page_id";
         const { data: fbPage } = await supabase
           .from("fb_pages")
-          .select("user_id, page_access_token, is_active")
-          .eq("fb_page_id", pageId)
+          .select("user_id, page_access_token, is_active, fb_page_id, ig_business_account_id")
+          .eq(lookupColumn, entryId)
           .eq("is_active", true)
           .maybeSingle();
 
         if (!fbPage) {
-          // Fallback to global token for backward compatibility
+          // Fallback to global token for backward compatibility (FB-only)
           const fallbackToken = Deno.env.get("FB_PAGE_ACCESS_TOKEN");
-          if (!fallbackToken) {
-            console.error("No fb_page found for page_id:", pageId, "and no fallback token");
+          if (isInstagram || !fallbackToken) {
+            console.error("No fb_page found for", lookupColumn, entryId);
             continue;
           }
-          // Try to find any active fb_page to get the user_id
           const { data: anyPage } = await supabase
             .from("fb_pages")
             .select("user_id")
@@ -91,13 +94,16 @@ serve(async (req) => {
           const fallbackSettings = fallbackUserId ? await loadSettings(supabase, fallbackUserId) : {};
           console.log("Using fallback token with user_id:", fallbackUserId);
           for (const event of entry.messaging || []) {
-            await handleMessagingEvent(supabase, event, pageId, fallbackToken, LOVABLE_API_KEY, fallbackSettings, fallbackUserId);
+            await handleMessagingEvent(supabase, event, entryId, fallbackToken, LOVABLE_API_KEY, fallbackSettings, fallbackUserId, "facebook");
           }
           continue;
         }
 
         const PAGE_ACCESS_TOKEN = fbPage.page_access_token;
         const userId = fbPage.user_id;
+        const platform: "facebook" | "instagram" = isInstagram ? "instagram" : "facebook";
+        // For IG, use IG account id as "pageId" identity in send helpers
+        const selfId = isInstagram ? fbPage.ig_business_account_id : fbPage.fb_page_id;
 
         // Load user-specific settings
         const settings = await loadSettings(supabase, userId);
@@ -108,19 +114,23 @@ serve(async (req) => {
           continue;
         }
 
-        // Handle messaging events (DMs)
+        // Handle messaging events (DMs) — same shape on FB and IG
         for (const event of entry.messaging || []) {
-          await handleMessagingEvent(supabase, event, pageId, PAGE_ACCESS_TOKEN, LOVABLE_API_KEY, settings, userId);
+          await handleMessagingEvent(supabase, event, selfId, PAGE_ACCESS_TOKEN, LOVABLE_API_KEY, settings, userId, platform);
         }
 
-        // Handle feed/comment events & page post auto-import
+        // Handle changes (FB feed + IG comments)
         for (const change of entry.changes || []) {
-          if (change.field === "feed") {
+          if (isInstagram) {
+            if (change.field === "comments") {
+              await handleIgCommentEvent(supabase, change.value, PAGE_ACCESS_TOKEN, settings, userId, LOVABLE_API_KEY, selfId);
+            }
+            // Future: mentions, message_reactions
+          } else if (change.field === "feed") {
             if (change.value?.item === "comment") {
               await handleCommentEvent(supabase, change.value, PAGE_ACCESS_TOKEN, settings, userId, LOVABLE_API_KEY);
             } else if (change.value?.item === "photo" || change.value?.item === "status") {
-              // Auto-import product from page post
-              await handlePagePostEvent(supabase, change.value, userId, LOVABLE_API_KEY, pageId, settings);
+              await handlePagePostEvent(supabase, change.value, userId, LOVABLE_API_KEY, entryId, settings);
             }
           }
         }
