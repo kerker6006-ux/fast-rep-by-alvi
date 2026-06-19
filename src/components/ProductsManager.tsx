@@ -574,7 +574,7 @@ const ProductsManager = () => {
         {categories.length > 0 && (
           <div className="flex flex-wrap gap-2">
             <button onClick={() => setFilterCategory("all")} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${filterCategory === "all" ? "bg-primary text-primary-foreground shadow-md" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
-              All ({categoryProductCounts.all || 0})
+              {t("products.allLabel")} ({categoryProductCounts.all || 0})
             </button>
             {categories.map(cat => (
               <button key={cat} onClick={() => setFilterCategory(cat)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${filterCategory === cat ? "bg-primary text-primary-foreground shadow-md" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
