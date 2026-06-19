@@ -80,6 +80,7 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
       {/* Nav */}
       <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
         {visibleItems.map((item) => {
+          const labelKey = item.id === "leads" && isService(category) ? "nav.appointments" : item.labelKey;
           const isActive = activeTab === item.id;
           const button = (
             <button
