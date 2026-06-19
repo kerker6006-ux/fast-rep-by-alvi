@@ -2,12 +2,13 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { FB_GRAPH, callbackUrl, getOrigin, verifyState } from "../_shared/fb.ts";
 
 function htmlRedirect(url: string, msg: string) {
-  return new Response(
-    `<!doctype html><meta charset="utf-8"><title>${msg}</title>
-     <script>window.location.replace(${JSON.stringify(url)});</script>
-     <p style="font-family:sans-serif;padding:20px">${msg} <a href="${url}">Continue</a></p>`,
-    { status: 200, headers: { "Content-Type": "text/html" } },
-  );
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: url,
+      "Cache-Control": "no-store",
+    },
+  });
 }
 
 Deno.serve(async (req) => {
