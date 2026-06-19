@@ -87,8 +87,11 @@ const AiTraining = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const [settings, setSettings] = useState<SettingsMap>({});
-  const [hasChanges, setHasChanges] = useState(false);
+  const { category } = useBusinessCategory();
+  const cat: BusinessCategory = (category as BusinessCategory) || "ecommerce";
+  const isEcom = cat === "ecommerce";
+  const catFields = CATEGORY_FIELDS[cat];
+  const quickAdd = QUICK_ADD_BY_CAT[cat];
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
