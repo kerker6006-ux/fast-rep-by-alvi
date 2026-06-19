@@ -373,6 +373,65 @@ export type Database = {
         }
         Relationships: []
       }
+      leads: {
+        Row: {
+          address: string | null
+          category: Database["public"]["Enums"]["business_category"]
+          conversation_id: string | null
+          created_at: string
+          id: string
+          name: string | null
+          notes: string | null
+          phone: string | null
+          preferred_date: string | null
+          service_or_product: string | null
+          source: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          category: Database["public"]["Enums"]["business_category"]
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string | null
+          notes?: string | null
+          phone?: string | null
+          preferred_date?: string | null
+          service_or_product?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          category?: Database["public"]["Enums"]["business_category"]
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string | null
+          notes?: string | null
+          phone?: string | null
+          preferred_date?: string | null
+          service_or_product?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string | null
@@ -632,6 +691,10 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          business_category:
+            | Database["public"]["Enums"]["business_category"]
+            | null
+          business_info: Json
           created_at: string
           display_name: string | null
           id: string
@@ -641,6 +704,10 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          business_category?:
+            | Database["public"]["Enums"]["business_category"]
+            | null
+          business_info?: Json
           created_at?: string
           display_name?: string | null
           id: string
@@ -650,6 +717,10 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          business_category?:
+            | Database["public"]["Enums"]["business_category"]
+            | null
+          business_info?: Json
           created_at?: string
           display_name?: string | null
           id?: string
@@ -702,6 +773,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      services: {
+        Row: {
+          active: boolean
+          category: Database["public"]["Enums"]["business_category"]
+          created_at: string
+          description: string | null
+          duration_text: string | null
+          faqs: Json
+          id: string
+          image_url: string | null
+          name: string
+          price_text: string | null
+          service_area: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          category: Database["public"]["Enums"]["business_category"]
+          created_at?: string
+          description?: string | null
+          duration_text?: string | null
+          faqs?: Json
+          id?: string
+          image_url?: string | null
+          name: string
+          price_text?: string | null
+          service_area?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          category?: Database["public"]["Enums"]["business_category"]
+          created_at?: string
+          description?: string | null
+          duration_text?: string | null
+          faqs?: Json
+          id?: string
+          image_url?: string | null
+          name?: string
+          price_text?: string | null
+          service_area?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_credits: {
         Row: {
@@ -793,6 +912,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      business_category: "ecommerce" | "dental" | "hvac" | "salon"
       order_status:
         | "pending"
         | "confirmed"
@@ -928,6 +1048,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      business_category: ["ecommerce", "dental", "hvac", "salon"],
       order_status: [
         "pending",
         "confirmed",
