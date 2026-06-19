@@ -82,7 +82,7 @@ const CreditDashboard = () => {
           </div>
           <div className="flex justify-between border-b pb-2">
             <span className="flex items-center gap-2"><Image className="h-4 w-4 text-purple-600" /> {t("credits.imageReply")}</span>
-            <Badge variant="secondary">{fmtUSD(costImage)} ({imageCents}¢)</Badge>
+            <Badge variant="secondary">{fmtUSD(costImage)}</Badge>
           </div>
           <div className="flex justify-between border-b pb-2">
             <span>{t("credits.orderDetection")}</span>
