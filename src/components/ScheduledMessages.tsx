@@ -30,6 +30,7 @@ const QUICK_DAYS = [
 ];
 
 const ScheduledMessages = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
