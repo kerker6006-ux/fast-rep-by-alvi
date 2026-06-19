@@ -32,15 +32,16 @@ Deno.serve(async (req) => {
     }
 
     const state = await signState(appSecret, data.claims.sub);
-    const configId = Deno.env.get("FB_CONFIG_ID") ?? "28436308939291186";
+    const configId = Deno.env.get("FB_CONFIG_ID");
     const params = new URLSearchParams({
       client_id: appId,
       redirect_uri: callbackUrl(),
       state,
       response_type: "code",
-      config_id: configId,
     });
-    if (!configId) {
+    if (configId) {
+      params.set("config_id", configId);
+    } else {
       params.set("scope", OAUTH_SCOPES.join(","));
       params.set("auth_type", "rerequest");
     }
