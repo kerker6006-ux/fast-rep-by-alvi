@@ -894,4 +894,98 @@ const AiTraining = () => {
   );
 };
 
+// ----- Live Business Profile Summary -----
+type ProfileSummaryProps = {
+  cat: BusinessCategory;
+  settings: SettingsMap;
+  catFields: CatField[];
+  onAsk: (label: string) => void;
+};
+
+const ProfileSummaryPanel = ({ cat, settings, catFields, onAsk }: ProfileSummaryProps) => {
+  const { t } = useTranslation();
+
+  // Core fields shown for every niche, then niche-specific fields
+  const coreFields: { key: string; label: string }[] = [
+    { key: "business_name", label: t("aiTraining.businessName", "Business name") },
+    { key: "reply_tone", label: t("aiTraining.replyTone") },
+    { key: "welcome_message", label: t("aiTraining.welcomeMessage") },
+  ];
+  const nicheFields = catFields.map((f) => ({ key: f.key, label: t(f.labelKey) }));
+
+  // FAQ + Never-say counts treated as fields too
+  const faqCount = parseSettingsJson<{ q: string; a: string }[]>(settings.faq_list, []).length;
+  const neverCount = parseSettingsJson<string[]>(settings.never_say_list, []).length;
+
+  const rows = [
+    ...coreFields,
+    ...nicheFields,
+    { key: "faq_list", label: `${t("aiTraining.faq")} (${faqCount})`, isList: true, count: faqCount },
+    { key: "never_say_list", label: `${t("aiTraining.neverSay")} (${neverCount})`, isList: true, count: neverCount },
+  ] as { key: string; label: string; isList?: boolean; count?: number }[];
+
+  const isFilled = (r: typeof rows[number]) => {
+    if (r.isList) return (r.count ?? 0) > 0;
+    return !!(settings[r.key] && String(settings[r.key]).trim());
+  };
+  const filledCount = rows.filter(isFilled).length;
+  const pct = Math.round((filledCount / rows.length) * 100);
+
+  return (
+    <Card className="h-fit lg:sticky lg:top-4">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" />
+          {t("aiTraining.profileTitle")}
+        </CardTitle>
+        <CardDescription className="text-xs">
+          {filledCount === rows.length
+            ? t("aiTraining.profileComplete")
+            : t("aiTraining.profileProgress", { filled: filledCount, total: rows.length })}
+        </CardDescription>
+        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden mt-1">
+          <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-1.5 max-h-[60vh] overflow-y-auto pr-1">
+        {rows.map((r) => {
+          const filled = isFilled(r);
+          const value = r.isList
+            ? (r.count && r.count > 0 ? `${r.count} ${t("aiTraining.itemsLabel")}` : "")
+            : String(settings[r.key] || "");
+          return (
+            <div
+              key={r.key}
+              className={`rounded-lg border px-2.5 py-2 text-xs flex items-start gap-2 ${
+                filled ? "border-primary/20 bg-primary/5" : "border-dashed border-border bg-muted/30"
+              }`}
+            >
+              {filled ? (
+                <CheckCircle className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+              ) : (
+                <div className="h-3.5 w-3.5 rounded-full border border-muted-foreground/40 shrink-0 mt-0.5" />
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-foreground/90">{r.label}</div>
+                {filled ? (
+                  <div className="text-muted-foreground line-clamp-2 mt-0.5 break-words">{value}</div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onAsk(r.label)}
+                    className="text-primary hover:underline mt-0.5"
+                  >
+                    {t("aiTraining.notSetYet")} · {t("aiTraining.askAi")}
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+};
+
 export default AiTraining;
+
