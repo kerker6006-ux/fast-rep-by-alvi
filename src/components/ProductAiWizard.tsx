@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +45,7 @@ interface ProductAiWizardProps {
 }
 
 const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts }: ProductAiWizardProps) => {
+  const { t, i18n } = useTranslation();
   const [messages, setMessages] = useState<WizardMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -65,10 +67,10 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
     if (open && messages.length === 0) {
       setMessages([{
         role: "assistant",
-        content: "👋 Hi! I'm your Product AI Assistant!\n\n📸 **Upload product images** (multiple at once!) and I'll analyze them — detect color, material, type — everything!\n\nOr just tell me about the product and I'll help you set it up perfectly. কি product add করতে চাও?"
+        content: t("products.wGreeting"),
       }]);
     }
-  }, [open]);
+  }, [open, t]);
 
   const uploadImage = async (file: File): Promise<string> => {
     const ext = file.name.split(".").pop();
@@ -112,13 +114,13 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
 
       const userMsg: WizardMessage = {
         role: "user",
-        content: `I uploaded ${urls.length} product image${urls.length > 1 ? 's' : ''}, please analyze ${urls.length > 1 ? 'them all' : 'it'}.`,
+        content: urls.length > 1 ? t("products.wUploadedMany", { count: urls.length }) : t("products.wUploadedOne", { count: urls.length }),
         image_urls: urls,
       };
       setMessages(prev => [...prev, userMsg]);
       await sendToAi([...messages, userMsg]);
     } catch (err: any) {
-      toast.error("Failed to upload images: " + err.message);
+      toast.error(t("products.wUploadFail") + ": " + err.message);
     } finally {
       setUploadingImage(false);
     }
@@ -129,6 +131,7 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
     try {
       const { data, error } = await supabase.functions.invoke("ai-product-wizard", {
         body: {
+          language: i18n.language,
           messages: allMessages.map(m => ({
             role: m.role,
             content: m.content,
@@ -142,7 +145,7 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
 
       const assistantMsg: WizardMessage = {
         role: "assistant",
-        content: data.reply || "I couldn't process that. Try again?",
+        content: data.reply || t("products.wCantProcess"),
       };
       setMessages(prev => [...prev, assistantMsg]);
 
@@ -151,10 +154,10 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
         setPendingData(data.extracted_data);
       }
     } catch (err: any) {
-      toast.error(err.message || "AI error");
+      toast.error(err.message || t("products.wAiError"));
       setMessages(prev => [...prev, {
         role: "assistant",
-        content: "❌ Sorry, something went wrong. Please try again."
+        content: t("products.wErrorRetry"),
       }]);
     } finally {
       setIsLoading(false);
@@ -186,10 +189,10 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
     setPendingData(null);
     setMessages(prev => [...prev, {
       role: "user",
-      content: "No, let me adjust some details."
+      content: t("products.wAdjustReply"),
     }]);
     // AI will respond to continue the conversation
-    sendToAi([...messages, { role: "user", content: "No, let me adjust some details. What should I change?" }]);
+    sendToAi([...messages, { role: "user", content: t("products.wAdjustReply") }]);
   };
 
   const handleReset = () => {
@@ -210,10 +213,10 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
             <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
               <Bot className="h-4 w-4 text-primary-foreground" />
             </div>
-            Product AI Assistant
+            {t("products.wTitle")}
             <Sparkles className="h-4 w-4 text-primary animate-pulse" />
           </DialogTitle>
-          <p className="text-xs text-muted-foreground">Upload images, chat, and I'll set up your product</p>
+          <p className="text-xs text-muted-foreground">{t("products.wSubtitle")}</p>
         </DialogHeader>
 
         {/* Chat Messages */}
@@ -272,26 +275,26 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
           <div className="mx-4 mb-2 p-3 rounded-xl border-2 border-primary/30 bg-primary/5 space-y-2 shrink-0">
             <div className="flex items-center gap-2 text-sm font-semibold text-primary">
               <Sparkles className="h-4 w-4" />
-              {pendingData.action === "add_variant" ? "Add Color Variant?" : "Create This Product?"}
+              {pendingData.action === "add_variant" ? t("products.wAddVariantQ") : t("products.wCreateQ")}
             </div>
             {pendingData.product && (
               <div className="text-xs space-y-0.5 text-foreground">
                 <p><strong>{pendingData.product.name}</strong> {pendingData.product.name_bn && `(${pendingData.product.name_bn})`}</p>
                 <p>${pendingData.product.price} • {pendingData.product.category} • {pendingData.product.color}</p>
-                {pendingData.product.material && <p>Material: {pendingData.product.material}</p>}
+                {pendingData.product.material && <p>{t("products.wMaterial")}: {pendingData.product.material}</p>}
               </div>
             )}
             {pendingData.variant && (
               <div className="text-xs text-foreground">
-                <p>Color: <strong>{pendingData.variant.color}</strong> → {pendingData.variant.product_name}</p>
+                <p>{t("products.wColor")}: <strong>{pendingData.variant.color}</strong> → {pendingData.variant.product_name}</p>
               </div>
             )}
             <div className="flex gap-2">
               <Button size="sm" className="flex-1 gap-1 h-8" onClick={handleAcceptProduct}>
-                <Check className="h-3 w-3" /> Yes, Apply
+                <Check className="h-3 w-3" /> {t("products.wYesApply")}
               </Button>
               <Button size="sm" variant="outline" className="flex-1 gap-1 h-8" onClick={handleRejectProduct}>
-                <X className="h-3 w-3" /> Adjust
+                <X className="h-3 w-3" /> {t("products.wAdjust")}
               </Button>
             </div>
           </div>
@@ -301,12 +304,12 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
         {stagedPreviews.length > 0 && (
           <div className="mx-4 mb-2 p-2 rounded-xl border border-primary/20 bg-muted/50 shrink-0">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs font-medium text-muted-foreground">{stagedPreviews.length} image{stagedPreviews.length > 1 ? 's' : ''} ready</span>
+              <span className="text-xs font-medium text-muted-foreground">{t("products.wImagesReady", { count: stagedPreviews.length })}</span>
               <div className="flex gap-1.5">
-                <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => fileInputRef.current?.click()}>+ More</Button>
+                <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => fileInputRef.current?.click()}>{t("products.wMore")}</Button>
                 <Button size="sm" className="h-6 text-xs px-3 gap-1" onClick={sendStagedImages} disabled={uploadingImage}>
                   {uploadingImage ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
-                  Send All
+                  {t("products.wSendAll")}
                 </Button>
               </div>
             </div>
@@ -350,7 +353,7 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
             <Input
               value={input}
               onChange={e => setInput(e.target.value)}
-              placeholder="Describe your product or ask anything..."
+              placeholder={t("products.wInputPh")}
               className="flex-1"
               onKeyDown={e => e.key === "Enter" && !e.shiftKey && handleSend()}
               disabled={isLoading}
