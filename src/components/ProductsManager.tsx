@@ -153,7 +153,7 @@ const ProductsManager = () => {
       } else {
         setForm(f => ({ ...f, description_bn: data.description || f.description_bn }));
       }
-      toast.success(`AI ${language === "en" ? "English" : "বাংলা"} description generated!`);
+      toast.success(`AI description generated!`);
     } catch (e: any) {
       toast.error(e.message || "AI generation failed");
     } finally {
@@ -331,8 +331,8 @@ const ProductsManager = () => {
                   <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Product name" />
                 </div>
                 <div className="space-y-2">
-                  <Label>নাম (বাংলা)</Label>
-                  <Input value={form.name_bn} onChange={e => setForm(f => ({ ...f, name_bn: e.target.value }))} placeholder="পণ্যের নাম" />
+                  <Label>Name (alternate language, optional)</Label>
+                  <Input value={form.name_bn} onChange={e => setForm(f => ({ ...f, name_bn: e.target.value }))} placeholder="Product name in a second language" />
                 </div>
               </div>
 
@@ -374,7 +374,7 @@ const ProductsManager = () => {
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs">বিবরণ (বাংলা)</Label>
+                      <Label className="text-xs">Description (alternate language, optional)</Label>
                       <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10" onClick={() => generateAiDescription("bn")} disabled={aiGeneratingBn || !form.name}>
                         {aiGeneratingBn ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
                         Generate

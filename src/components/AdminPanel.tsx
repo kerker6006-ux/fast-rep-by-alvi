@@ -85,7 +85,7 @@ const AdminPanel = () => {
         user_id: userId,
         amount,
         type: "recharge",
-        description: note || "bKash recharge by admin",
+        description: note || "Manual recharge by admin",
         admin_id: user?.id,
       });
       if (txError) throw txError;
@@ -288,7 +288,7 @@ const AdminPanel = () => {
                   onChange={(e) => setRechargeAmount(e.target.value)}
                 />
                 <Input
-                  placeholder="Note (e.g., bKash TrxID: ABC123)"
+                  placeholder="Transaction reference / note"
                   value={rechargeNote}
                   onChange={(e) => setRechargeNote(e.target.value)}
                 />

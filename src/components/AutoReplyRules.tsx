@@ -14,10 +14,10 @@ import { useState } from "react";
 import { Plus, Trash2, Zap, Pencil, X } from "lucide-react";
 
 const TEMPLATE_RULES = [
-  { keywords: "delivery, ডেলিভারি, shipping, কবে পাব", response: "আমরা ২-৩ কার্যদিবসের মধ্যে ডেলিভারি দিই। ঢাকায় ৬০ টাকা, ঢাকার বাইরে ১২০ টাকা।", responseBn: "", label: "🚚 Delivery Info" },
-  { keywords: "payment, পেমেন্ট, bkash, বিকাশ, নগদ, nagad", response: "আমরা বিকাশ, নগদ এবং ক্যাশ অন ডেলিভারি গ্রহণ করি।", responseBn: "", label: "💳 Payment Methods" },
-  { keywords: "return, রিটার্ন, ফেরত, exchange, বদলে", response: "পণ্যে সমস্যা থাকলে ৩ দিনের মধ্যে জানান, আমরা বদলে দিবো।", responseBn: "", label: "🔄 Return Policy" },
-  { keywords: "open, খোলা, বন্ধ, close, সময়, time, hours", response: "আমরা প্রতিদিন সকাল ১০টা থেকে রাত ১০টা পর্যন্ত সেবা দিই।", responseBn: "", label: "🕐 Business Hours" },
+  { keywords: "delivery, shipping", response: "We deliver within 2-3 business days. Standard delivery rates apply.", responseBn: "", label: "🚚 Delivery Info" },
+  { keywords: "payment, pay", response: "We accept Cash on Delivery and other payment methods.", responseBn: "", label: "💳 Payment Methods" },
+  { keywords: "return, exchange, refund", response: "If there's any issue with the product, let us know within 3 days for a return or exchange.", responseBn: "", label: "🔄 Return Policy" },
+  { keywords: "open, close, time, hours", response: "We're open every day from 10 AM to 10 PM.", responseBn: "", label: "🕐 Business Hours" },
 ];
 
 const AutoReplyRules = () => {
@@ -156,16 +156,16 @@ const AutoReplyRules = () => {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Trigger Keywords (comma separated)</Label>
-              <Input value={form.keywords} onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))} placeholder="delivery, ডেলিভারি, shipping" />
+              <Input value={form.keywords} onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))} placeholder="delivery, shipping, price" />
               <p className="text-xs text-muted-foreground">When a customer message contains any of these words, this reply is sent instantly.</p>
             </div>
             <div className="space-y-2">
-              <Label>Response (English / Bangla)</Label>
+              <Label>Response</Label>
               <Textarea value={form.response} onChange={e => setForm(f => ({ ...f, response: e.target.value }))} placeholder="We deliver within 2-3 business days..." rows={3} />
             </div>
             <div className="space-y-2">
-              <Label>Response (বাংলা) — optional alternate</Label>
-              <Textarea value={form.responseBn} onChange={e => setForm(f => ({ ...f, responseBn: e.target.value }))} placeholder="আমরা ২-৩ কার্যদিবসের মধ্যে ডেলিভারি দিই..." rows={2} />
+              <Label>Response (alternate language, optional)</Label>
+              <Textarea value={form.responseBn} onChange={e => setForm(f => ({ ...f, responseBn: e.target.value }))} placeholder="Optional second-language version of the same reply…" rows={2} />
             </div>
             <div className="space-y-2">
               <Label>Priority (higher = checked first)</Label>
@@ -201,7 +201,7 @@ const AutoReplyRules = () => {
                   </div>
                   <p className="text-sm text-muted-foreground line-clamp-2">{rule.response_text}</p>
                   {rule.response_text_bn && (
-                    <p className="text-xs text-muted-foreground line-clamp-1">বাংলা: {rule.response_text_bn}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-1">Alt: {rule.response_text_bn}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
