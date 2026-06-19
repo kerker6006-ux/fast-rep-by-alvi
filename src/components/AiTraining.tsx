@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   Brain, Save, Plus, X, MessageCircle, Send, Bot, User,
-  Sparkles, Settings2, Loader2, CheckCircle, RotateCcw, Wand2, Pencil,
+  Sparkles, Settings2, Loader2, CheckCircle, RotateCcw, Wand2, Pencil, Languages,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
