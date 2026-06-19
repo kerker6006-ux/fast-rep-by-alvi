@@ -341,7 +341,7 @@ async function handleMessagingEvent(
   const fbMessageId = event.message?.mid || null;
 
   // Get or create conversation (with user_id)
-  const conversationId = await getOrCreateConversation(supabase, senderId, pageAccessToken, userId);
+  const conversationId = await getOrCreateConversation(supabase, senderId, pageAccessToken, userId, platform);
   if (!conversationId) return;
 
   let imageUrl: string | null = null;
