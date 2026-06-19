@@ -116,7 +116,7 @@ const BotSettings = () => {
               <Textarea
                 value={settings.custom_instructions || ""}
                 onChange={e => update("custom_instructions", e.target.value)}
-                placeholder="e.g. Always mention free delivery for orders above ৳500. Don't discuss competitor products."
+                placeholder="e.g. Always mention free delivery for orders above $500. Don't discuss competitor products."
                 className="min-h-[120px]"
               />
             </div>

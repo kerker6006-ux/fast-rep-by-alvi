@@ -45,7 +45,7 @@
       "searchPlaceholder": "Buscar por nombre o ID…",
       "unnamed": "Usuario sin nombre", "suspended": "Suspendido", "joined": "Registrado", "balance": "Saldo",
       "addCredits": "Añadir créditos", "removeCredits": "Quitar créditos",
-      "amount": "Cantidad (৳)", "notePlaceholder": "Motivo / nota (ej.: bKash TrxID)",
+      "amount": "Cantidad ($)", "notePlaceholder": "Motivo / nota (ej.: transaction reference)",
       "suspend": "Suspender", "unsuspend": "Reactivar",
       "creditsUpdated": "Créditos actualizados", "updated": "Usuario actualizado", "deleted": "Usuario eliminado",
       "deleteConfirmTitle": "¿Eliminar este usuario permanentemente?",
@@ -64,9 +64,9 @@
     },
     "pricing": {
       "title": "Precios y planes", "subtitle": "Tarifas globales aplicadas a cada respuesta.",
-      "textCost": "Costo por respuesta de texto (৳)", "textCostHint": "Se cobra cuando el bot envía un mensaje de texto.",
-      "imageCost": "Costo por respuesta con imagen (৳)", "imageCostHint": "Se cobra cuando el bot envía proactivamente una imagen.",
-      "signupBonus": "Bono de registro (৳)", "signupBonusHint": "Créditos otorgados automáticamente a nuevos usuarios.",
+      "textCost": "Costo por respuesta de texto ($)", "textCostHint": "Se cobra cuando el bot envía un mensaje de texto.",
+      "imageCost": "Costo por respuesta con imagen ($)", "imageCostHint": "Se cobra cuando el bot envía proactivamente una imagen.",
+      "signupBonus": "Bono de registro ($)", "signupBonusHint": "Créditos otorgados automáticamente a nuevos usuarios.",
       "save": "Guardar precios", "saved": "Precios guardados"
     },
     "fbPages": { "title": "Todas las páginas de Facebook", "subtitle": "Páginas conectadas por todos los usuarios.", "empty": "Sin páginas conectadas aún." },
@@ -76,7 +76,7 @@
       "bodyField": "Mensaje", "bodyPlaceholder": "Vamos a actualizar el sistema esta noche a las 11pm…",
       "send": "Enviar anuncio", "sent": "Anuncio enviado"
     },
-    "analytics": { "title": "Analíticas profundas", "subtitle": "Costos y patrones de uso de IA.", "topSpenders": "Top 10 usuarios por gasto en IA (৳)" },
+    "analytics": { "title": "Analíticas profundas", "subtitle": "Costos y patrones de uso de IA.", "topSpenders": "Top 10 usuarios por gasto en IA ($)" },
     "settings": { "title": "Ajustes de admin", "subtitle": "Tu cuenta de admin.", "adminAccount": "Cuenta de admin" }
   }
 }

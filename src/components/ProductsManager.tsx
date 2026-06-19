@@ -339,7 +339,7 @@ const ProductsManager = () => {
               {/* Attributes row */}
               <div className="grid grid-cols-4 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Price (৳)</Label>
+                  <Label className="text-xs">Price ($)</Label>
                   <Input type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="0" />
                 </div>
                 <div className="space-y-1.5">
@@ -468,7 +468,7 @@ const ProductsManager = () => {
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-semibold flex items-center gap-2">
                     📏 Size / ML Variants
-                    <span className="text-xs font-normal text-muted-foreground">(e.g. 50ml = 100৳, 100ml = 200৳)</span>
+                    <span className="text-xs font-normal text-muted-foreground">(e.g. 50ml = 100$, 100ml = 200$)</span>
                   </Label>
                   <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10" onClick={() => setSizeVariants(s => [...s, { size: "", price: 0 }])}>
                     <Plus className="h-3 w-3" /> Add Size
@@ -479,7 +479,7 @@ const ProductsManager = () => {
                     {sizeVariants.map((s, i) => (
                       <div key={i} className="flex items-center gap-2 bg-background rounded-lg p-2 border">
                         <Input value={s.size} placeholder="50ml / 100ml / 250g" className="h-9 flex-1" onChange={e => setSizeVariants(arr => arr.map((it, ii) => ii === i ? { ...it, size: e.target.value } : it))} />
-                        <Input type="number" value={s.price || ""} placeholder="Price ৳" className="h-9 w-32" onChange={e => setSizeVariants(arr => arr.map((it, ii) => ii === i ? { ...it, price: parseFloat(e.target.value) || 0 } : it))} />
+                        <Input type="number" value={s.price || ""} placeholder="Price $" className="h-9 w-32" onChange={e => setSizeVariants(arr => arr.map((it, ii) => ii === i ? { ...it, price: parseFloat(e.target.value) || 0 } : it))} />
                         <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => setSizeVariants(arr => arr.filter((_, ii) => ii !== i))}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -487,7 +487,7 @@ const ProductsManager = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-muted-foreground text-center py-2">No size options yet. Add e.g. "50ml" → 100৳, "100ml" → 200৳</p>
+                  <p className="text-xs text-muted-foreground text-center py-2">No size options yet. Add e.g. "50ml" → 100$, "100ml" → 200$</p>
                 )}
               </div>
 
@@ -615,7 +615,7 @@ const ProductsManager = () => {
                   </div>
                 )}
                 <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold text-primary">৳{previewProduct.price}</span>
+                  <span className="text-2xl font-bold text-primary">${previewProduct.price}</span>
                   <Badge variant={previewProduct.is_active ? "default" : "destructive"}>{previewProduct.is_active ? "Active" : "Inactive"}</Badge>
                 </div>
                 {((previewProduct as any).size_variants?.length > 0) && (
@@ -623,7 +623,7 @@ const ProductsManager = () => {
                     <p className="text-xs font-semibold text-muted-foreground">📏 Size Options</p>
                     <div className="flex flex-wrap gap-2">
                       {(previewProduct as any).size_variants.map((s: SizeVariant, i: number) => (
-                        <Badge key={i} variant="secondary">{s.size} — ৳{s.price}</Badge>
+                        <Badge key={i} variant="secondary">{s.size} — ${s.price}</Badge>
                       ))}
                     </div>
                   </div>
@@ -713,7 +713,7 @@ const ProductsManager = () => {
                             <p className="font-semibold text-sm truncate">{p.name}</p>
                             {p.name_bn && <p className="text-[11px] text-muted-foreground truncate">{p.name_bn}</p>}
                           </div>
-                          <span className="text-sm font-bold text-primary whitespace-nowrap">৳{p.price}</span>
+                          <span className="text-sm font-bold text-primary whitespace-nowrap">${p.price}</span>
                         </div>
                         {p.description && <p className="text-[11px] text-muted-foreground line-clamp-2">{p.description}</p>}
                         <div className="flex flex-wrap gap-1 pt-0.5">
@@ -757,7 +757,7 @@ const ProductsManager = () => {
                             {p.material && <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">{p.material}</Badge>}
                           </div>
                         </div>
-                        <span className="text-lg font-bold text-primary whitespace-nowrap">৳{p.price}</span>
+                        <span className="text-lg font-bold text-primary whitespace-nowrap">${p.price}</span>
                         <div className="flex gap-1">
                           <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); openEdit(p); }} className="h-8 w-8 p-0"><Pencil className="h-3.5 w-3.5" /></Button>
                           <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(p.id); }} className="h-8 w-8 p-0 text-destructive hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>

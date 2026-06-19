@@ -184,7 +184,7 @@ const AdminPanel = () => {
             </p>
           </div>
           <span className="text-xs font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded-md flex items-center gap-1 shrink-0">
-            <Coins className="h-3 w-3" /> ৳{Number(u.creditBalance).toLocaleString()}
+            <Coins className="h-3 w-3" /> ${Number(u.creditBalance).toLocaleString()}
           </span>
         </div>
 
@@ -279,11 +279,11 @@ const AdminPanel = () => {
               </DialogHeader>
               <div className="space-y-4 pt-2">
                 <p className="text-sm text-muted-foreground">
-                  Current balance: <span className="font-bold text-foreground">৳{Number(u.creditBalance).toLocaleString()}</span>
+                  Current balance: <span className="font-bold text-foreground">${Number(u.creditBalance).toLocaleString()}</span>
                 </p>
                 <Input
                   type="number"
-                  placeholder="Amount (৳)"
+                  placeholder="Amount ($)"
                   value={rechargeAmount}
                   onChange={(e) => setRechargeAmount(e.target.value)}
                 />
@@ -304,7 +304,7 @@ const AdminPanel = () => {
                       });
                     }}
                   >
-                    Add ৳{rechargeAmount || "0"} Credits
+                    Add ${rechargeAmount || "0"} Credits
                   </Button>
                 </DialogClose>
               </div>

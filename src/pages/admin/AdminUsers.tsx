@@ -61,7 +61,7 @@ const AdjustCreditsDialog = ({ userId, displayName, mode, onDone }: { userId: st
             disabled={!amount || Number(amount) <= 0 || mutate.isPending}
             onClick={() => mutate.mutate()}
           >
-            {mode === "add" ? `+ ৳${amount || 0}` : `− ৳${amount || 0}`}
+            {mode === "add" ? `+ $${amount || 0}` : `− $${amount || 0}`}
           </Button>
         </div>
       </DialogContent>
@@ -166,7 +166,7 @@ const AdminUsers = () => {
                   <div className="text-right">
                     <p className="text-[10px] uppercase text-slate-500 tracking-wide">{t("admin.users.balance")}</p>
                     <p className="font-display text-2xl font-bold text-amber-600 flex items-center gap-1 justify-end">
-                      <Coins className="h-5 w-5" /> ৳{u.balance.toLocaleString()}
+                      <Coins className="h-5 w-5" /> ${u.balance.toLocaleString()}
                     </p>
                   </div>
 

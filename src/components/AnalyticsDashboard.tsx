@@ -87,7 +87,7 @@ const AnalyticsDashboard = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("analytics.totalRevenue")}</p>
-                <p className="font-display text-4xl sm:text-5xl font-bold mt-2 text-gradient">৳{stats?.totalRevenue?.toLocaleString() || 0}</p>
+                <p className="font-display text-4xl sm:text-5xl font-bold mt-2 text-gradient">${stats?.totalRevenue?.toLocaleString() || 0}</p>
               </div>
               <div className="h-11 w-11 rounded-2xl bg-primary/10 flex items-center justify-center">
                 <TrendingUp className="h-5 w-5 text-primary" />

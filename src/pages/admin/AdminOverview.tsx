@@ -50,7 +50,7 @@ const AdminOverview = () => {
     { icon: Package, label: t("admin.stats.products"), value: stats?.products ?? 0, color: "from-sky-500 to-sky-600" },
     { icon: ShoppingCart, label: t("admin.stats.orders"), value: stats?.orders ?? 0, color: "from-cyan-500 to-cyan-600" },
     { icon: MessageSquare, label: t("admin.stats.conversations"), value: stats?.conversations ?? 0, color: "from-violet-500 to-violet-600" },
-    { icon: Coins, label: t("admin.stats.totalCredits"), value: `৳${(stats?.totalCredits ?? 0).toLocaleString()}`, color: "from-amber-500 to-amber-600" },
+    { icon: Coins, label: t("admin.stats.totalCredits"), value: `$${(stats?.totalCredits ?? 0).toLocaleString()}`, color: "from-amber-500 to-amber-600" },
   ];
 
   return (
