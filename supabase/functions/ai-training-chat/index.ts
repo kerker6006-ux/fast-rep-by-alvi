@@ -12,8 +12,11 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, action, settings, category } = await req.json();
+    const { messages, action, settings, category, language } = await req.json();
     const cat: string = (category && ["ecommerce", "dental", "hvac", "salon"].includes(category)) ? category : "ecommerce";
+    const LANG_NAMES: Record<string, string> = { en: "English", bn: "Bangla (বাংলা)", es: "Spanish (Español)", ko: "Korean (한국어)" };
+    const chatLang: string = (language && LANG_NAMES[language]) ? language : (settings?.training_chat_language && LANG_NAMES[settings.training_chat_language] ? settings.training_chat_language : "");
+    const chatLangName = chatLang ? LANG_NAMES[chatLang] : "";
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
