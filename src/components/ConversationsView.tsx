@@ -5,8 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, User, Clock, ArrowLeft } from "lucide-react";
+import { MessageSquare, User, Clock, ArrowLeft, GraduationCap } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import TrainBotDialog from "@/components/TrainBotDialog";
 
 type Conversation = {
   id: string;
