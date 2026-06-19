@@ -59,7 +59,11 @@ const AdminFbPages = () => {
                     {p.subscription_status || (p.is_active ? "active" : "pending")}
                   </Badge>
                 </div>
-                <p className="text-xs text-slate-500">Owner: <span className="font-mono">{p.user_id?.slice(0, 8)}…</span></p>
+                <div className="space-y-0.5 pt-1 border-t">
+                  {p.owner_email && <p className="text-xs text-blue-700 truncate">📧 {p.owner_email}</p>}
+                  {p.owner_name && <p className="text-xs text-slate-600 truncate">👤 {p.owner_name}</p>}
+                  <p className="text-[10px] text-slate-400 font-mono truncate">{p.user_id}</p>
+                </div>
               </CardContent>
             </Card>
           ))}
