@@ -33,7 +33,7 @@ type FbPage = {
   ig_subscription_status?: string | null;
 };
 
-type SessionPage = { id: string; name: string; category: string | null; picture_url: string | null };
+type SessionPage = { id: string; name: string; category: string | null; picture_url: string | null; ig_username?: string | null };
 
 const FB_BLUE = "#1877F2";
 
