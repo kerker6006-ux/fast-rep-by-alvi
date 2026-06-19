@@ -88,7 +88,17 @@
     "language": "ভাষা",
     "services": "সার্ভিস",
     "leads": "লিড",
-    "appointments": "অ্যাপয়েন্টমেন্ট"
+    "appointments": "অ্যাপয়েন্টমেন্ট",
+    "chatsByCat": {
+      "dental": "রোগীর চ্যাট",
+      "hvac": "গ্রাহকের চ্যাট",
+      "salon": "ক্লায়েন্টের চ্যাট"
+    },
+    "complaintsByCat": {
+      "dental": "রোগীর অভিযোগ",
+      "hvac": "সার্ভিস অভিযোগ",
+      "salon": "ক্লায়েন্টের অভিযোগ"
+    }
   },
   "settings": {
     "language": "ভাষা"
