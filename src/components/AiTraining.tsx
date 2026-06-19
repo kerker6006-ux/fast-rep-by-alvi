@@ -362,9 +362,10 @@ const AiTraining = () => {
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2">
             <Brain className="h-5 w-5 text-primary" />
-            {t("aiTraining.title")}
+            {t(`aiTraining.titleByCat.${cat}`)}
           </h2>
-          <p className="text-sm text-muted-foreground">{t("aiTraining.subtitle")}</p>
+          <p className="text-sm text-muted-foreground">{t(`aiTraining.subtitleByCat.${cat}`)}</p>
+
         </div>
         {hasChanges && (
           <Button onClick={() => saveMutation.mutate(settings)} disabled={saveMutation.isPending} size="sm" className="gap-1.5">
