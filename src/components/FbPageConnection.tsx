@@ -180,7 +180,18 @@ const FbPageConnection = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fb-webhook`;
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+  const webhookUrl = `${supabaseUrl}/functions/v1/fb-webhook`;
+  const oauthRedirectUri = `${supabaseUrl}/functions/v1/fb-oauth-callback`;
+  const backendHost = (() => { try { return new URL(supabaseUrl).host; } catch { return supabaseUrl; } })();
+  const frontendHost = typeof window !== "undefined" ? window.location.host : "";
+
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const copyText = (val: string, key: string) => {
+    navigator.clipboard.writeText(val);
+    setCopiedField(key);
+    setTimeout(() => setCopiedField(null), 1500);
+  };
   const copyWebhook = () => {
     navigator.clipboard.writeText(webhookUrl);
     setCopied(true);
