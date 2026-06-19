@@ -540,9 +540,15 @@ async function handleMessagingEvent(
         await deductCredits(supabase, userId, deduction, hasImage ? "image_reply" : "text_reply");
       }
 
-      await detectAndProcessOrder(supabase, lovableApiKey, conversationId, messageText, replyText, userId);
-      await detectAndCreateComplaint(supabase, lovableApiKey, conversationId, senderId, pageAccessToken, messageText, replyText, userId);
-      await extractAndSaveLead(supabase, lovableApiKey, conversationId, userId);
+      if (settings.auto_create_orders !== "false") {
+        await detectAndProcessOrder(supabase, lovableApiKey, conversationId, messageText, replyText, userId);
+      }
+      if (settings.auto_create_complaints !== "false") {
+        await detectAndCreateComplaint(supabase, lovableApiKey, conversationId, senderId, pageAccessToken, messageText, replyText, userId);
+      }
+      if (settings.auto_create_leads !== "false") {
+        await extractAndSaveLead(supabase, lovableApiKey, conversationId, userId);
+      }
     } catch (aiError) {
       console.error("AI processing error:", aiError);
       const fallback = settings.welcome_message || "ধন্যবাদ! আমরা শীঘ্রই আপনার সাথে যোগাযোগ করব।";
