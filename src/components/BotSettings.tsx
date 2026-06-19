@@ -80,6 +80,26 @@ const BotSettings = () => {
       <div className="grid gap-6">
         <Card>
           <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Briefcase className="h-5 w-5" /> {t("botSettings.businessCategory")}</CardTitle>
+            <CardDescription>{t("botSettings.businessCategoryDesc")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Select
+              value={category || ""}
+              onValueChange={(v) => setCategory.mutate(v as BusinessCategory, { onSuccess: () => toast.success(t("onboarding.saved")) })}
+            >
+              <SelectTrigger><SelectValue placeholder={t("onboarding.pickOne")} /></SelectTrigger>
+              <SelectContent>
+                {BUSINESS_CATEGORIES.map((c) => (
+                  <SelectItem key={c} value={c}>{t(`category.${c}.name`)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle className="flex items-center gap-2"><Globe className="h-5 w-5" /> {t("botSettings.businessInfo")}</CardTitle>
             <CardDescription>{t("botSettings.businessInfoDesc")}</CardDescription>
           </CardHeader>
