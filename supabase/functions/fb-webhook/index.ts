@@ -484,36 +484,40 @@ async function handleMessagingEvent(
 // ---- Helper Functions ----
 
 async function getOrCreateConversation(
-  supabase: any, senderId: string, pageAccessToken: string, userId: string | null
+  supabase: any, senderId: string, pageAccessToken: string, userId: string | null,
+  channel: "facebook" | "instagram" = "facebook"
 ): Promise<string | null> {
   let query = supabase.from("conversations").select("id").eq("fb_sender_id", senderId);
   if (userId) query = query.eq("user_id", userId);
   const { data: existingConvo } = await query.maybeSingle();
 
-  // Always try to fetch sender name from FB profile
+  // Try to fetch sender name. For Instagram, the IG Graph profile endpoint differs
+  // (we get a username via /{igsid}?fields=name,username with the page token).
   let senderName = null;
   try {
+    const fields = channel === "instagram" ? "name,username" : "first_name,last_name";
     const profileRes = await fetch(
-      `https://graph.facebook.com/${senderId}?fields=first_name,last_name&access_token=${pageAccessToken}`
+      `https://graph.facebook.com/v21.0/${senderId}?fields=${fields}&access_token=${pageAccessToken}`
     );
     const profile = await profileRes.json();
-    if (profile.first_name || profile.last_name) {
+    if (channel === "instagram") {
+      senderName = profile.name || profile.username || null;
+    } else if (profile.first_name || profile.last_name) {
       senderName = `${profile.first_name || ""} ${profile.last_name || ""}`.trim();
     }
-    console.log("FB profile for", senderId, ":", JSON.stringify(profile));
+    console.log(`[${channel}] profile for`, senderId, ":", JSON.stringify(profile));
   } catch (e) {
-    console.error("FB profile fetch error:", e);
+    console.error("Profile fetch error:", e);
   }
 
   if (existingConvo) {
-    // Update sender_name if we got one and it's currently missing
     if (senderName) {
-      await supabase.from("conversations").update({ sender_name: senderName }).eq("id", existingConvo.id);
+      await supabase.from("conversations").update({ sender_name: senderName, channel }).eq("id", existingConvo.id);
     }
     return existingConvo.id;
   }
 
-  const insertData: any = { fb_sender_id: senderId, sender_name: senderName };
+  const insertData: any = { fb_sender_id: senderId, sender_name: senderName, channel };
   if (userId) insertData.user_id = userId;
 
   const { data: newConvo, error } = await supabase
