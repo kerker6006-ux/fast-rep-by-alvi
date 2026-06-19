@@ -43,11 +43,13 @@ const OrdersManager = () => {
   };
 
   const { data: orders, isLoading } = useQuery({
-    queryKey: ["orders"],
+    queryKey: ["orders", user?.id],
+    enabled: !!user?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
         .select("*, conversations(sender_name, fb_sender_id)")
+        .eq("user_id", user!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
