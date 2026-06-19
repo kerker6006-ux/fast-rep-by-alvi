@@ -261,6 +261,9 @@
     "replyPrimaryPh": "Por favor escríbenos al inbox 📩",
     "replyAltPh": "Respuesta en idioma alternativo…",
     "saveAll": "Guardar todos los cambios",
+    "loadTemplate": "Cargar plantilla inicial",
+    "templateLoaded": "Se cargaron {{count}} campos iniciales. Puedes editarlos cuando quieras.",
+    "templateAllSet": "Tu base de conocimientos ya está completa — nada que cargar.",
     "titleByCat": {
       "ecommerce": "Entrenamiento del Asistente de Tienda",
       "dental": "Entrenamiento de la Recepcionista IA",
