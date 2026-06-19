@@ -225,6 +225,7 @@ export type Database = {
       }
       conversations: {
         Row: {
+          channel: string
           created_at: string
           fb_sender_id: string
           followup_reason: string | null
@@ -237,6 +238,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          channel?: string
           created_at?: string
           fb_sender_id: string
           followup_reason?: string | null
@@ -249,6 +251,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          channel?: string
           created_at?: string
           fb_sender_id?: string
           followup_reason?: string | null
