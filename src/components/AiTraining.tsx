@@ -351,8 +351,10 @@ const AiTraining = () => {
           messages: [{ role: "user", content: `Analyze these real customer messages and suggest 8-10 FAQ entries (question + answer pairs). Focus on the MOST COMMON questions customers ask. Return JSON array: [{"q":"question","a":"suggested answer"}]. Customer messages:\n${customerMessages}` }],
           action: "faq_suggestions",
           settings,
+          category: cat,
         },
       });
+
 
       if (error) throw error;
       if (data?.faqs) {
