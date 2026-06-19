@@ -35,6 +35,9 @@ const STATUSES = ["new", "contacted", "booked", "closed"] as const;
 const LeadsManager = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { category } = useBusinessCategory();
+  const isService = category && category !== "ecommerce";
+  const ns = isService ? "appointments" : "leads";
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
