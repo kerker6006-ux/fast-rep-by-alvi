@@ -41,10 +41,8 @@ const CreditDashboard = () => {
 
   const costText = data?.costText ?? 0.003;
   const costImage = data?.costImage ?? 0.015;
-  const msgsPerDime = Math.floor(0.10 / costText);
-  const imgsPerDime = Math.floor(0.10 / costImage);
-  const textCents = (costText * 100).toFixed(2);
-  const imageCents = (costImage * 100).toFixed(2);
+  const msgsPerDollar = Math.floor(1 / costText);
+  const imgsPerDollar = Math.floor(1 / costImage);
 
   const txLabel = (type: string) => {
     if (type === "recharge") return t("credits.tx.recharge");
@@ -80,11 +78,11 @@ const CreditDashboard = () => {
         <CardContent className="space-y-3 text-sm">
           <div className="flex justify-between border-b pb-2">
             <span className="flex items-center gap-2"><MessageSquare className="h-4 w-4 text-blue-600" /> {t("credits.textReply")}</span>
-            <Badge variant="secondary">{fmtUSD(costText)} ({textCents}¢)</Badge>
+            <Badge variant="secondary">{fmtUSD(costText)}</Badge>
           </div>
           <div className="flex justify-between border-b pb-2">
             <span className="flex items-center gap-2"><Image className="h-4 w-4 text-purple-600" /> {t("credits.imageReply")}</span>
-            <Badge variant="secondary">{fmtUSD(costImage)} ({imageCents}¢)</Badge>
+            <Badge variant="secondary">{fmtUSD(costImage)}</Badge>
           </div>
           <div className="flex justify-between border-b pb-2">
             <span>{t("credits.orderDetection")}</span>
@@ -98,12 +96,12 @@ const CreditDashboard = () => {
       </Card>
 
       <Card className="border-primary/20 bg-primary/5">
-        <CardHeader><CardTitle className="text-base">{t("credits.what10cGets")}</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">{t("credits.what1Gets")}</CardTitle></CardHeader>
         <CardContent className="text-sm space-y-2">
-          <p>{t("credits.with10c")}</p>
+          <p>{t("credits.with1")}</p>
           <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-            <li><span className="font-semibold text-foreground">{t("credits.textRepliesLine", { count: msgsPerDime, cents: textCents })}</span></li>
-            <li><span className="font-semibold text-foreground">{t("credits.imageRepliesLine", { count: imgsPerDime, cents: imageCents })}</span></li>
+            <li><span className="font-semibold text-foreground">{t("credits.textRepliesLine", { count: msgsPerDollar })}</span></li>
+            <li><span className="font-semibold text-foreground">{t("credits.imageRepliesLine", { count: imgsPerDollar })}</span></li>
           </ul>
         </CardContent>
       </Card>
