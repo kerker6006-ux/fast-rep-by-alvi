@@ -24,6 +24,7 @@ import {
   parseSettingsJson,
   type SettingsMap,
 } from "@/lib/ai-training-settings";
+import AutoLearnPanel from "@/components/AutoLearnPanel";
 
 type CatField = { key: string; labelKey: string; phKey: string; type?: "text" | "textarea" };
 
