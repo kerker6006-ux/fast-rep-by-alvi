@@ -395,7 +395,7 @@ const ProductsManager = () => {
 
               {/* Main Product Image */}
               <div className="space-y-2">
-                <Label>Main Product Image</Label>
+                <Label>{t("products.mainImage")}</Label>
                 <div className="flex items-center gap-4">
                   {(editingProduct?.image_url || imageFile) && (
                     <img src={imageFile ? URL.createObjectURL(imageFile) : editingProduct?.image_url || ""} alt="Preview" className="h-20 w-20 rounded-xl object-cover border-2 border-border shadow-sm" />
@@ -410,17 +410,17 @@ const ProductsManager = () => {
               <div className="space-y-3 p-4 rounded-xl border-2 border-primary/30 bg-gradient-to-br from-accent/40 to-primary/5">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-semibold flex items-center gap-2">
-                    🎨 Color Variants
-                    <span className="text-xs font-normal text-muted-foreground">(Bot sends the exact color image customer asks for)</span>
+                    🎨 {t("products.colorVariants")}
+                    <span className="text-xs font-normal text-muted-foreground">{t("products.colorVariantsHint")}</span>
                   </Label>
                   <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10" onClick={() => setVariants(v => [...v, {color: "", file: null, image_url: ""}])}>
-                    <Plus className="h-3 w-3" /> Add Color
+                    <Plus className="h-3 w-3" /> {t("products.addColor")}
                   </Button>
                 </div>
                 {variants.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-[11px] text-primary/70 bg-primary/5 px-3 py-1.5 rounded-lg border border-primary/10">
-                      ⚠️ <strong>Important:</strong> Write color name clearly (e.g. "Cream", "Pink", "কালো"). The bot matches this name to send the correct image.
+                      ⚠️ {t("products.variantsImportant")}
                     </p>
                     <div className="grid gap-3">
                       {variants.map((v, i) => (
@@ -441,11 +441,11 @@ const ProductsManager = () => {
                           </div>
                           <div className="flex-1 space-y-2">
                             <div className="space-y-1">
-                              <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Color Name (Bot reads this)</Label>
-                              <Input value={v.color} onChange={e => setVariants(vs => vs.map((vv, ii) => ii === i ? {...vv, color: e.target.value} : vv))} placeholder="e.g. Cream, Pink, মেরুন, কালো" className="h-8 text-sm font-medium border-primary/20 focus:border-primary" />
+                              <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("products.variantNameLabel")}</Label>
+                              <Input value={v.color} onChange={e => setVariants(vs => vs.map((vv, ii) => ii === i ? {...vv, color: e.target.value} : vv))} placeholder={t("products.variantNamePh")} className="h-8 text-sm font-medium border-primary/20 focus:border-primary" />
                             </div>
                             <div className="space-y-1">
-                              <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Photo for this color</Label>
+                              <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("products.variantPhotoLabel")}</Label>
                               <Input type="file" accept="image/*" className="h-8 text-xs" onChange={e => setVariants(vs => vs.map((vv, ii) => ii === i ? {...vv, file: e.target.files?.[0] || null} : vv))} />
                             </div>
                           </div>
@@ -459,8 +459,8 @@ const ProductsManager = () => {
                 )}
                 {variants.length === 0 && (
                   <div className="text-center py-4 space-y-2">
-                    <p className="text-xs text-muted-foreground">No color variants yet.</p>
-                    <p className="text-[11px] text-muted-foreground/70">Example: Add "Cream" with cream hijab photo, "Pink" with pink hijab photo — bot sends the right one!</p>
+                    <p className="text-xs text-muted-foreground">{t("products.noVariants")}</p>
+                    <p className="text-[11px] text-muted-foreground/70">{t("products.variantsExample")}</p>
                   </div>
                 )}
               </div>
@@ -469,19 +469,19 @@ const ProductsManager = () => {
               <div className="space-y-3 p-4 rounded-xl border-2 border-primary/30 bg-gradient-to-br from-accent/40 to-primary/5">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-semibold flex items-center gap-2">
-                    📏 Size / ML Variants
-                    <span className="text-xs font-normal text-muted-foreground">(e.g. 50ml = 100$, 100ml = 200$)</span>
+                    📏 {t("products.sizeMl")}
+                    <span className="text-xs font-normal text-muted-foreground">{t("products.sizeMlHint")}</span>
                   </Label>
                   <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10" onClick={() => setSizeVariants(s => [...s, { size: "", price: 0 }])}>
-                    <Plus className="h-3 w-3" /> Add Size
+                    <Plus className="h-3 w-3" /> {t("products.addSize")}
                   </Button>
                 </div>
                 {sizeVariants.length > 0 ? (
                   <div className="grid gap-2">
                     {sizeVariants.map((s, i) => (
                       <div key={i} className="flex items-center gap-2 bg-background rounded-lg p-2 border">
-                        <Input value={s.size} placeholder="50ml / 100ml / 250g" className="h-9 flex-1" onChange={e => setSizeVariants(arr => arr.map((it, ii) => ii === i ? { ...it, size: e.target.value } : it))} />
-                        <Input type="number" value={s.price || ""} placeholder="Price $" className="h-9 w-32" onChange={e => setSizeVariants(arr => arr.map((it, ii) => ii === i ? { ...it, price: parseFloat(e.target.value) || 0 } : it))} />
+                        <Input value={s.size} placeholder={t("products.sizeUnitPh")} className="h-9 flex-1" onChange={e => setSizeVariants(arr => arr.map((it, ii) => ii === i ? { ...it, size: e.target.value } : it))} />
+                        <Input type="number" value={s.price || ""} placeholder={t("products.priceShort")} className="h-9 w-32" onChange={e => setSizeVariants(arr => arr.map((it, ii) => ii === i ? { ...it, price: parseFloat(e.target.value) || 0 } : it))} />
                         <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => setSizeVariants(arr => arr.filter((_, ii) => ii !== i))}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -489,7 +489,7 @@ const ProductsManager = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-muted-foreground text-center py-2">No size options yet. Add e.g. "50ml" → 100$, "100ml" → 200$</p>
+                  <p className="text-xs text-muted-foreground text-center py-2">{t("products.noSizeOptions")}</p>
                 )}
               </div>
 
@@ -497,7 +497,7 @@ const ProductsManager = () => {
               <div className="flex items-center justify-between pt-2">
                 <div className="flex items-center gap-2">
                   <Switch checked={form.is_active} onCheckedChange={v => setForm(f => ({ ...f, is_active: v }))} />
-                  <Label className="text-sm">Active (Bot will show this)</Label>
+                  <Label className="text-sm">{t("products.activeBot")}</Label>
                 </div>
                 <Button onClick={() => saveMutation.mutate()} disabled={!form.name || saveMutation.isPending} className="px-6 gap-2 shadow-md">
                   {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
