@@ -1,0 +1,58 @@
+{
+  "app": {
+    "name": "Fast Rep",
+    "tagline": "AI-powered Messenger auto-reply bot"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signUp": "Create account",
+    "signInTitle": "Welcome back",
+    "signUpTitle": "Get started with Fast Rep",
+    "signInSubtitle": "Enter your credentials to access your dashboard",
+    "signUpSubtitle": "Create your account in seconds. No approval required.",
+    "displayName": "Your name",
+    "email": "Email",
+    "password": "Password",
+    "signInBtn": "Sign In",
+    "signUpBtn": "Create Account",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "welcomeBack": "Welcome back!",
+    "accountCreated": "Account created — welcome aboard!"
+  },
+  "nav": {
+    "analytics": "Analytics",
+    "credits": "Credits",
+    "aiUsage": "AI Usage",
+    "aiTraining": "AI Training",
+    "products": "Products",
+    "autoImport": "Auto-Import",
+    "suggestions": "Suggestions",
+    "websiteImport": "Website Import",
+    "orders": "Orders",
+    "complaints": "Complaints",
+    "chats": "Chats",
+    "autoReply": "Auto-Reply",
+    "scheduled": "Scheduled",
+    "fbPages": "FB Pages",
+    "settings": "Settings",
+    "admin": "Admin",
+    "signOut": "Sign Out",
+    "collapse": "Collapse",
+    "language": "Language"
+  },
+  "analytics": {
+    "title": "Dashboard",
+    "subtitle": "Here's what's happening with your bot today.",
+    "totalConversations": "Conversations",
+    "totalMessages": "Total Messages",
+    "todayMessages": "Today",
+    "totalOrders": "Orders",
+    "deliveredOrders": "Delivered",
+    "totalRevenue": "Revenue",
+    "recentConversations": "Recent Conversations",
+    "last7Days": "Last 7 days",
+    "noRecent": "No recent conversations.",
+    "customer": "Customer"
+  }
+}

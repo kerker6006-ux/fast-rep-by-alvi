@@ -1,36 +1,33 @@
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 import {
   BarChart3, Package, ShoppingCart, MessageSquare,
-  Zap, Clock, Settings, Bot, Brain, ChevronLeft, ChevronRight, LogOut, Globe, ShieldCheck, Activity, Coins, AlertTriangle, Inbox, Lightbulb
+  Zap, Clock, Settings, Bot, Brain, ChevronLeft, ChevronRight, LogOut, Globe, ShieldCheck, Activity, Coins, AlertTriangle, Inbox, Lightbulb,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
-type NavItem = {
-  id: string;
-  label: string;
-  icon: React.ElementType;
-  adminOnly?: boolean;
-};
+type NavItem = { id: string; labelKey: string; icon: React.ElementType; adminOnly?: boolean };
 
 const navItems: NavItem[] = [
-  { id: "analytics", label: "Analytics", icon: BarChart3 },
-  { id: "credits", label: "Credits", icon: Coins },
-  { id: "ai-usage", label: "AI Usage", icon: Activity },
-  { id: "ai-training", label: "AI Training", icon: Brain },
-  { id: "products", label: "Products", icon: Package },
-  { id: "pending-products", label: "Auto-Import", icon: Inbox },
-  { id: "suggestions", label: "Suggestions", icon: Lightbulb },
-  { id: "website-import", label: "Website Import", icon: Globe },
-  { id: "orders", label: "Orders", icon: ShoppingCart },
-  { id: "complaints", label: "Complaints", icon: AlertTriangle },
-  { id: "conversations", label: "Chats", icon: MessageSquare },
-  { id: "auto-reply", label: "Auto-Reply", icon: Zap },
-  { id: "scheduled", label: "Scheduled", icon: Clock },
-  { id: "fb-pages", label: "FB Pages", icon: Globe },
-  { id: "settings", label: "Settings", icon: Settings },
-  { id: "admin", label: "Admin", icon: ShieldCheck, adminOnly: true },
+  { id: "analytics", labelKey: "nav.analytics", icon: BarChart3 },
+  { id: "credits", labelKey: "nav.credits", icon: Coins },
+  { id: "ai-usage", labelKey: "nav.aiUsage", icon: Activity },
+  { id: "ai-training", labelKey: "nav.aiTraining", icon: Brain },
+  { id: "products", labelKey: "nav.products", icon: Package },
+  { id: "pending-products", labelKey: "nav.autoImport", icon: Inbox },
+  { id: "suggestions", labelKey: "nav.suggestions", icon: Lightbulb },
+  { id: "website-import", labelKey: "nav.websiteImport", icon: Globe },
+  { id: "orders", labelKey: "nav.orders", icon: ShoppingCart },
+  { id: "complaints", labelKey: "nav.complaints", icon: AlertTriangle },
+  { id: "conversations", labelKey: "nav.chats", icon: MessageSquare },
+  { id: "auto-reply", labelKey: "nav.autoReply", icon: Zap },
+  { id: "scheduled", labelKey: "nav.scheduled", icon: Clock },
+  { id: "fb-pages", labelKey: "nav.fbPages", icon: Globe },
+  { id: "settings", labelKey: "nav.settings", icon: Settings },
+  { id: "admin", labelKey: "nav.admin", icon: ShieldCheck, adminOnly: true },
 ];
 
 interface DashboardSidebarProps {
@@ -41,32 +38,29 @@ interface DashboardSidebarProps {
 }
 
 const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange }: DashboardSidebarProps) => {
+  const { t } = useTranslation();
   const { signOut, user } = useAuth();
   const { isAdmin } = useIsAdmin();
 
-  const visibleItems = navItems.filter(item => !item.adminOnly || isAdmin);
+  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <aside
       className={cn(
         "fixed left-0 top-0 z-40 h-screen flex flex-col border-r transition-all duration-300 ease-out",
         "bg-sidebar text-sidebar-foreground border-sidebar-border",
-        collapsed ? "w-[72px]" : "w-[240px]"
+        collapsed ? "w-[72px]" : "w-[240px]",
       )}
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border shrink-0">
-        <div className="h-9 w-9 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0">
-          <Bot className="h-5 w-5 text-sidebar-primary-foreground" />
+        <div className="h-9 w-9 rounded-xl bg-gradient-primary flex items-center justify-center shrink-0 shadow-glow">
+          <Bot className="h-5 w-5 text-white" />
         </div>
         {!collapsed && (
           <div className="animate-fade-in overflow-hidden">
-            <p className="font-semibold text-sm text-sidebar-primary-foreground leading-tight truncate">
-              Fast Rep
-            </p>
-            <p className="text-[11px] text-sidebar-foreground/60 leading-tight truncate">
-              AI Messenger Bot
-            </p>
+            <p className="font-display font-bold text-sm leading-tight truncate">Fast Rep</p>
+            <p className="text-[11px] text-sidebar-foreground/60 leading-tight truncate">{t("app.tagline")}</p>
           </div>
         )}
       </div>
@@ -80,33 +74,27 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
               key={item.id}
               onClick={() => onTabChange(item.id)}
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+                "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
                 "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 "active:scale-[0.97]",
                 isActive
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm shadow-sidebar-primary/30"
+                  ? "bg-gradient-primary text-white shadow-glow"
                   : "text-sidebar-foreground",
-                collapsed && "justify-center px-0"
+                collapsed && "justify-center px-0",
               )}
             >
               <item.icon className="h-[18px] w-[18px] shrink-0" />
-              {!collapsed && (
-                <span className="truncate animate-fade-in">{item.label}</span>
-              )}
+              {!collapsed && <span className="truncate animate-fade-in">{t(item.labelKey)}</span>}
             </button>
           );
-
           if (collapsed) {
             return (
               <Tooltip key={item.id} delayDuration={0}>
                 <TooltipTrigger asChild>{button}</TooltipTrigger>
-                <TooltipContent side="right" className="font-medium">
-                  {item.label}
-                </TooltipContent>
+                <TooltipContent side="right" className="font-medium">{t(item.labelKey)}</TooltipContent>
               </Tooltip>
             );
           }
-
           return button;
         })}
       </nav>
@@ -114,29 +102,28 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
       {/* Bottom actions */}
       <div className="border-t border-sidebar-border p-2 shrink-0 space-y-0.5">
         {!collapsed && user && (
-          <div className="px-3 py-2 text-[11px] text-sidebar-foreground/50 truncate">
-            {user.email}
-          </div>
+          <div className="px-3 py-2 text-[11px] text-sidebar-foreground/50 truncate">{user.email}</div>
         )}
+        <LanguageSwitcher collapsed={collapsed} />
         <button
           onClick={signOut}
           className={cn(
-            "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-sidebar-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-colors",
-            collapsed && "justify-center px-0"
+            "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-sidebar-foreground/70 hover:text-destructive hover:bg-destructive/10 transition-colors",
+            collapsed && "justify-center px-0",
           )}
         >
           <LogOut className="h-4 w-4" />
-          {!collapsed && <span>Sign Out</span>}
+          {!collapsed && <span>{t("nav.signOut")}</span>}
         </button>
         <button
           onClick={() => onCollapsedChange(!collapsed)}
           className={cn(
             "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors",
-            collapsed && "justify-center px-0"
+            collapsed && "justify-center px-0",
           )}
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          {!collapsed && <span>Collapse</span>}
+          {!collapsed && <span>{t("nav.collapse")}</span>}
         </button>
       </div>
     </aside>
