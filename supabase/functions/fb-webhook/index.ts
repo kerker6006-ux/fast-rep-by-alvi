@@ -1049,7 +1049,7 @@ ${businessInfoObj.faqs ? `\nFAQs: ${businessInfoObj.faqs}` : ""}
   // If message has Bangla script OR is Banglish, reply in Bangla
   const shouldReplyBangla = !isCurrentMsgEnglish || isBanglish;
 
-  const systemPrompt = `#############################
+  const systemPrompt = `${receptionistPreamble}#############################
 # LANGUAGE RULE — HIGHEST PRIORITY — MUST FOLLOW BEFORE ANYTHING ELSE
 #############################
 LANGUAGE RULE — STRICT:
