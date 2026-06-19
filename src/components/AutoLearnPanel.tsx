@@ -80,12 +80,11 @@ const AutoLearnPanel = () => {
       } else if (s.kind === "personality") {
         patch.ai_personality = s.payload.addition;
       } else if (s.kind === "rule") {
-        // Insert auto_reply_rule directly
         const { error } = await supabase.from("auto_reply_rules").insert({
           user_id: user!.id,
-          keywords: [s.payload.keyword],
-          response: s.payload.response,
-          enabled: true,
+          trigger_keywords: [s.payload.keyword],
+          response_text: s.payload.response,
+          is_active: true,
           priority: 5,
         });
         if (error) throw error;
