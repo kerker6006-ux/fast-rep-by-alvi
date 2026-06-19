@@ -96,12 +96,12 @@ const CreditDashboard = () => {
       </Card>
 
       <Card className="border-primary/20 bg-primary/5">
-        <CardHeader><CardTitle className="text-base">{t("credits.what10cGets")}</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">{t("credits.what1Gets")}</CardTitle></CardHeader>
         <CardContent className="text-sm space-y-2">
-          <p>{t("credits.with10c")}</p>
+          <p>{t("credits.with1")}</p>
           <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-            <li><span className="font-semibold text-foreground">{t("credits.textRepliesLine", { count: msgsPerDime, cents: textCents })}</span></li>
-            <li><span className="font-semibold text-foreground">{t("credits.imageRepliesLine", { count: imgsPerDime, cents: imageCents })}</span></li>
+            <li><span className="font-semibold text-foreground">{t("credits.textRepliesLine", { count: msgsPerDollar })}</span></li>
+            <li><span className="font-semibold text-foreground">{t("credits.imageRepliesLine", { count: imgsPerDollar })}</span></li>
           </ul>
         </CardContent>
       </Card>
