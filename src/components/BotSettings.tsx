@@ -100,6 +100,28 @@ const BotSettings = () => {
 
         <Card>
           <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Globe className="h-5 w-5" /> {t("botSettings.replyLanguage", "Reply Language")}</CardTitle>
+            <CardDescription>{t("botSettings.replyLanguageDesc", "Choose which language the bot should reply in. Mix mode auto-detects and mirrors the customer's language (first message is English; if unknown, the bot will ask).")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Select
+              value={settings.reply_language || "mix"}
+              onValueChange={(v) => update("reply_language", v)}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mix">🌐 Mix (auto-detect & mirror)</SelectItem>
+                <SelectItem value="bn">🇧🇩 Bangla only (বাংলা)</SelectItem>
+                <SelectItem value="ko">🇰🇷 Korean only (한국어)</SelectItem>
+                <SelectItem value="en">🇺🇸 English only</SelectItem>
+                <SelectItem value="es">🇪🇸 Spanish only (Español)</SelectItem>
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle className="flex items-center gap-2"><Globe className="h-5 w-5" /> {t("botSettings.businessInfo")}</CardTitle>
             <CardDescription>{t("botSettings.businessInfoDesc")}</CardDescription>
           </CardHeader>
