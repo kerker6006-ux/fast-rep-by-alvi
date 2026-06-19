@@ -861,6 +861,50 @@ async function generateAiReply(
   if (userId) productQuery = productQuery.eq("user_id", userId);
   const { data: products } = await productQuery;
 
+  // ----- AI Receptionist: load business category + services -----
+  let businessCategory: string | null = null;
+  let businessInfoObj: any = {};
+  let servicesList: any[] = [];
+  if (userId) {
+    const { data: prof } = await supabase
+      .from("profiles").select("business_category, business_info").eq("id", userId).maybeSingle();
+    businessCategory = prof?.business_category || null;
+    businessInfoObj = prof?.business_info || {};
+    if (businessCategory && businessCategory !== "ecommerce") {
+      const { data: svcs } = await supabase
+        .from("services").select("name, description, price_text, duration_text, service_area")
+        .eq("user_id", userId).eq("category", businessCategory).eq("active", true);
+      servicesList = svcs || [];
+    }
+  }
+
+  const leadFieldsByCategory: Record<string, string[]> = {
+    ecommerce: ["Customer Name", "Phone Number", "Product Interested In"],
+    dental:    ["Patient Name", "Phone Number", "Interested Service", "Preferred Appointment Date"],
+    hvac:      ["Customer Name", "Phone Number", "Address", "Service Needed", "Preferred Visit Date"],
+    salon:     ["Customer Name", "Phone Number", "Service Interested In", "Appointment Date"],
+  };
+  const categoryLabel: Record<string, string> = {
+    ecommerce: "online store", dental: "dental clinic",
+    hvac: "HVAC / home services company", salon: "beauty salon / med spa",
+  };
+  const receptionistPreamble = businessCategory ? `#############################
+# ROLE — AI RECEPTIONIST (HIGHEST PRIORITY)
+#############################
+You are the AI Receptionist for a ${categoryLabel[businessCategory] || "business"}. Your two jobs:
+1) ANSWER questions using ONLY the knowledge base below. If something is not in the knowledge base, say you'll check with the team — NEVER invent prices, hours, services, or policies.
+2) CAPTURE a lead by collecting these fields naturally during the conversation: ${leadFieldsByCategory[businessCategory].join(", ")}. Ask one missing field at a time.
+
+${servicesList.length ? `SERVICES WE OFFER:\n${servicesList.map((s: any) => `- ${s.name}${s.price_text ? ` — ${s.price_text}` : ""}${s.duration_text ? ` (${s.duration_text})` : ""}${s.description ? `: ${s.description}` : ""}${s.service_area ? ` | Area: ${s.service_area}` : ""}`).join("\n")}` : ""}
+${businessInfoObj.delivery_info ? `\nDELIVERY: ${businessInfoObj.delivery_info}` : ""}
+${businessInfoObj.return_policy ? `\nRETURN POLICY: ${businessInfoObj.return_policy}` : ""}
+${businessInfoObj.hours ? `\nHOURS: ${businessInfoObj.hours}` : ""}
+${businessInfoObj.address ? `\nADDRESS: ${businessInfoObj.address}` : ""}
+${businessInfoObj.faqs ? `\nFAQs: ${businessInfoObj.faqs}` : ""}
+#############################
+` : "";
+
+
   // Fetch website knowledge base (if any)
   let websiteKnowledge = "";
   if (userId) {
