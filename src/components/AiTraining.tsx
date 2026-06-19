@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   Brain, Save, Plus, X, MessageCircle, Send, Bot, User,
-  Sparkles, Settings2, Loader2, CheckCircle, RotateCcw, Wand2, Pencil,
+  Sparkles, Settings2, Loader2, CheckCircle, RotateCcw, Wand2, Pencil, Languages,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -261,7 +261,31 @@ const AiTraining = () => {
 
   // ---- Chat Functions ----
 
-  const startChat = async () => {
+  const chatLang = settings.training_chat_language || "";
+  const LANG_OPTIONS: { code: string; label: string }[] = [
+    { code: "en", label: "English" },
+    { code: "bn", label: "বাংলা" },
+    { code: "es", label: "Español" },
+    { code: "ko", label: "한국어" },
+  ];
+  const chatLangLabel = LANG_OPTIONS.find((l) => l.code === chatLang)?.label || "";
+
+  const setChatLanguage = async (code: string) => {
+    const next = { ...settings, training_chat_language: code };
+    setSettings(next);
+    try {
+      await upsertSettings({ training_chat_language: code });
+      await queryClient.invalidateQueries({ queryKey: ["bot-settings", user?.id] });
+      const label = LANG_OPTIONS.find((l) => l.code === code)?.label || code;
+      toast.success(t("aiTraining.languageLockedToast", { lang: label }));
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save language");
+    }
+  };
+
+  const startChat = async (overrideLang?: string) => {
+    const lang = overrideLang || chatLang;
+    if (!lang) return; // picker handles this
     setChatStarted(true);
     setIsChatLoading(true);
     try {
@@ -270,6 +294,7 @@ const AiTraining = () => {
           messages: [{ role: "user", content: "Hi, I want to set up my bot. Help me." }],
           settings,
           category: cat,
+          language: lang,
         },
       });
       if (error) throw error;
@@ -298,7 +323,7 @@ const AiTraining = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke("ai-training-chat", {
-        body: { messages: newMessages, settings, category: cat },
+        body: { messages: newMessages, settings, category: cat, language: chatLang },
       });
       if (error) throw error;
       if (data.error) throw new Error(data.error);
@@ -321,7 +346,7 @@ const AiTraining = () => {
     setIsGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke("ai-training-chat", {
-        body: { messages: chatMessages, action: "generate_settings", settings, category: cat },
+        body: { messages: chatMessages, action: "generate_settings", settings, category: cat, language: chatLang },
       });
       if (error) throw error;
       if (data.error) throw new Error(data.error);
@@ -357,6 +382,25 @@ const AiTraining = () => {
       } catch { /* ignore */ }
     }
   };
+
+  const changeChatLanguage = async () => {
+    // Clear language + history, return to picker
+    setChatMessages([]);
+    setChatStarted(false);
+    const next = { ...settings };
+    delete next.training_chat_language;
+    setSettings(next);
+    if (user?.id) {
+      try {
+        await supabase
+          .from("bot_settings")
+          .delete()
+          .eq("user_id", user.id)
+          .in("setting_key", ["training_chat_language", "ai_training_chat_history"]);
+      } catch { /* ignore */ }
+    }
+  };
+
 
 
   // ---- Manual helpers ----
@@ -492,23 +536,61 @@ const AiTraining = () => {
         {/* ===== AI WIZARD TAB ===== */}
         <TabsContent value="wizard" className="space-y-4">
           {!chatStarted ? (
-            <Card className="border-dashed border-primary/30">
-              <CardContent className="flex flex-col items-center justify-center py-10 space-y-4">
-                <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Bot className="h-7 w-7 text-primary" />
-                </div>
-                <div className="text-center space-y-1.5">
-                  <h3 className="font-semibold text-lg">{t("aiTraining.wizardTitle")}</h3>
-                  <p className="text-sm text-muted-foreground max-w-sm">
-                    {t("aiTraining.wizardDesc")}
-                  </p>
-                </div>
-                <Button onClick={startChat} className="gap-2">
-                  <Sparkles className="h-4 w-4" />
-                  {t("aiTraining.startTraining")}
-                </Button>
-              </CardContent>
-            </Card>
+            !chatLang ? (
+              <Card className="border-dashed border-primary/30">
+                <CardContent className="flex flex-col items-center justify-center py-10 space-y-4">
+                  <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Languages className="h-7 w-7 text-primary" />
+                  </div>
+                  <div className="text-center space-y-1.5">
+                    <h3 className="font-semibold text-lg">{t("aiTraining.chooseLanguageTitle")}</h3>
+                    <p className="text-sm text-muted-foreground max-w-sm">
+                      {t("aiTraining.chooseLanguageDesc")}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {LANG_OPTIONS.map((l) => (
+                      <Button
+                        key={l.code}
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          await setChatLanguage(l.code);
+                          await startChat(l.code);
+                        }}
+                        className="gap-1.5"
+                      >
+                        {l.label}
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border-dashed border-primary/30">
+                <CardContent className="flex flex-col items-center justify-center py-10 space-y-4">
+                  <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Bot className="h-7 w-7 text-primary" />
+                  </div>
+                  <div className="text-center space-y-1.5">
+                    <h3 className="font-semibold text-lg">{t("aiTraining.wizardTitle")}</h3>
+                    <p className="text-sm text-muted-foreground max-w-sm">
+                      {t("aiTraining.wizardDesc")}
+                    </p>
+                    <p className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                      <Languages className="h-3 w-3" /> {chatLangLabel}
+                      <button onClick={changeChatLanguage} className="underline ml-1 hover:text-primary">
+                        {t("aiTraining.changeLanguage")}
+                      </button>
+                    </p>
+                  </div>
+                  <Button onClick={() => startChat()} className="gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    {t("aiTraining.startTraining")}
+                  </Button>
+                </CardContent>
+              </Card>
+            )
           ) : (
             <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
             <Card className="flex flex-col" style={{ height: "calc(100vh - 260px)", minHeight: "400px" }}>
@@ -517,6 +599,11 @@ const AiTraining = () => {
                 <div className="flex items-center gap-2">
                   <Bot className="h-4 w-4 text-primary" />
                   <CardTitle className="text-sm">{t("aiTraining.assistant")}</CardTitle>
+                  {chatLangLabel && (
+                    <span className="text-[10px] text-muted-foreground inline-flex items-center gap-1 ml-1 px-1.5 py-0.5 rounded bg-muted">
+                      <Languages className="h-3 w-3" /> {chatLangLabel}
+                    </span>
+                  )}
                 </div>
                 <div className="flex gap-1.5">
                   <Button
@@ -528,6 +615,9 @@ const AiTraining = () => {
                   >
                     {isGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />}
                     {isGenerating ? t("aiTraining.generating") : t("aiTraining.applySettings")}
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={changeChatLanguage} className="h-7 text-xs gap-1" title={t("aiTraining.changeLanguage")}>
+                    <Languages className="h-3 w-3" />
                   </Button>
                   <Button variant="ghost" size="sm" onClick={resetChat} className="h-7 text-xs gap-1">
                     <RotateCcw className="h-3 w-3" /> {t("aiTraining.resetConversation")}

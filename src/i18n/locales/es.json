@@ -358,7 +358,11 @@
     "askHintPrefix": "Por favor ayúdame a configurar:",
     "resetConversation": "Reiniciar conversación",
     "itemsLabel": "elementos",
-    "businessName": "Nombre del negocio"
+    "businessName": "Nombre del negocio",
+    "chooseLanguageTitle": "¿En qué idioma chateamos?",
+    "chooseLanguageDesc": "Seguiré respondiendo en este idioma hasta que pidas cambiarlo.",
+    "changeLanguage": "Cambiar idioma",
+    "languageLockedToast": "Idioma del chat de entrenamiento: {{lang}}."
   },
   "autoReply": {
     "title": "Reglas de auto-respuesta",

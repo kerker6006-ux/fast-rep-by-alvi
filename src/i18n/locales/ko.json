@@ -358,7 +358,11 @@
     "askHintPrefix": "다음 항목을 설정해 주세요:",
     "resetConversation": "대화 초기화",
     "itemsLabel": "개",
-    "businessName": "비즈니스 이름"
+    "businessName": "비즈니스 이름",
+    "chooseLanguageTitle": "어떤 언어로 대화할까요?",
+    "chooseLanguageDesc": "변경을 요청하실 때까지 이 언어로 계속 답변하겠습니다.",
+    "changeLanguage": "언어 변경",
+    "languageLockedToast": "학습 채팅 언어가 {{lang}}(으)로 설정되었습니다."
   },
   "autoReply": {
     "title": "자동 응답 규칙",

@@ -12,8 +12,11 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, action, settings, category } = await req.json();
+    const { messages, action, settings, category, language } = await req.json();
     const cat: string = (category && ["ecommerce", "dental", "hvac", "salon"].includes(category)) ? category : "ecommerce";
+    const LANG_NAMES: Record<string, string> = { en: "English", bn: "Bangla (বাংলা)", es: "Spanish (Español)", ko: "Korean (한국어)" };
+    const chatLang: string = (language && LANG_NAMES[language]) ? language : (settings?.training_chat_language && LANG_NAMES[settings.training_chat_language] ? settings.training_chat_language : "");
+    const chatLangName = chatLang ? LANG_NAMES[chatLang] : "";
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -213,8 +216,13 @@ Rules:
       salon: `DO NOT ask about delivery, returns, payment methods for goods, product catalog, or order collection.`,
     };
 
+    const languageRule = chatLangName
+      ? `\nLANGUAGE LOCK: ALWAYS reply ONLY in ${chatLangName}. The user explicitly chose ${chatLangName} for this training chat. Do NOT switch languages even if the user writes a single word in another language. Only switch if the user clearly and explicitly asks you to change the chat language (e.g. "switch to English", "change language to Spanish").`
+      : `\nMirror the user's language (English/Spanish/Korean/Bangla).`;
+
     const systemPrompt = `${wizardByCategory[cat]}
 ${offLimitsByCategory[cat]}
+${languageRule}
 
 ALREADY CONFIGURED (DO NOT ASK ABOUT THESE AGAIN — only confirm if the user brings them up):
 ${knownSummary}
@@ -229,7 +237,6 @@ RULES FOR YOU:
 - Ask 1-2 questions at a time, NOT all at once. Keep messages 3-4 lines max.
 - After each answer, briefly acknowledge it and move to the next MISSING piece.
 - NEVER re-ask anything in the ALREADY CONFIGURED list.
-- Mirror the user's language (English/Spanish/Korean/Bangla).
 - When the MISSING list is empty, say "Your setup is complete — want me to save?" and stop asking new questions.`;
 
 
