@@ -136,7 +136,7 @@ const ServicesManager = () => {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">{t("services.title")}</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t(`services.titleByCat.${cat}`)}</h2>
           <p className="text-muted-foreground">{t(`services.subtitle.${cat}`)}</p>
         </div>
         <div className="flex gap-2">
