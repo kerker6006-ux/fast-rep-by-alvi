@@ -1141,6 +1141,41 @@ ${businessInfoObj.faqs ? `\nFAQs: ${businessInfoObj.faqs}` : ""}
   // If message has Bangla script OR is Banglish, reply in Bangla
   const shouldReplyBangla = !isCurrentMsgEnglish || isBanglish;
 
+  // ====== LANGUAGE PREFERENCE (user-controlled in Bot Settings) ======
+  // Supported: "bn" | "ko" | "en" | "es" | "mix" (default: mix)
+  const replyLang = (settings.reply_language || "mix").toLowerCase();
+  const inboundCount = (recentMessages || []).filter((m: any) => m.direction === "inbound").length;
+  const isFirstInbound = inboundCount <= 1; // current message is included
+  const hasKorean = messageText ? /[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]/.test(messageText) : false;
+  const hasBangla = messageText ? /[\u0980-\u09FF]/.test(messageText) : false;
+  const hasSpanish = messageText ? /[áéíóúñ¿¡]/i.test(messageText) : false;
+  const detectedLang = hasKorean ? "ko" : hasBangla ? "bn" : hasSpanish ? "es" : (isBanglish ? "bn-latin" : (isCurrentMsgEnglish ? "en" : "unknown"));
+
+  let languageDirective = "";
+  if (replyLang === "bn") {
+    languageDirective = `LANGUAGE RULE — STRICT:\n- ALWAYS reply in Bangla script (বাংলা). Never English, never Banglish, never any other language.\n- Product names may remain in English. Everything else must be Bangla script.`;
+  } else if (replyLang === "ko") {
+    languageDirective = `LANGUAGE RULE — STRICT:\n- ALWAYS reply in Korean (한국어). Never English, never any other language.\n- Product names may remain in English. Everything else must be Korean.`;
+  } else if (replyLang === "en") {
+    languageDirective = `LANGUAGE RULE — STRICT:\n- ALWAYS reply in clear, simple English. Never any other language.`;
+  } else if (replyLang === "es") {
+    languageDirective = `LANGUAGE RULE — STRICT:\n- ALWAYS reply in Spanish (Español). Never any other language.`;
+  } else {
+    // mix mode: detect & mirror; first message English; ask if unknown
+    languageDirective = `LANGUAGE RULE — MIX MODE (STRICT):
+- If this is the customer's FIRST message in the conversation, reply in ENGLISH.
+- Otherwise, DETECT the customer's language and reply in EXACTLY that language:
+  • Bangla script (বাংলা) → reply in Bangla script
+  • Korean (한국어) → reply in Korean
+  • Spanish → reply in Spanish
+  • English → reply in English
+  • Banglish (Bangla in Latin letters) → reply in Banglish
+- If you CANNOT confidently identify the language, politely ASK the customer which language they prefer (offer: English / বাংলা / 한국어 / Español).
+- NEVER switch languages mid-conversation unless the customer switches first.
+${isFirstInbound ? "→ This IS the first message: reply in English." : `→ Detected language: ${detectedLang}. Reply in that language.`}`;
+  }
+  // ====== END LANGUAGE PREFERENCE ======
+
   // Branch system prompt by business category.
   // Service verticals (dental/hvac/salon) get a clean AI Receptionist prompt
   // with no product catalog, no order/shopkeeper/skincare bias.
