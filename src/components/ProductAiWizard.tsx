@@ -114,13 +114,13 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
 
       const userMsg: WizardMessage = {
         role: "user",
-        content: `I uploaded ${urls.length} product image${urls.length > 1 ? 's' : ''}, please analyze ${urls.length > 1 ? 'them all' : 'it'}.`,
+        content: urls.length > 1 ? t("products.wUploadedMany", { count: urls.length }) : t("products.wUploadedOne", { count: urls.length }),
         image_urls: urls,
       };
       setMessages(prev => [...prev, userMsg]);
       await sendToAi([...messages, userMsg]);
     } catch (err: any) {
-      toast.error("Failed to upload images: " + err.message);
+      toast.error(t("products.wUploadFail") + ": " + err.message);
     } finally {
       setUploadingImage(false);
     }
