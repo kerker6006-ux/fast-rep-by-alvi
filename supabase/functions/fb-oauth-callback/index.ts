@@ -55,9 +55,9 @@ Deno.serve(async (req) => {
     const longJson = await longRes.json();
     const userAccessToken = longJson.access_token || tokenJson.access_token;
 
-    // Fetch pages
+    // Fetch pages with linked Instagram Business Account
     const pagesRes = await fetch(
-      `${FB_GRAPH}/me/accounts?fields=id,name,access_token,category,picture{url},tasks&limit=200&access_token=${encodeURIComponent(userAccessToken)}`,
+      `${FB_GRAPH}/me/accounts?fields=id,name,access_token,category,picture{url},tasks,instagram_business_account{id,username,profile_picture_url}&limit=200&access_token=${encodeURIComponent(userAccessToken)}`,
     );
     const pagesJson = await pagesRes.json();
     if (!pagesRes.ok) {
@@ -70,6 +70,9 @@ Deno.serve(async (req) => {
       category: p.category ?? null,
       picture_url: p.picture?.data?.url ?? null,
       tasks: p.tasks ?? [],
+      ig_business_account_id: p.instagram_business_account?.id ?? null,
+      ig_username: p.instagram_business_account?.username ?? null,
+      ig_picture_url: p.instagram_business_account?.profile_picture_url ?? null,
     }));
 
     // Store session row keyed by random session token
