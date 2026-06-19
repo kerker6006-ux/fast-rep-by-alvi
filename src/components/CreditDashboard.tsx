@@ -165,7 +165,7 @@ const CreditDashboard = () => {
                   </div>
                   <div className="text-right">
                     <p className={`text-sm font-bold ${tx.amount > 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                      {tx.amount > 0 ? "+" : ""}{fmtBalance(Math.abs(tx.amount))}{tx.amount < 0 ? "" : ""}
+                      {tx.amount > 0 ? "+" : "−"}{fmtBalance(Math.abs(tx.amount))}
                     </p>
                     <p className="text-[10px] text-muted-foreground">{new Date(tx.created_at).toLocaleString()}</p>
                   </div>
