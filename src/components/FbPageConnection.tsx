@@ -13,8 +13,9 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Globe, Plus, Trash2, Copy, Check, RefreshCw, Loader2, Facebook, ChevronRight } from "lucide-react";
+import { Globe, Plus, Trash2, Copy, Check, RefreshCw, Loader2, Facebook, ChevronRight, Activity } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 type FbPage = {
   id: string;
@@ -36,6 +37,7 @@ const FB_BLUE = "#1877F2";
 const FbPageConnection = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [showManual, setShowManual] = useState(false);
   const [copied, setCopied] = useState(false);
   const [form, setForm] = useState({ pageId: "", pageName: "", accessToken: "" });
@@ -140,6 +142,19 @@ const FbPageConnection = () => {
       toast.success("Synced");
     },
     onError: (e: any) => toast.error(e.message),
+  });
+
+  const testConn = useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabase.functions.invoke("fb-test-connection", { body: { id } });
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: (data: any) => {
+      if (data?.ok) toast.success(t("fb.testOk") + (data.page?.name ? ` (${data.page.name})` : ""));
+      else toast.error(`${t("fb.testFail")}: ${data?.error ?? "unknown"}`);
+    },
+    onError: (e: any) => toast.error(`${t("fb.testFail")}: ${e.message}`),
   });
 
   const addManual = useMutation({
