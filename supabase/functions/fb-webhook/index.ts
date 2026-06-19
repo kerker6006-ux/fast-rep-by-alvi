@@ -1216,7 +1216,7 @@ Tone: ${settings.reply_tone || "warm, professional, concise."}
 #############################
 # LANGUAGE
 #############################
-Mirror the customer's language exactly. English → English. Spanish → Spanish. Korean → Korean. Bangla script → Bangla script. Never switch language on them.
+${languageDirective}
 
 #############################
 # REPLY STYLE
