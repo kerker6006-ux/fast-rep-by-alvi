@@ -1,10 +1,14 @@
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Coins, MessageSquare, Image, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { Coins, MessageSquare, Image, ArrowDownCircle, ArrowUpCircle, Sparkles, CreditCard, Loader2 } from "lucide-react";
 
 const fmtUSD = (n: number) => `$${Number(n).toFixed(3)}`;
 const fmtBalance = (n: number) => `$${Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -12,15 +16,30 @@ const fmtBalance = (n: number) => `$${Number(n).toLocaleString(undefined, { mini
 const CreditDashboard = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const [topupAmount, setTopupAmount] = useState("5");
+  const [loadingFlow, setLoadingFlow] = useState<null | "subscription" | "topup">(null);
 
-  const { data, isLoading } = useQuery({
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get("billing");
+    if (!status) return;
+    if (status === "success") toast.success("Subscription activated! $5 welcome bonus added.");
+    else if (status === "topup-success") toast.success("Top-up successful! Balance updated.");
+    else if (status === "cancelled") toast.info("Checkout cancelled.");
+    params.delete("billing"); params.delete("session_id");
+    const url = window.location.pathname + (params.toString() ? `?${params}` : "");
+    window.history.replaceState({}, "", url);
+  }, []);
+
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ["credits", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const [credits, transactions, settings] = await Promise.all([
+      const [credits, transactions, settings, profile] = await Promise.all([
         supabase.from("user_credits").select("balance").eq("user_id", user!.id).maybeSingle(),
         supabase.from("credit_transactions").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(50),
         supabase.from("bot_settings").select("setting_key, setting_value").eq("user_id", user!.id),
+        supabase.from("profiles").select("subscription_status, subscription_plan, subscription_current_period_end").eq("id", user!.id).maybeSingle(),
       ]);
 
       const settingsMap: Record<string, string> = {};
@@ -31,9 +50,40 @@ const CreditDashboard = () => {
         transactions: transactions.data || [],
         costText: Number(settingsMap.credit_cost_text) || 0.003,
         costImage: Number(settingsMap.credit_cost_image) || 0.015,
+        subscription: profile.data as any,
       };
     },
   });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("session_id") || params.get("billing")) {
+      const t1 = setTimeout(() => refetch(), 2000);
+      const t2 = setTimeout(() => refetch(), 6000);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
+    }
+  }, [refetch]);
+
+  const startCheckout = async (flow: "subscription" | "topup") => {
+    setLoadingFlow(flow);
+    try {
+      const amount = flow === "topup" ? Number(topupAmount) : undefined;
+      if (flow === "topup" && (!amount || amount < 1)) {
+        toast.error("Minimum top-up is $1");
+        setLoadingFlow(null);
+        return;
+      }
+      const { data: resp, error } = await supabase.functions.invoke("create-checkout-session", {
+        body: { flow, amount },
+      });
+      if (error) throw error;
+      if (resp?.url) window.location.href = resp.url;
+      else throw new Error("No checkout URL returned");
+    } catch (e: any) {
+      toast.error(e?.message || "Could not start checkout");
+      setLoadingFlow(null);
+    }
+  };
 
   if (isLoading) {
     return <div className="animate-pulse space-y-4">{[1, 2].map(i => <div key={i} className="h-24 bg-muted rounded-lg" />)}</div>;
