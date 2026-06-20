@@ -1,10 +1,14 @@
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Coins, MessageSquare, Image, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { Coins, MessageSquare, Image, ArrowDownCircle, ArrowUpCircle, Sparkles, CreditCard, Loader2 } from "lucide-react";
 
 const fmtUSD = (n: number) => `$${Number(n).toFixed(3)}`;
 const fmtBalance = (n: number) => `$${Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -12,15 +16,30 @@ const fmtBalance = (n: number) => `$${Number(n).toLocaleString(undefined, { mini
 const CreditDashboard = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const [topupAmount, setTopupAmount] = useState("5");
+  const [loadingFlow, setLoadingFlow] = useState<null | "subscription" | "topup">(null);
 
-  const { data, isLoading } = useQuery({
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get("billing");
+    if (!status) return;
+    if (status === "success") toast.success("Subscription activated! $5 welcome bonus added.");
+    else if (status === "topup-success") toast.success("Top-up successful! Balance updated.");
+    else if (status === "cancelled") toast.info("Checkout cancelled.");
+    params.delete("billing"); params.delete("session_id");
+    const url = window.location.pathname + (params.toString() ? `?${params}` : "");
+    window.history.replaceState({}, "", url);
+  }, []);
+
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ["credits", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const [credits, transactions, settings] = await Promise.all([
+      const [credits, transactions, settings, profile] = await Promise.all([
         supabase.from("user_credits").select("balance").eq("user_id", user!.id).maybeSingle(),
         supabase.from("credit_transactions").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(50),
         supabase.from("bot_settings").select("setting_key, setting_value").eq("user_id", user!.id),
+        supabase.from("profiles").select("subscription_status, subscription_plan, subscription_current_period_end").eq("id", user!.id).maybeSingle(),
       ]);
 
       const settingsMap: Record<string, string> = {};
@@ -31,9 +50,40 @@ const CreditDashboard = () => {
         transactions: transactions.data || [],
         costText: Number(settingsMap.credit_cost_text) || 0.003,
         costImage: Number(settingsMap.credit_cost_image) || 0.015,
+        subscription: profile.data as any,
       };
     },
   });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("session_id") || params.get("billing")) {
+      const t1 = setTimeout(() => refetch(), 2000);
+      const t2 = setTimeout(() => refetch(), 6000);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
+    }
+  }, [refetch]);
+
+  const startCheckout = async (flow: "subscription" | "topup") => {
+    setLoadingFlow(flow);
+    try {
+      const amount = flow === "topup" ? Number(topupAmount) : undefined;
+      if (flow === "topup" && (!amount || amount < 1)) {
+        toast.error("Minimum top-up is $1");
+        setLoadingFlow(null);
+        return;
+      }
+      const { data: resp, error } = await supabase.functions.invoke("create-checkout-session", {
+        body: { flow, amount },
+      });
+      if (error) throw error;
+      if (resp?.url) window.location.href = resp.url;
+      else throw new Error("No checkout URL returned");
+    } catch (e: any) {
+      toast.error(e?.message || "Could not start checkout");
+      setLoadingFlow(null);
+    }
+  };
 
   if (isLoading) {
     return <div className="animate-pulse space-y-4">{[1, 2].map(i => <div key={i} className="h-24 bg-muted rounded-lg" />)}</div>;
@@ -106,18 +156,75 @@ const CreditDashboard = () => {
         </CardContent>
       </Card>
 
+      {/* Subscription */}
+      {(() => {
+        const sub = data?.subscription;
+        const isActive = sub?.subscription_status === "active";
+        return (
+          <Card className={isActive ? "border-emerald-500/40 bg-emerald-500/5" : "border-primary/30 bg-primary/5"}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" /> Basic Plan — $20/month
+              </CardTitle>
+              {isActive && <Badge className="bg-emerald-600 hover:bg-emerald-600">Active</Badge>}
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <ul className="list-disc list-inside text-muted-foreground space-y-1">
+                <li>$5 welcome balance added on first subscription</li>
+                <li>Unlocks balance top-ups (recharge anytime, min $1)</li>
+                <li>Cancel anytime from Stripe</li>
+              </ul>
+              {!isActive ? (
+                <Button onClick={() => startCheckout("subscription")} disabled={loadingFlow !== null} className="w-full">
+                  {loadingFlow === "subscription" ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CreditCard className="h-4 w-4 mr-2" /> Subscribe with Stripe</>}
+                </Button>
+              ) : (
+                <p className="text-xs text-emerald-700">
+                  {sub?.subscription_current_period_end
+                    ? `Renews on ${new Date(sub.subscription_current_period_end).toLocaleDateString()}`
+                    : "Subscription is active."}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
+
+      {/* Top up balance — requires active subscription */}
       <Card>
-        <CardHeader><CardTitle className="text-base">{t("credits.recharge")}</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">Top up balance</CardTitle></CardHeader>
         <CardContent className="space-y-3 text-sm">
-          <div className="bg-muted p-4 rounded-lg space-y-2">
-            <p className="font-semibold">{t("credits.howToRecharge")}</p>
-            <ol className="list-decimal list-inside space-y-1.5 text-muted-foreground">
-              <li>{t("credits.rechargeStep1")}</li>
-              <li>{t("credits.rechargeStep2")}</li>
-              <li>{t("credits.rechargeStep3")}</li>
-            </ol>
+          <p className="text-muted-foreground">Recharge your account balance with Stripe. Minimum $1.</p>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+              <Input
+                type="number"
+                min="1"
+                step="1"
+                value={topupAmount}
+                onChange={(e) => setTopupAmount(e.target.value)}
+                className="pl-7"
+                placeholder="Amount"
+              />
+            </div>
+            <Button
+              onClick={() => startCheckout("topup")}
+              disabled={loadingFlow !== null || data?.subscription?.subscription_status !== "active"}
+            >
+              {loadingFlow === "topup" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Top up"}
+            </Button>
           </div>
-          <p className="text-xs text-muted-foreground text-center">{t("credits.rechargeNote")}</p>
+          {data?.subscription?.subscription_status !== "active" && (
+            <p className="text-xs text-amber-600">Subscribe to the Basic plan first to enable top-ups.</p>
+          )}
+          <div className="flex gap-2">
+            {[5, 10, 20, 50].map((v) => (
+              <Button key={v} type="button" size="sm" variant="outline" onClick={() => setTopupAmount(String(v))}>
+                ${v}
+              </Button>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
