@@ -10,7 +10,7 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useBusinessCategory } from "@/hooks/useBusinessCategory";
 import { useNavigate } from "react-router-dom";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import ChangePasswordDialog from "@/components/ChangePasswordDialog";
+
 
 type NavItem = { id: string; labelKey: string; icon: React.ElementType; adminOnly?: boolean; show?: (cat: string | null | undefined) => boolean };
 
@@ -126,7 +126,7 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
           <div className="px-3 py-2 text-[11px] text-sidebar-foreground/50 truncate">{user.email}</div>
         )}
         <LanguageSwitcher collapsed={collapsed} />
-        <ChangePasswordDialog collapsed={collapsed} email={user?.email} />
+        
         <button
           onClick={signOut}
           className={cn(
