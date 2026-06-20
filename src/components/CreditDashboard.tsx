@@ -156,18 +156,75 @@ const CreditDashboard = () => {
         </CardContent>
       </Card>
 
+      {/* Subscription */}
+      {(() => {
+        const sub = data?.subscription;
+        const isActive = sub?.subscription_status === "active";
+        return (
+          <Card className={isActive ? "border-emerald-500/40 bg-emerald-500/5" : "border-primary/30 bg-primary/5"}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" /> Basic Plan — $20/month
+              </CardTitle>
+              {isActive && <Badge className="bg-emerald-600 hover:bg-emerald-600">Active</Badge>}
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <ul className="list-disc list-inside text-muted-foreground space-y-1">
+                <li>$5 welcome balance added on first subscription</li>
+                <li>Unlocks balance top-ups (recharge anytime, min $1)</li>
+                <li>Cancel anytime from Stripe</li>
+              </ul>
+              {!isActive ? (
+                <Button onClick={() => startCheckout("subscription")} disabled={loadingFlow !== null} className="w-full">
+                  {loadingFlow === "subscription" ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CreditCard className="h-4 w-4 mr-2" /> Subscribe with Stripe</>}
+                </Button>
+              ) : (
+                <p className="text-xs text-emerald-700">
+                  {sub?.subscription_current_period_end
+                    ? `Renews on ${new Date(sub.subscription_current_period_end).toLocaleDateString()}`
+                    : "Subscription is active."}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
+
+      {/* Top up balance — requires active subscription */}
       <Card>
-        <CardHeader><CardTitle className="text-base">{t("credits.recharge")}</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">Top up balance</CardTitle></CardHeader>
         <CardContent className="space-y-3 text-sm">
-          <div className="bg-muted p-4 rounded-lg space-y-2">
-            <p className="font-semibold">{t("credits.howToRecharge")}</p>
-            <ol className="list-decimal list-inside space-y-1.5 text-muted-foreground">
-              <li>{t("credits.rechargeStep1")}</li>
-              <li>{t("credits.rechargeStep2")}</li>
-              <li>{t("credits.rechargeStep3")}</li>
-            </ol>
+          <p className="text-muted-foreground">Recharge your account balance with Stripe. Minimum $1.</p>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+              <Input
+                type="number"
+                min="1"
+                step="1"
+                value={topupAmount}
+                onChange={(e) => setTopupAmount(e.target.value)}
+                className="pl-7"
+                placeholder="Amount"
+              />
+            </div>
+            <Button
+              onClick={() => startCheckout("topup")}
+              disabled={loadingFlow !== null || data?.subscription?.subscription_status !== "active"}
+            >
+              {loadingFlow === "topup" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Top up"}
+            </Button>
           </div>
-          <p className="text-xs text-muted-foreground text-center">{t("credits.rechargeNote")}</p>
+          {data?.subscription?.subscription_status !== "active" && (
+            <p className="text-xs text-amber-600">Subscribe to the Basic plan first to enable top-ups.</p>
+          )}
+          <div className="flex gap-2">
+            {[5, 10, 20, 50].map((v) => (
+              <Button key={v} type="button" size="sm" variant="outline" onClick={() => setTopupAmount(String(v))}>
+                ${v}
+              </Button>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
