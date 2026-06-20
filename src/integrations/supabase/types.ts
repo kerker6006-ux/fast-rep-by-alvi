@@ -272,6 +272,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          stripe_session_id: string | null
           type: string
           user_id: string
         }
@@ -281,6 +282,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          stripe_session_id?: string | null
           type?: string
           user_id: string
         }
@@ -290,6 +292,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          stripe_session_id?: string | null
           type?: string
           user_id?: string
         }
@@ -714,6 +717,11 @@ export type Database = {
           display_name: string | null
           id: string
           is_approved: boolean
+          stripe_customer_id: string | null
+          subscription_current_period_end: string | null
+          subscription_id: string | null
+          subscription_plan: string | null
+          subscription_status: string | null
           suspended: boolean
           updated_at: string
         }
@@ -727,6 +735,11 @@ export type Database = {
           display_name?: string | null
           id: string
           is_approved?: boolean
+          stripe_customer_id?: string | null
+          subscription_current_period_end?: string | null
+          subscription_id?: string | null
+          subscription_plan?: string | null
+          subscription_status?: string | null
           suspended?: boolean
           updated_at?: string
         }
@@ -740,6 +753,11 @@ export type Database = {
           display_name?: string | null
           id?: string
           is_approved?: boolean
+          stripe_customer_id?: string | null
+          subscription_current_period_end?: string | null
+          subscription_id?: string | null
+          subscription_plan?: string | null
+          subscription_status?: string | null
           suspended?: boolean
           updated_at?: string
         }
