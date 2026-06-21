@@ -50,7 +50,7 @@ const tabs: Record<string, React.ComponentType> = {
   scheduled: ScheduledMessages,
   "fb-pages": FbPageConnection,
   settings: BotSettings,
-  admin: AdminPanel,
+  
 };
 
 const TabFallback = () => (
