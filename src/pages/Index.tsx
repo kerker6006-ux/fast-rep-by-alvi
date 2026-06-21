@@ -94,7 +94,8 @@ const Index = () => {
         className="transition-all duration-300"
         style={{ marginLeft: sidebarCollapsed ? 72 : 240 }}
       >
-        <div className="sticky top-0 z-30 flex justify-end items-center gap-2 px-6 lg:px-8 py-3 bg-background/80 backdrop-blur border-b">
+        <div className="sticky top-0 z-30 flex justify-between items-center gap-2 px-6 lg:px-8 py-3 bg-background/80 backdrop-blur border-b">
+          <PageSwitcher />
           <NotificationBell />
         </div>
         <div className="max-w-6xl mx-auto px-6 lg:px-8 py-8">
