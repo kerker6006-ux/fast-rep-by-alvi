@@ -43,10 +43,10 @@ const Auth = () => {
   const handleFacebook = async () => {
     setLoading(true);
     try {
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const functionsUrl = `${(import.meta.env.VITE_SUPABASE_URL as string) ?? supabase.supabaseUrl}/functions/v1`;
       const redirectTo = `${window.location.origin}/dashboard`;
       const res = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/fb-login-start?redirect_to=${encodeURIComponent(redirectTo)}`,
+        `${functionsUrl}/fb-login-start?redirect_to=${encodeURIComponent(redirectTo)}`,
       );
       const data = await res.json();
       if (!res.ok || !data?.url) {
