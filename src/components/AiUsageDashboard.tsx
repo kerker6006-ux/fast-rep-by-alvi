@@ -3,8 +3,8 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageSquare, Image, ShoppingCart, DollarSign, TrendingUp, Calendar } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { MessageSquare, Image as ImageIcon, ShoppingCart, DollarSign, TrendingUp, Calendar, Type, Coins } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 
 const AiUsageDashboard = () => {
   const { t } = useTranslation();
@@ -18,7 +18,6 @@ const AiUsageDashboard = () => {
         supabase.from("ai_usage").select("*").order("created_at", { ascending: false }),
         supabase.from("bot_settings").select("setting_key, setting_value").eq("user_id", user!.id),
       ]);
-
       if (usageRes.error) throw usageRes.error;
       const rows = usageRes.data || [];
 
@@ -27,62 +26,48 @@ const AiUsageDashboard = () => {
       const costText = Number(settingsMap.credit_cost_text) || 0.003;
       const costImage = Number(settingsMap.credit_cost_image) || 0.015;
 
-      const textCalls = rows.filter((r: any) => r.call_type === "text").length;
-      const imageCalls = rows.filter((r: any) => r.call_type === "image").length;
-      const orderCalls = rows.filter((r: any) => r.call_type === "order_detection").length;
-      const totalCost = rows.reduce((sum: number, r: any) => sum + (Number(r.estimated_cost) || 0), 0);
+      const textRows = rows.filter((r: any) => r.call_type === "text");
+      const imageRows = rows.filter((r: any) => r.call_type === "image");
+      const orderRows = rows.filter((r: any) => r.call_type === "order_detection");
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const textCost = textRows.reduce((s: number, r: any) => s + (Number(r.estimated_cost) || 0), 0);
+      const imageCost = imageRows.reduce((s: number, r: any) => s + (Number(r.estimated_cost) || 0), 0);
+      const totalCost = textCost + imageCost + orderRows.reduce((s: number, r: any) => s + (Number(r.estimated_cost) || 0), 0);
+      const totalTokens = textRows.reduce((s: number, r: any) => s + (Number(r.tokens_used) || 0), 0);
+
+      const today = new Date(); today.setHours(0,0,0,0);
       const todayRows = rows.filter((r: any) => new Date(r.created_at) >= today);
-      const todayCost = todayRows.reduce((sum: number, r: any) => sum + (Number(r.estimated_cost) || 0), 0);
+      const todayTextCost = todayRows.filter((r: any) => r.call_type === "text").reduce((s: number, r: any) => s + (Number(r.estimated_cost) || 0), 0);
+      const todayImageCost = todayRows.filter((r: any) => r.call_type === "image").reduce((s: number, r: any) => s + (Number(r.estimated_cost) || 0), 0);
 
-      const dailyMap: Record<string, { date: string; text: number; image: number; cost: number }> = {};
+      const dailyMap: Record<string, { date: string; text: number; image: number; textCost: number; imageCost: number }> = {};
       for (let i = 6; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
+        const d = new Date(); d.setDate(d.getDate() - i);
         const key = d.toISOString().slice(0, 10);
-        const label = d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-        dailyMap[key] = { date: label, text: 0, image: 0, cost: 0 };
+        dailyMap[key] = { date: d.toLocaleDateString(undefined, { month: "short", day: "numeric" }), text: 0, image: 0, textCost: 0, imageCost: 0 };
       }
       for (const r of rows) {
         const key = r.created_at.slice(0, 10);
-        if (dailyMap[key]) {
-          if (r.call_type === "text") dailyMap[key].text++;
-          else if (r.call_type === "image") dailyMap[key].image++;
-          dailyMap[key].cost += Number(r.estimated_cost) || 0;
-        }
+        if (!dailyMap[key]) continue;
+        if (r.call_type === "text") { dailyMap[key].text++; dailyMap[key].textCost += Number(r.estimated_cost) || 0; }
+        else if (r.call_type === "image") { dailyMap[key].image++; dailyMap[key].imageCost += Number(r.estimated_cost) || 0; }
       }
 
       return {
-        textCalls, imageCalls, orderCalls, totalCost, todayCost,
-        totalCalls: rows.length, chartData: Object.values(dailyMap),
+        textCount: textRows.length, imageCount: imageRows.length, orderCount: orderRows.length,
+        textCost, imageCost, totalCost, totalTokens,
+        todayTextCost, todayImageCost,
+        chartData: Object.values(dailyMap),
         costText, costImage,
       };
     },
   });
 
   if (isLoading) {
-    return (
-      <div className="animate-pulse space-y-4">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-24 bg-muted rounded-lg" />
-        ))}
-      </div>
-    );
+    return <div className="animate-pulse space-y-4">{[1,2,3].map(i => <div key={i} className="h-24 bg-muted rounded-lg" />)}</div>;
   }
 
-  const costText = data?.costText ?? 0.003;
-  const costImage = data?.costImage ?? 0.015;
-
-  const cards = [
-    { title: t("aiUsage.totalCalls"), value: data?.totalCalls || 0, icon: TrendingUp, color: "text-primary" },
-    { title: t("aiUsage.textMessages"), value: data?.textCalls || 0, icon: MessageSquare, color: "text-blue-600" },
-    { title: t("aiUsage.imageAnalyses"), value: data?.imageCalls || 0, icon: Image, color: "text-purple-600" },
-    { title: t("aiUsage.orderDetections"), value: data?.orderCalls || 0, icon: ShoppingCart, color: "text-orange-600" },
-    { title: t("aiUsage.todayCost"), value: `$${data?.todayCost?.toFixed(4) || "0.0000"}`, icon: Calendar, color: "text-emerald-600" },
-    { title: t("aiUsage.totalCost"), value: `$${data?.totalCost?.toFixed(4) || "0.0000"}`, icon: DollarSign, color: "text-rose-600" },
-  ];
+  const fmt = (n: number) => `$${(n || 0).toFixed(4)}`;
 
   return (
     <div className="space-y-6">
@@ -91,71 +76,70 @@ const AiUsageDashboard = () => {
         <p className="text-muted-foreground">{t("aiUsage.subtitle")}</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {cards.map((card) => (
-          <Card key={card.title}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{card.title}</CardTitle>
-              <card.icon className={`h-4 w-4 ${card.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{card.value}</div>
-            </CardContent>
-          </Card>
-        ))}
+      {/* PRIMARY COST CARDS — split by type */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card className="border-l-4 border-l-blue-500">
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Type className="h-4 w-4 text-blue-500" /> Text AI Cost</CardTitle></CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{fmt(data?.textCost || 0)}</div>
+            <p className="text-xs text-muted-foreground mt-1">{data?.textCount || 0} messages · {(data?.totalTokens || 0).toLocaleString()} tokens</p>
+            <p className="text-xs text-emerald-600 mt-0.5">Today: {fmt(data?.todayTextCost || 0)}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-purple-500">
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2"><ImageIcon className="h-4 w-4 text-purple-500" /> Image Cost</CardTitle></CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{fmt(data?.imageCost || 0)}</div>
+            <p className="text-xs text-muted-foreground mt-1">{data?.imageCount || 0} images analyzed</p>
+            <p className="text-xs text-emerald-600 mt-0.5">Today: {fmt(data?.todayImageCost || 0)}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-emerald-500">
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Coins className="h-4 w-4 text-emerald-500" /> Total AI Cost</CardTitle></CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{fmt(data?.totalCost || 0)}</div>
+            <p className="text-xs text-muted-foreground mt-1">All-time, all AI calls</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* SECONDARY STATS */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm text-muted-foreground">Total Calls</CardTitle><TrendingUp className="h-4 w-4 text-primary" /></CardHeader><CardContent><div className="text-2xl font-bold">{(data?.textCount || 0) + (data?.imageCount || 0) + (data?.orderCount || 0)}</div></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm text-muted-foreground">Text Messages</CardTitle><MessageSquare className="h-4 w-4 text-blue-600" /></CardHeader><CardContent><div className="text-2xl font-bold">{data?.textCount || 0}</div></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm text-muted-foreground">Images</CardTitle><ImageIcon className="h-4 w-4 text-purple-600" /></CardHeader><CardContent><div className="text-2xl font-bold">{data?.imageCount || 0}</div></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm text-muted-foreground">Order Detections</CardTitle><ShoppingCart className="h-4 w-4 text-orange-600" /></CardHeader><CardContent><div className="text-2xl font-bold">{data?.orderCount || 0}</div></CardContent></Card>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t("aiUsage.last7DaysUsage")}</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="text-base">Last 7 days — Text vs Image</CardTitle></CardHeader>
         <CardContent>
           {data?.chartData?.length ? (
-            <ResponsiveContainer width="100%" height={260}>
+            <ResponsiveContainer width="100%" height={280}>
               <BarChart data={data.chartData}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis dataKey="date" className="text-xs" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
                 <YAxis className="text-xs" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 8,
-                    fontSize: 12,
-                  }}
-                />
-                <Bar dataKey="text" name={t("aiUsage.textMessages")} fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="image" name={t("aiUsage.imageAnalyses")} fill="hsl(262 80% 60%)" radius={[4, 4, 0, 0]} />
+                <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Bar dataKey="text" name="Text" stackId="a" fill="hsl(217 72% 52%)" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="image" name="Image" stackId="a" fill="hsl(262 80% 60%)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          ) : (
-            <p className="text-sm text-muted-foreground">{t("aiUsage.noData")}</p>
-          )}
+          ) : <p className="text-sm text-muted-foreground">No data</p>}
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t("aiUsage.costBreakdown")}</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="text-base">Per-Call Pricing</CardTitle></CardHeader>
         <CardContent>
           <div className="space-y-3 text-sm">
-            <div className="flex justify-between border-b pb-2">
-              <span className="text-muted-foreground">{t("aiUsage.textReply")}</span>
-              <span className="font-medium">${costText.toFixed(3)} / {t("aiUsage.perMessage")}</span>
-            </div>
-            <div className="flex justify-between border-b pb-2">
-              <span className="text-muted-foreground">{t("aiUsage.imageReply")}</span>
-              <span className="font-medium">${costImage.toFixed(3)} / {t("aiUsage.perImage")}</span>
-            </div>
-            <div className="flex justify-between border-b pb-2">
-              <span className="text-muted-foreground">{t("aiUsage.orderDetection")}</span>
-              <span className="font-medium text-emerald-600">{t("common.free")}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">{t("aiUsage.autoReplyKeyword")}</span>
-              <span className="font-medium text-emerald-600">{t("common.free")}</span>
-            </div>
+            <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground">Text Reply</span><span className="font-medium">${(data?.costText ?? 0).toFixed(3)} / message</span></div>
+            <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground">Image Analysis</span><span className="font-medium">${(data?.costImage ?? 0).toFixed(3)} / image</span></div>
+            <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground">Order Detection</span><span className="font-medium text-emerald-600">Free</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Auto-Reply Keywords</span><span className="font-medium text-emerald-600">Free</span></div>
           </div>
         </CardContent>
       </Card>

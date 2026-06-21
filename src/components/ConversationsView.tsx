@@ -6,8 +6,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, User, Clock, ArrowLeft, GraduationCap } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { MessageSquare, User, Clock, ArrowLeft, GraduationCap, Send, AlertTriangle, Check, CheckCheck } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 import TrainBotDialog from "@/components/TrainBotDialog";
 
 type Conversation = {
@@ -24,6 +26,8 @@ type Message = {
   direction: string;
   content: string | null;
   image_url: string | null;
+  read_at: string | null;
+  delivered_at: string | null;
   created_at: string;
 };
 
