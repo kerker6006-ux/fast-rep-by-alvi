@@ -48,13 +48,14 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ emails }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const [{ data: profiles }, { data: credits }, { data: products }, { data: orders }, { data: conversations }, { data: pages }] = await Promise.all([
-      admin.from("profiles").select("id, display_name, created_at, suspended").order("created_at", { ascending: false }),
+    const [{ data: profiles }, { data: credits }, { data: products }, { data: orders }, { data: conversations }, { data: pages }, { data: aiUsage }] = await Promise.all([
+      admin.from("profiles").select("id, display_name, full_name, country, user_type, created_at, suspended, onboarded_at").order("created_at", { ascending: false }),
       admin.from("user_credits").select("user_id, balance"),
       admin.from("products").select("user_id"),
       admin.from("orders").select("user_id"),
       admin.from("conversations").select("user_id"),
       admin.from("fb_pages").select("user_id, page_name"),
+      admin.from("ai_usage").select("user_id, cost"),
     ]);
 
     const countByUser = (rows: Array<{ user_id?: string | null }> | null | undefined) => {
@@ -72,6 +73,11 @@ Deno.serve(async (req) => {
       acc[row.user_id].push({ page_name: row.page_name });
       return acc;
     }, {});
+    const aiSpendByUser: Record<string, number> = {};
+    for (const row of aiUsage ?? []) {
+      if (!row.user_id) continue;
+      aiSpendByUser[row.user_id] = (aiSpendByUser[row.user_id] ?? 0) + Number(row.cost ?? 0);
+    }
     const productCounts = countByUser(products);
     const orderCounts = countByUser(orders);
     const conversationCounts = countByUser(conversations);
@@ -83,6 +89,7 @@ Deno.serve(async (req) => {
       productCount: productCounts[profile.id] ?? 0,
       orderCount: orderCounts[profile.id] ?? 0,
       conversationCount: conversationCounts[profile.id] ?? 0,
+      aiSpend: aiSpendByUser[profile.id] ?? 0,
       pages: pagesByUser[profile.id] ?? [],
     }));
 
