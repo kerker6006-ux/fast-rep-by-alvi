@@ -95,7 +95,9 @@ const FbPageConnection = () => {
 
   const startOAuth = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("fb-oauth-start");
+      const { data, error } = await supabase.functions.invoke("fb-oauth-start", {
+        body: { origin: window.location.origin },
+      });
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
       window.location.href = data.url;
