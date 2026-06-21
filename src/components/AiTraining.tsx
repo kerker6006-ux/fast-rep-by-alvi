@@ -764,25 +764,25 @@ const AiTraining = () => {
           {/* Category-specific knowledge */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">{t(`aiTraining.kbTitle.${cat}`)}</CardTitle>
-              <CardDescription className="text-xs">{t(`aiTraining.kbDesc.${cat}`)}</CardDescription>
+              <CardTitle className="text-sm">{meta.kbTitle}</CardTitle>
+              <CardDescription className="text-xs">{meta.kbDesc}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {catFields.map((f) => (
                 <div key={f.key} className="space-y-1">
-                  <Label className="text-xs">{t(f.labelKey)}</Label>
+                  <Label className="text-xs">{f.label}</Label>
                   {f.type === "textarea" ? (
                     <Textarea
                       value={settings[f.key] || ""}
                       onChange={(e) => update(f.key, e.target.value)}
-                      placeholder={t(f.phKey)}
+                      placeholder={f.placeholder}
                       className="min-h-[60px] text-sm"
                     />
                   ) : (
                     <Input
                       value={settings[f.key] || ""}
                       onChange={(e) => update(f.key, e.target.value)}
-                      placeholder={t(f.phKey)}
+                      placeholder={f.placeholder}
                       className="h-8 text-sm"
                     />
                   )}
@@ -790,6 +790,7 @@ const AiTraining = () => {
               ))}
             </CardContent>
           </Card>
+
 
 
           {/* Welcome */}
