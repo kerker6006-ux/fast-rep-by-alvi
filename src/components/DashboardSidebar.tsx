@@ -166,20 +166,8 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
         <div className="space-y-0.5">
           {!collapsed && <div className="px-3 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 mb-1">Connections</div>}
           {renderGroup(connection, false)}
-          {isAdmin && (
-            <button
-              onClick={() => onTabChange("admin")}
-              className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
-                "hover:bg-sidebar-accent",
-                activeTab === "admin" ? "bg-gradient-primary text-white shadow-glow" : "text-sidebar-foreground",
-                collapsed && "justify-center px-0",
-              )}
-            >
-              <Settings className="h-[18px] w-[18px] shrink-0" />
-              {!collapsed && <span className="flex-1 text-left">Admin</span>}
-            </button>
-          )}
+
+
         </div>
       </nav>
 
