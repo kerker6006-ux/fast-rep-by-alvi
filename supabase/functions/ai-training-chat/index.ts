@@ -203,9 +203,8 @@ Rules:
     // Build known vs missing field lists per niche so the AI never re-asks
     const PRIORITY_BY_CAT: Record<string, string[]> = {
       ecommerce: ["business_name", "business_description", "reply_tone", "delivery_info", "payment_methods", "return_policy", "welcome_message", "out_of_stock_message", "faq_list", "never_say_list", "order_instructions"],
-      dental: ["business_name", "business_description", "reply_tone", "operating_hours", "business_address", "insurance_accepted", "emergency_policy", "cancellation_policy", "welcome_message", "faq_list", "never_say_list"],
-      hvac: ["business_name", "business_description", "reply_tone", "operating_hours", "service_area_zips", "emergency_policy", "pricing_policy", "welcome_message", "faq_list", "never_say_list"],
-      salon: ["business_name", "business_description", "reply_tone", "operating_hours", "business_address", "cancellation_policy", "deposit_policy", "welcome_message", "faq_list", "never_say_list"],
+      service: ["business_name", "business_description", "reply_tone", "operating_hours", "business_address", "pricing_policy", "cancellation_policy", "emergency_policy", "welcome_message", "faq_list", "never_say_list"],
+      content_creator: ["business_name", "business_description", "reply_tone", "course_lineup", "enrollment_info", "refund_policy", "support_channel", "welcome_message", "faq_list", "never_say_list"],
     };
     const priority = PRIORITY_BY_CAT[cat] || PRIORITY_BY_CAT.ecommerce;
     const isFilled = (k: string, v: unknown): boolean => {
