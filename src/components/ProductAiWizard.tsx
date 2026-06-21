@@ -380,6 +380,12 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
               <Send className="h-4 w-4" />
             </Button>
           </div>
+          {!hasActiveSub && (
+            <p className="text-[11px] text-amber-600 mt-2 text-center">
+              🔒 Subscribe to use the AI Wizard.{" "}
+              <button className="underline font-medium" onClick={() => { window.location.hash = "#credits"; }}>Subscribe</button>
+            </p>
+          )}
         </div>
       </DialogContent>
     </Dialog>
