@@ -128,8 +128,8 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
             >
               <item.icon className="h-[18px] w-[18px] shrink-0" />
               {!collapsed && <span className="truncate animate-fade-in flex-1">{t(labelKey)}</span>}
-              {item.id === "conversations" && unreadImages > 0 && (
-                <Badge variant="destructive" className={cn("h-5 min-w-[20px] px-1.5 text-[10px] font-bold", collapsed && "absolute top-1 right-1")}>{unreadImages}</Badge>
+              {item.id === "conversations" && unreadAlerts > 0 && (
+                <Badge variant="destructive" className={cn("h-5 min-w-[20px] px-1.5 text-[10px] font-bold", collapsed && "absolute top-1 right-1")}>{unreadAlerts}</Badge>
               )}
             </button>
           );
