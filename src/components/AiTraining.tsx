@@ -515,9 +515,9 @@ const AiTraining = () => {
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2">
             <Brain className="h-5 w-5 text-primary" />
-            {t(`aiTraining.titleByCat.${cat}`)}
+            {meta.title}
           </h2>
-          <p className="text-sm text-muted-foreground">{t(`aiTraining.subtitleByCat.${cat}`)}</p>
+          <p className="text-sm text-muted-foreground">{meta.subtitle}</p>
 
         </div>
         <div className="flex items-center gap-2">
