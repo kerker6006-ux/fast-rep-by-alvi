@@ -12,7 +12,8 @@ function htmlRedirect(url: string, msg: string) {
 }
 
 Deno.serve(async (req) => {
-  const appOrigin = getOrigin();
+  const defaultOrigin = getOrigin();
+  let appOrigin = defaultOrigin;
   try {
     const appId = Deno.env.get("FB_APP_ID");
     const appSecret = Deno.env.get("FB_APP_SECRET");
