@@ -46,14 +46,14 @@ async function hmac(secret: string, data: string): Promise<string> {
     .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-export async function signState(secret: string, userId: string): Promise<string> {
-  const payload = btoa(JSON.stringify({ u: userId, t: Date.now(), n: crypto.randomUUID() }))
+export async function signState(secret: string, userId: string, origin?: string | null): Promise<string> {
+  const payload = btoa(JSON.stringify({ u: userId, t: Date.now(), n: crypto.randomUUID(), o: origin ?? null }))
     .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   const sig = await hmac(secret, payload);
   return `${payload}.${sig}`;
 }
 
-export async function verifyState(secret: string, state: string): Promise<{ userId: string } | null> {
+export async function verifyState(secret: string, state: string): Promise<{ userId: string; origin: string | null } | null> {
   const [payload, sig] = state.split(".");
   if (!payload || !sig) return null;
   const expected = await hmac(secret, payload);
@@ -62,10 +62,20 @@ export async function verifyState(secret: string, state: string): Promise<{ user
     const b64 = payload.replace(/-/g, "+").replace(/_/g, "/");
     const json = JSON.parse(atob(b64));
     if (Date.now() - json.t > 15 * 60 * 1000) return null; // 15 min
-    return { userId: json.u };
+    return { userId: json.u, origin: json.o ?? null };
   } catch {
     return null;
   }
+}
+
+// Allow-list of origins we will redirect back to after OAuth.
+const ALLOWED_ORIGIN_SUFFIXES = ["leadpilot.life", "lovable.app", "lovableproject.com", "localhost", "127.0.0.1"];
+export function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return false;
+  try {
+    const u = new URL(origin);
+    return ALLOWED_ORIGIN_SUFFIXES.some((s) => u.hostname === s || u.hostname.endsWith("." + s));
+  } catch { return false; }
 }
 
 export function getOrigin(): string {
