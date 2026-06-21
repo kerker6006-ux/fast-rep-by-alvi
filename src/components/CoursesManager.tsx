@@ -161,10 +161,10 @@ const CoursesManager = () => {
 const CourseDialog = ({ open, course, onClose, onSave, saving }: {
   open: boolean; course: Course | null; onClose: () => void; onSave: (c: any) => void; saving: boolean;
 }) => {
-  const [form, setForm] = useState<any>(course || { title: "", description: "", price: 0, currency: "BDT", thumbnail_url: "", payment_instructions: "", is_active: true });
+  const [form, setForm] = useState<any>(course || { title: "", description: "", price: 0, currency: "USD", thumbnail_url: "", payment_instructions: "", is_active: true });
   // Reset form when dialog opens
   const handleOpenChange = (v: boolean) => {
-    if (v) setForm(course || { title: "", description: "", price: 0, currency: "BDT", thumbnail_url: "", payment_instructions: "", is_active: true });
+    if (v) setForm(course || { title: "", description: "", price: 0, currency: "USD", thumbnail_url: "", payment_instructions: "", is_active: true });
     else onClose();
   };
 
