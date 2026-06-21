@@ -43,7 +43,15 @@ const Auth = () => {
         redirect_uri: window.location.origin,
         prompt: "select_account",
       });
-      window.top.location.href = `${window.location.origin}/~oauth/initiate?${params.toString()}`;
+      const oauthUrl = `${window.location.origin}/~oauth/initiate?${params.toString()}`;
+      const popup = window.open(oauthUrl, "_blank");
+      if (!popup) {
+        toast.error("Popup blocked. Open the preview in a new tab, then try Google again.");
+      } else {
+        popup.focus();
+        toast.message("Google sign-in opened in a new tab");
+      }
+      setLoading(false);
       return;
     }
 
