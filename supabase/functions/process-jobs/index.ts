@@ -14,7 +14,18 @@ const STUCK_MINUTES = 10;
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  // Require service-role bearer token (pg_cron / internal callers only)
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const auth = req.headers.get("authorization") || "";
+  const token = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7) : "";
+  if (!token || token !== serviceKey) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const supabase = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey);
 
   // Requeue stuck jobs
   const stuckCutoff = new Date(Date.now() - STUCK_MINUTES * 60 * 1000).toISOString();

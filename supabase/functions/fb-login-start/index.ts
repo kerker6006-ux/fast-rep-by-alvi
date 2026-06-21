@@ -27,12 +27,37 @@ function callbackUrl(): string {
   return `${Deno.env.get("SUPABASE_URL")}/functions/v1/fb-login-callback`;
 }
 
+const ALLOWED_REDIRECT_ORIGINS = new Set([
+  "https://leadpilot.life",
+  "https://www.leadpilot.life",
+  "https://fast-rep-by-alvi.lovable.app",
+  "http://localhost:8080",
+  "http://localhost:5173",
+]);
+
+function isAllowedRedirect(target: string): boolean {
+  try {
+    const u = new URL(target);
+    if (ALLOWED_REDIRECT_ORIGINS.has(u.origin)) return true;
+    // Allow lovable preview subdomains
+    if (u.protocol === "https:" && /\.lovable\.app$/.test(u.hostname)) return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
     const url = new URL(req.url);
     const redirectTo = url.searchParams.get("redirect_to") || "";
+    if (!redirectTo || !isAllowedRedirect(redirectTo)) {
+      return new Response(JSON.stringify({ error: "Invalid redirect_to" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const appId = Deno.env.get("FB_APP_ID");
     const appSecret = Deno.env.get("FB_APP_SECRET");
     if (!appId || !appSecret) {

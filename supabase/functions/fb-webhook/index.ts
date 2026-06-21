@@ -57,7 +57,11 @@ serve(async (req) => {
 
       // ===== Verify X-Hub-Signature-256 against FB_APP_SECRET =====
       const FB_APP_SECRET = Deno.env.get("FB_APP_SECRET");
-      if (FB_APP_SECRET) {
+      if (!FB_APP_SECRET) {
+        console.error("FB_APP_SECRET not configured — rejecting webhook");
+        return new Response("Webhook not configured", { status: 500, headers: corsHeaders });
+      }
+      {
         const sigHeader = req.headers.get("x-hub-signature-256") || "";
         const expectedPrefix = "sha256=";
         if (!sigHeader.startsWith(expectedPrefix)) {
@@ -76,7 +80,6 @@ serve(async (req) => {
           await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(rawBody)),
         );
         const computed = Array.from(sigBytes).map((b) => b.toString(16).padStart(2, "0")).join("");
-        // constant-time compare
         let ok = computed.length === provided.length;
         for (let i = 0; i < computed.length && i < provided.length; i++) {
           ok = ok && (computed.charCodeAt(i) === provided.charCodeAt(i));
@@ -85,8 +88,6 @@ serve(async (req) => {
           console.warn("Webhook rejected: invalid x-hub-signature-256");
           return new Response("Forbidden", { status: 403, headers: corsHeaders });
         }
-      } else {
-        console.warn("FB_APP_SECRET not set — webhook signature verification skipped");
       }
 
       const body = JSON.parse(rawBody);
