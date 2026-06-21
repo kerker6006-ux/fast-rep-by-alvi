@@ -27,7 +27,7 @@ const CommentTriggers = lazy(() => import("@/components/CommentTriggers"));
 const ScheduledMessages = lazy(() => import("@/components/ScheduledMessages"));
 const FbPageConnection = lazy(() => import("@/components/FbPageConnection"));
 const BotSettings = lazy(() => import("@/components/BotSettings"));
-const AdminPanel = lazy(() => import("@/components/AdminPanel"));
+
 
 const tabs: Record<string, React.ComponentType> = {
   analytics: AnalyticsDashboard,
