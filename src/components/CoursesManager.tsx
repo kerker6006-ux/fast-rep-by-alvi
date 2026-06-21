@@ -69,7 +69,7 @@ const CoursesManager = () => {
       } else {
         const { error } = await supabase.from("courses").insert({
           user_id: user.id, fb_page_id: pageId,
-          title: c.title!, description: c.description, price: c.price ?? 0, currency: c.currency ?? "BDT",
+          title: c.title!, description: c.description, price: c.price ?? 0, currency: c.currency ?? "USD",
           thumbnail_url: c.thumbnail_url, payment_instructions: c.payment_instructions, is_active: c.is_active ?? true,
         });
         if (error) throw error;
