@@ -1841,9 +1841,10 @@ async function detectAndCreateComplaint(
 async function extractAndSaveLead(supabase: any, apiKey: string, conversationId: string, userId: string | null) {
   if (!userId || !apiKey) return;
   try {
-    const { data: prof } = await supabase
-      .from("profiles").select("business_category").eq("id", userId).maybeSingle();
-    const category = prof?.business_category;
+    const { data: pageRow } = await supabase
+      .from("fb_pages").select("page_category").eq("user_id", userId).eq("is_active", true)
+      .order("created_at", { ascending: true }).limit(1).maybeSingle();
+    const category = pageRow?.page_category as string | null;
     if (!category) return;
 
     const { data: msgs } = await supabase
@@ -1854,9 +1855,9 @@ async function extractAndSaveLead(supabase: any, apiKey: string, conversationId:
     const transcript = msgs.map((m: any) => `${m.direction === "incoming" ? "Customer" : "Bot"}: ${m.content || ""}`).join("\n");
 
     const fields = category === "ecommerce"
+      ? ["name", "phone", "address", "service_or_product"]
+      : category === "content_creator"
       ? ["name", "phone", "service_or_product"]
-      : category === "hvac"
-      ? ["name", "phone", "address", "service_or_product", "preferred_date"]
       : ["name", "phone", "service_or_product", "preferred_date"];
 
     const sysPrompt = `Extract lead information from this Facebook Messenger conversation. Return ONLY a JSON object with these fields (null if not stated): ${fields.join(", ")}. Use null for missing values. Do not invent data.`;
