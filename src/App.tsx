@@ -11,6 +11,7 @@ import AdminRoute from "@/components/AdminRoute";
 // Lazy-load every route so the initial bundle stays tiny.
 const Landing = lazy(() => import("./pages/Landing.tsx"));
 const Auth = lazy(() => import("./pages/Auth.tsx"));
+const Welcome = lazy(() => import("./pages/Welcome.tsx"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe.tsx"));
 
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
@@ -56,6 +57,7 @@ const App = () => (
           <Suspense fallback={<RouteFallback />}>
             <Routes>
               <Route path="/auth" element={<Auth />} />
+              <Route path="/welcome" element={<ProtectedRoute><Welcome /></ProtectedRoute>} />
               
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
