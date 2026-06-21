@@ -12,7 +12,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
-import { Save, Globe, MessageCircle, Info, Briefcase } from "lucide-react";
+import { Save, Globe, MessageCircle, Info, Briefcase, AlertTriangle, ShoppingBag, Stethoscope, Wrench, Sparkles } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const BotSettings = () => {
   const { t } = useTranslation();
