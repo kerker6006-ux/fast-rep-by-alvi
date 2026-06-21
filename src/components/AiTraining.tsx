@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useBusinessCategory, BusinessCategory } from "@/hooks/useBusinessCategory";
+import { useActivePage, PageCategory } from "@/contexts/ActivePageContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,91 +26,101 @@ import {
 } from "@/lib/ai-training-settings";
 import AutoLearnPanel from "@/components/AutoLearnPanel";
 
-type CatField = { key: string; labelKey: string; phKey: string; type?: "text" | "textarea" };
+type Cat = PageCategory; // "ecommerce" | "service" | "content_creator"
+type CatField = { key: string; label: string; placeholder: string; type?: "text" | "textarea" };
 
-const CATEGORY_FIELDS: Record<BusinessCategory, CatField[]> = {
+const CATEGORY_META: Record<Cat, { title: string; subtitle: string; kbTitle: string; kbDesc: string }> = {
+  ecommerce: {
+    title: "AI Shopkeeper Training",
+    subtitle: "Train your store assistant to pitch products, take orders, and answer about delivery & payments.",
+    kbTitle: "Shop Knowledge",
+    kbDesc: "Shipping, payment and return policies the bot will use.",
+  },
+  service: {
+    title: "AI Receptionist Training",
+    subtitle: "Train your front-desk to qualify leads, book appointments, and answer service questions.",
+    kbTitle: "Service Business Knowledge",
+    kbDesc: "Hours, location, service area, pricing and booking policies the bot will use.",
+  },
+  content_creator: {
+    title: "AI Course Assistant Training",
+    subtitle: "Train your bot to pitch courses, capture leads, and handle access/enrollment questions.",
+    kbTitle: "Creator Knowledge",
+    kbDesc: "Course lineup, enrollment, refund policy and access info the bot will use.",
+  },
+};
+
+const CATEGORY_FIELDS: Record<Cat, CatField[]> = {
   ecommerce: [
-    { key: "delivery_info", labelKey: "aiTraining.deliveryInfo", phKey: "aiTraining.deliveryInfoPh" },
-    { key: "payment_methods", labelKey: "aiTraining.paymentMethods", phKey: "aiTraining.paymentMethodsPh" },
-    { key: "return_policy", labelKey: "aiTraining.returnPolicy", phKey: "aiTraining.returnPolicyPh" },
+    { key: "delivery_info", label: "Delivery Info", placeholder: "Flat $5 shipping. 3–5 business days nationwide." },
+    { key: "payment_methods", label: "Payment Methods", placeholder: "Card, PayPal, Cash on Delivery." },
+    { key: "return_policy", label: "Return Policy", placeholder: "7-day return on unused items in original packaging." },
   ],
-  dental: [
-    { key: "operating_hours", labelKey: "aiTraining.operatingHours", phKey: "aiTraining.operatingHoursPh" },
-    { key: "business_address", labelKey: "aiTraining.address", phKey: "aiTraining.addressPh" },
-    { key: "insurance_accepted", labelKey: "aiTraining.insurance", phKey: "aiTraining.insurancePh" },
-    { key: "emergency_policy", labelKey: "aiTraining.emergencyPolicy", phKey: "aiTraining.emergencyPolicyPh", type: "textarea" },
-    { key: "cancellation_policy", labelKey: "aiTraining.cancellationPolicy", phKey: "aiTraining.cancellationPolicyPh", type: "textarea" },
+  service: [
+    { key: "operating_hours", label: "Operating Hours", placeholder: "Mon–Sat 9am–7pm. Sun closed." },
+    { key: "business_address", label: "Address / Service Area", placeholder: "123 Main St, City — or 25-mile radius." },
+    { key: "pricing_policy", label: "Pricing / Estimate Policy", placeholder: "Free phone estimate. $79 on-site diagnostic, credited toward repair.", type: "textarea" },
+    { key: "cancellation_policy", label: "Cancellation / Booking Policy", placeholder: "Free reschedule with 24h notice. No-shows forfeit any deposit.", type: "textarea" },
+    { key: "emergency_policy", label: "Emergency / Same-Day Policy", placeholder: "Same-day slots for urgent cases — please call the front desk.", type: "textarea" },
   ],
-  hvac: [
-    { key: "operating_hours", labelKey: "aiTraining.operatingHours", phKey: "aiTraining.operatingHoursPh" },
-    { key: "service_area_zips", labelKey: "aiTraining.serviceArea", phKey: "aiTraining.serviceAreaPh" },
-    { key: "emergency_policy", labelKey: "aiTraining.emergencyAvailability", phKey: "aiTraining.emergencyAvailabilityPh", type: "textarea" },
-    { key: "pricing_policy", labelKey: "aiTraining.pricingPolicy", phKey: "aiTraining.pricingPolicyPh", type: "textarea" },
-  ],
-  salon: [
-    { key: "operating_hours", labelKey: "aiTraining.operatingHours", phKey: "aiTraining.operatingHoursPh" },
-    { key: "business_address", labelKey: "aiTraining.address", phKey: "aiTraining.addressPh" },
-    { key: "cancellation_policy", labelKey: "aiTraining.cancellationPolicy", phKey: "aiTraining.cancellationPolicyPh", type: "textarea" },
-    { key: "deposit_policy", labelKey: "aiTraining.depositPolicy", phKey: "aiTraining.depositPolicyPh", type: "textarea" },
+  content_creator: [
+    { key: "course_lineup", label: "Course / Product Lineup", placeholder: "Beginner course — $49. Advanced cohort — $199 (live).", type: "textarea" },
+    { key: "enrollment_info", label: "Enrollment & Access", placeholder: "After payment, access link is emailed within 5 minutes. Lifetime access.", type: "textarea" },
+    { key: "refund_policy", label: "Refund Policy", placeholder: "7-day refund if less than 20% consumed." },
+    { key: "support_channel", label: "Support Channel", placeholder: "Email support@yourdomain.com — replies within 12h." },
   ],
 };
 
-const QUICK_ADD_BY_CAT: Record<BusinessCategory, { qKey: string; aKey: string }[]> = {
+const QUICK_ADD_BY_CAT: Record<Cat, { q: string; a: string }[]> = {
   ecommerce: [
-    { qKey: "autoReply.deliveryInfo", aKey: "autoReply.deliveryResp" },
-    { qKey: "autoReply.paymentMethods", aKey: "autoReply.paymentResp" },
-    { qKey: "autoReply.returnPolicy", aKey: "autoReply.returnResp" },
-    { qKey: "autoReply.businessHours", aKey: "autoReply.hoursResp" },
+    { q: "How much is delivery?", a: "Flat $5 nationwide, delivered in 3–5 business days." },
+    { q: "What payment methods do you accept?", a: "Card, PayPal and Cash on Delivery." },
+    { q: "What is your return policy?", a: "7-day return on unused items in original packaging." },
+    { q: "Do you have it in stock?", a: "Let me check — share the product name or photo." },
   ],
-  dental: [
-    { qKey: "aiTraining.qa.dental.hours", aKey: "aiTraining.qa.dental.hoursA" },
-    { qKey: "aiTraining.qa.dental.insurance", aKey: "aiTraining.qa.dental.insuranceA" },
-    { qKey: "aiTraining.qa.dental.emergency", aKey: "aiTraining.qa.dental.emergencyA" },
-    { qKey: "aiTraining.qa.dental.book", aKey: "aiTraining.qa.dental.bookA" },
+  service: [
+    { q: "What are your hours?", a: "We're open Mon–Sat 9am–7pm. Sun closed." },
+    { q: "Where are you located?", a: "123 Main St, City. We also serve a 25-mile radius." },
+    { q: "How much does it cost?", a: "Estimates are free over phone. A detailed quote is shared after a quick consultation." },
+    { q: "How do I book an appointment?", a: "Share your name, phone and preferred date — I'll book you in." },
   ],
-  hvac: [
-    { qKey: "aiTraining.qa.hvac.area", aKey: "aiTraining.qa.hvac.areaA" },
-    { qKey: "aiTraining.qa.hvac.emergency", aKey: "aiTraining.qa.hvac.emergencyA" },
-    { qKey: "aiTraining.qa.hvac.estimate", aKey: "aiTraining.qa.hvac.estimateA" },
-    { qKey: "aiTraining.qa.hvac.hours", aKey: "aiTraining.qa.hvac.hoursA" },
-  ],
-  salon: [
-    { qKey: "aiTraining.qa.salon.book", aKey: "aiTraining.qa.salon.bookA" },
-    { qKey: "aiTraining.qa.salon.cancel", aKey: "aiTraining.qa.salon.cancelA" },
-    { qKey: "aiTraining.qa.salon.hours", aKey: "aiTraining.qa.salon.hoursA" },
-    { qKey: "aiTraining.qa.salon.deposit", aKey: "aiTraining.qa.salon.depositA" },
+  content_creator: [
+    { q: "How do I enroll?", a: "Share your name and email — I'll send the enrollment link right away." },
+    { q: "How long is access?", a: "You get lifetime access to the course after purchase." },
+    { q: "Do you offer refunds?", a: "Yes — within 7 days if you've consumed less than 20% of the course." },
+    { q: "Can I get a discount?", a: "Special bundles are posted on the page. DM us 'BUNDLE' to see current offers." },
   ],
 };
 
 // Starter templates per niche — applied only to EMPTY fields (never overwrites edits).
-const PRESET_TEMPLATES: Record<BusinessCategory, SettingsMap> = {
+const PRESET_TEMPLATES: Record<Cat, SettingsMap> = {
   ecommerce: {
     delivery_info: "Flat $5 shipping. Standard delivery 3–5 business days.",
     payment_methods: "Credit/Debit card, PayPal, Cash on Delivery.",
     return_policy: "7-day return for unused items in original packaging. Buyer pays return shipping.",
-    reply_tone: "Friendly, direct, helpful.",
+    reply_tone: "Friendly, direct, helpful — sharp shopkeeper energy.",
+    welcome_message: "Hi! Welcome to our shop. What are you looking for today?",
+    out_of_stock_message: "That item is out of stock right now. Want me to suggest a similar one?",
+    ai_personality: "You are a sharp shopkeeper. Pitch products, send images, capture name/phone/address/quantity, and confirm orders before saving. Never invent prices.",
   },
-  dental: {
-    operating_hours: "Sun–Thu 10:00am – 8:00pm. Fri closed.",
+  service: {
+    operating_hours: "Mon–Sat 9:00am – 7:00pm. Sun closed.",
     business_address: "123 Main St, City",
-    insurance_accepted: "We accept Delta Dental, MetLife and Cigna. Please share your card at the visit.",
-    emergency_policy: "Same-day slots for acute pain or trauma — please call the front desk.",
-    cancellation_policy: "Free reschedule with 24h notice. Later cancellations may forfeit any deposit.",
-    reply_tone: "Warm, calm, professional.",
-  },
-  hvac: {
-    operating_hours: "Mon–Sat 8:00am – 7:00pm. 24/7 emergency line available.",
-    service_area_zips: "Dallas, TX and 25-mile radius. 75201, 75202, 75203…",
-    emergency_policy: "Same-day visits for no-heat, no-cool, gas smell or active leaks.",
     pricing_policy: "Free phone estimates. On-site diagnostic $79, credited toward any repair.",
-    reply_tone: "Clear, confident, helpful.",
+    cancellation_policy: "Free reschedule with 24h notice. Later cancellations may forfeit any deposit.",
+    emergency_policy: "Same-day slots available for urgent cases — please call the front desk.",
+    reply_tone: "Warm, calm, professional front-desk receptionist.",
+    welcome_message: "Hi! Thanks for reaching out. How can we help you today?",
+    ai_personality: "You are a professional front-desk receptionist. Qualify the request, capture name/phone/service-needed/preferred-date, and book the appointment. Never invent prices or policies — only answer from the knowledge base.",
   },
-  salon: {
-    operating_hours: "Tue–Sun 10:00am – 8:00pm. Mon closed.",
-    business_address: "123 Beauty Ave, City",
-    cancellation_policy: "24h notice required to reschedule. No-shows forfeit the deposit.",
-    deposit_policy: "20% deposit on color and longer services, refundable up to 48h before the visit.",
-    reply_tone: "Warm, polished, concierge-style.",
+  content_creator: {
+    course_lineup: "Beginner course — $49. Advanced cohort — $199 (live, monthly).",
+    enrollment_info: "After payment, access link is emailed within 5 minutes. Lifetime access.",
+    refund_policy: "7-day refund if less than 20% of the course is consumed.",
+    support_channel: "Email support@yourdomain.com or DM us — replies within 12h.",
+    reply_tone: "Warm, encouraging, knowledgeable mentor.",
+    welcome_message: "Hey! Glad you're here. Which course are you interested in?",
+    ai_personality: "You are a course support assistant. Pitch the right course, capture name + email/phone + course of interest, and answer enrollment/access questions. Never impersonate the creator and never invent course content.",
   },
 };
 
@@ -120,9 +130,9 @@ const AiTraining = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { category } = useBusinessCategory();
-  const cat: BusinessCategory = (category as BusinessCategory) || "ecommerce";
-  const isEcom = cat === "ecommerce";
+  const { activePage } = useActivePage();
+  const cat: Cat = (activePage?.page_category as Cat) || "ecommerce";
+  const meta = CATEGORY_META[cat];
   const catFields = CATEGORY_FIELDS[cat];
   const quickAdd = QUICK_ADD_BY_CAT[cat];
   const [settings, setSettings] = useState<SettingsMap>({});
@@ -505,9 +515,9 @@ const AiTraining = () => {
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2">
             <Brain className="h-5 w-5 text-primary" />
-            {t(`aiTraining.titleByCat.${cat}`)}
+            {meta.title}
           </h2>
-          <p className="text-sm text-muted-foreground">{t(`aiTraining.subtitleByCat.${cat}`)}</p>
+          <p className="text-sm text-muted-foreground">{meta.subtitle}</p>
 
         </div>
         <div className="flex items-center gap-2">
@@ -754,25 +764,25 @@ const AiTraining = () => {
           {/* Category-specific knowledge */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">{t(`aiTraining.kbTitle.${cat}`)}</CardTitle>
-              <CardDescription className="text-xs">{t(`aiTraining.kbDesc.${cat}`)}</CardDescription>
+              <CardTitle className="text-sm">{meta.kbTitle}</CardTitle>
+              <CardDescription className="text-xs">{meta.kbDesc}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {catFields.map((f) => (
                 <div key={f.key} className="space-y-1">
-                  <Label className="text-xs">{t(f.labelKey)}</Label>
+                  <Label className="text-xs">{f.label}</Label>
                   {f.type === "textarea" ? (
                     <Textarea
                       value={settings[f.key] || ""}
                       onChange={(e) => update(f.key, e.target.value)}
-                      placeholder={t(f.phKey)}
+                      placeholder={f.placeholder}
                       className="min-h-[60px] text-sm"
                     />
                   ) : (
                     <Input
                       value={settings[f.key] || ""}
                       onChange={(e) => update(f.key, e.target.value)}
-                      placeholder={t(f.phKey)}
+                      placeholder={f.placeholder}
                       className="h-8 text-sm"
                     />
                   )}
@@ -780,6 +790,7 @@ const AiTraining = () => {
               ))}
             </CardContent>
           </Card>
+
 
 
           {/* Welcome */}
@@ -897,7 +908,6 @@ const AiTraining = () => {
                 </p>
                 <div className="grid gap-1.5">
                   {quickAdd
-                    .map(({ qKey, aKey }) => ({ q: t(qKey), a: t(aKey) }))
                     .filter((s) => !faqList.some((f: any) => f.q === s.q))
                     .map((s, i) => (
                       <button
@@ -994,7 +1004,7 @@ const AiTraining = () => {
 
 // ----- Live Business Profile Summary -----
 type ProfileSummaryProps = {
-  cat: BusinessCategory;
+  cat: Cat;
   settings: SettingsMap;
   catFields: CatField[];
   onAsk: (label: string) => void;
@@ -1009,7 +1019,7 @@ const ProfileSummaryPanel = ({ cat, settings, catFields, onAsk }: ProfileSummary
     { key: "reply_tone", label: t("aiTraining.replyTone") },
     { key: "welcome_message", label: t("aiTraining.welcomeMessage") },
   ];
-  const nicheFields = catFields.map((f) => ({ key: f.key, label: t(f.labelKey) }));
+  const nicheFields = catFields.map((f) => ({ key: f.key, label: f.label }));
 
   // FAQ + Never-say counts treated as fields too
   const faqCount = parseSettingsJson<{ q: string; a: string }[]>(settings.faq_list, []).length;

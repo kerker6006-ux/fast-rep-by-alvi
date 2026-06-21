@@ -2,13 +2,16 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageSquare, Image as ImageIcon, ShoppingCart, DollarSign, TrendingUp, Calendar, Type, Coins, Brain } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MessageSquare, Image as ImageIcon, ShoppingCart, DollarSign, TrendingUp, Calendar, Type, Coins, Brain, Lock } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 
 const AiUsageDashboard = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { hasActiveSub } = useSubscriptionStatus();
 
   const { data, isLoading } = useQuery({
     queryKey: ["ai-usage", user?.id],
@@ -90,12 +93,27 @@ const AiUsageDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-purple-500">
+        <Card className="border-l-4 border-l-purple-500 relative overflow-hidden">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2"><ImageIcon className="h-4 w-4 text-purple-500" /> Image Cost</CardTitle></CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{fmt(data?.imageCost || 0)}</div>
-            <p className="text-xs text-muted-foreground mt-1">{data?.imageCount || 0} images analyzed</p>
-            <p className="text-xs text-emerald-600 mt-0.5">Today: {fmt(data?.todayImageCost || 0)}</p>
+            {hasActiveSub ? (
+              <>
+                <div className="text-3xl font-bold">{fmt(data?.imageCost || 0)}</div>
+                <p className="text-xs text-muted-foreground mt-1">{data?.imageCount || 0} images analyzed</p>
+                <p className="text-xs text-emerald-600 mt-0.5">Today: {fmt(data?.todayImageCost || 0)}</p>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <Lock className="h-5 w-5 text-amber-500" />
+                  <span className="text-base font-semibold text-muted-foreground">Not active</span>
+                </div>
+                <p className="text-xs text-amber-600 mt-1">Image analysis is locked on Free plan.</p>
+                <Button size="sm" variant="outline" className="mt-2 h-7 text-xs" onClick={() => { window.location.hash = "#credits"; }}>
+                  Subscribe to unlock
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -149,7 +167,7 @@ const AiUsageDashboard = () => {
         <CardContent>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground">Text Reply</span><span className="font-medium">${(data?.costText ?? 0).toFixed(3)} / message</span></div>
-            <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground">Image Analysis</span><span className="font-medium">${(data?.costImage ?? 0).toFixed(3)} / image</span></div>
+            <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground">Image Analysis</span>{hasActiveSub ? (<span className="font-medium">${(data?.costImage ?? 0).toFixed(3)} / image</span>) : (<span className="font-medium text-amber-600 flex items-center gap-1"><Lock className="h-3 w-3" /> Not active — subscribe to unlock</span>)}</div>
             <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground">Order Detection</span><span className="font-medium text-emerald-600">Free</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Auto-Reply Keywords</span><span className="font-medium text-emerald-600">Free</span></div>
           </div>

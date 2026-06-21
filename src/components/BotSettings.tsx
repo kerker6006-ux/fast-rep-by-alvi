@@ -262,14 +262,24 @@ const BotSettings = () => {
                 <Label>Enable Image Analysis</Label>
                 <p className="text-xs text-muted-foreground">When customers send images, use AI to analyze them. Turn OFF to save costs — images route to Image Inbox for manual reply.</p>
                 {!hasActiveSub && (
-                  <p className="text-xs text-amber-600 mt-1">🔒 Subscribe to the $20/mo plan to enable image analysis.</p>
+                  <p className="text-xs text-amber-600 mt-1">🔒 Locked on Free plan. Subscribe to the $20/mo plan to unlock image analysis.</p>
                 )}
               </div>
-              <Switch
-                disabled={!hasActiveSub}
-                checked={hasActiveSub && settings.enable_image_analysis === "true"}
-                onCheckedChange={(v) => update("enable_image_analysis", v ? "true" : "false")}
-              />
+              <div
+                onClick={() => {
+                  if (!hasActiveSub) {
+                    toast.error("Image analysis is a paid feature. Subscribe to unlock it.", {
+                      action: { label: "Subscribe", onClick: () => { window.location.hash = "#credits"; } },
+                    });
+                  }
+                }}
+              >
+                <Switch
+                  disabled={!hasActiveSub}
+                  checked={hasActiveSub && settings.enable_image_analysis === "true"}
+                  onCheckedChange={(v) => update("enable_image_analysis", v ? "true" : "false")}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -37,7 +37,7 @@ serve(async (req) => {
 
   try {
     const { messages, action, settings, category, language } = await req.json();
-    const cat: string = (category && ["ecommerce", "dental", "hvac", "salon"].includes(category)) ? category : "ecommerce";
+    const cat: string = (category && ["ecommerce", "service", "content_creator"].includes(category)) ? category : "ecommerce";
     const LANG_NAMES: Record<string, string> = { en: "English", bn: "Bangla (বাংলা)", es: "Spanish (Español)", ko: "Korean (한국어)" };
     const chatLang: string = (language && LANG_NAMES[language]) ? language : (settings?.training_chat_language && LANG_NAMES[settings.training_chat_language] ? settings.training_chat_language : "");
     const chatLangName = chatLang ? LANG_NAMES[chatLang] : "";
@@ -203,9 +203,8 @@ Rules:
     // Build known vs missing field lists per niche so the AI never re-asks
     const PRIORITY_BY_CAT: Record<string, string[]> = {
       ecommerce: ["business_name", "business_description", "reply_tone", "delivery_info", "payment_methods", "return_policy", "welcome_message", "out_of_stock_message", "faq_list", "never_say_list", "order_instructions"],
-      dental: ["business_name", "business_description", "reply_tone", "operating_hours", "business_address", "insurance_accepted", "emergency_policy", "cancellation_policy", "welcome_message", "faq_list", "never_say_list"],
-      hvac: ["business_name", "business_description", "reply_tone", "operating_hours", "service_area_zips", "emergency_policy", "pricing_policy", "welcome_message", "faq_list", "never_say_list"],
-      salon: ["business_name", "business_description", "reply_tone", "operating_hours", "business_address", "cancellation_policy", "deposit_policy", "welcome_message", "faq_list", "never_say_list"],
+      service: ["business_name", "business_description", "reply_tone", "operating_hours", "business_address", "pricing_policy", "cancellation_policy", "emergency_policy", "welcome_message", "faq_list", "never_say_list"],
+      content_creator: ["business_name", "business_description", "reply_tone", "course_lineup", "enrollment_info", "refund_policy", "support_channel", "welcome_message", "faq_list", "never_say_list"],
     };
     const priority = PRIORITY_BY_CAT[cat] || PRIORITY_BY_CAT.ecommerce;
     const isFilled = (k: string, v: unknown): boolean => {
@@ -230,16 +229,14 @@ Rules:
     const missingList = missing.length ? missing.join(", ") : "(everything is filled — confirm and offer to save)";
 
     const wizardByCategory: Record<string, string> = {
-      ecommerce: `You are training an AI Shopkeeper for a Facebook Messenger online store.`,
-      dental: `You are training an AI Receptionist for a DENTAL CLINIC.`,
-      hvac: `You are training an AI Dispatcher for an HVAC / HOME-SERVICES company.`,
-      salon: `You are training an AI Receptionist for a BEAUTY SALON / MED SPA.`,
+      ecommerce: `You are training an AI Shopkeeper for a Facebook Messenger online store. The bot pitches products, sends images, captures name/phone/address/quantity, and confirms orders before saving.`,
+      service: `You are training an AI Front-Desk Receptionist for a SERVICE BUSINESS (clinic, salon, repair shop, home services, consulting, etc.). The bot qualifies the request, captures name/phone/service-needed/preferred-date, and books appointments.`,
+      content_creator: `You are training an AI Course Assistant for a CONTENT CREATOR / COACH selling online courses and digital products. The bot pitches the right course, captures name + email/phone + course of interest, and answers enrollment/access questions.`,
     };
     const offLimitsByCategory: Record<string, string> = {
-      ecommerce: `DO NOT ask about appointments, insurance, service area, or clinic hours.`,
-      dental: `DO NOT ask about delivery, returns, payment methods for goods, product catalog, or order collection.`,
-      hvac: `DO NOT ask about delivery, returns, product catalog, or shopkeeper-style orders.`,
-      salon: `DO NOT ask about delivery, returns, payment methods for goods, product catalog, or order collection.`,
+      ecommerce: `DO NOT ask about appointments, service areas, course enrollment, or clinic hours.`,
+      service: `DO NOT ask about delivery, returns, product catalog, course refunds, or shopkeeper-style orders.`,
+      content_creator: `DO NOT ask about delivery, physical returns, appointment booking, or clinic hours.`,
     };
 
     const languageRule = chatLangName
