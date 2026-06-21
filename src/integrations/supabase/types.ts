@@ -119,6 +119,7 @@ export type Database = {
       auto_reply_rules: {
         Row: {
           created_at: string
+          fb_page_id: string | null
           id: string
           is_active: boolean
           priority: number
@@ -130,6 +131,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          fb_page_id?: string | null
           id?: string
           is_active?: boolean
           priority?: number
@@ -141,6 +143,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          fb_page_id?: string | null
           id?: string
           is_active?: boolean
           priority?: number
@@ -150,11 +153,27 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "auto_reply_rules_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auto_reply_rules_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages_safe"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bot_settings: {
         Row: {
           created_at: string
+          fb_page_id: string | null
           id: string
           setting_key: string
           setting_value: string
@@ -163,6 +182,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          fb_page_id?: string | null
           id?: string
           setting_key: string
           setting_value: string
@@ -171,13 +191,29 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          fb_page_id?: string | null
           id?: string
           setting_key?: string
           setting_value?: string
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bot_settings_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bot_settings_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages_safe"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       comment_trigger_logs: {
         Row: {
@@ -299,6 +335,7 @@ export type Database = {
           created_at: string
           customer_name: string | null
           customer_phone: string | null
+          fb_page_id: string | null
           id: string
           notes: string | null
           status: string
@@ -311,6 +348,7 @@ export type Database = {
           created_at?: string
           customer_name?: string | null
           customer_phone?: string | null
+          fb_page_id?: string | null
           id?: string
           notes?: string | null
           status?: string
@@ -323,6 +361,7 @@ export type Database = {
           created_at?: string
           customer_name?: string | null
           customer_phone?: string | null
+          fb_page_id?: string | null
           id?: string
           notes?: string | null
           status?: string
@@ -335,6 +374,20 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaints_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaints_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -383,6 +436,193 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      course_enrollments: {
+        Row: {
+          amount_paid: number | null
+          conversation_id: string | null
+          course_id: string
+          created_at: string
+          customer_name: string | null
+          customer_phone: string | null
+          fb_page_id: string | null
+          fb_user_id: string | null
+          granted_at: string | null
+          id: string
+          notes: string | null
+          payment_status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_paid?: number | null
+          conversation_id?: string | null
+          course_id: string
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          fb_page_id?: string | null
+          fb_user_id?: string | null
+          granted_at?: string | null
+          id?: string
+          notes?: string | null
+          payment_status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_paid?: number | null
+          conversation_id?: string | null
+          course_id?: string
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          fb_page_id?: string | null
+          fb_user_id?: string | null
+          granted_at?: string | null
+          id?: string
+          notes?: string | null
+          payment_status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_enrollments_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_enrollments_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_enrollments_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_lessons: {
+        Row: {
+          content: string | null
+          course_id: string
+          created_at: string
+          id: string
+          order_index: number
+          pdf_url: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          video_url: string | null
+        }
+        Insert: {
+          content?: string | null
+          course_id: string
+          created_at?: string
+          id?: string
+          order_index?: number
+          pdf_url?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+          video_url?: string | null
+        }
+        Update: {
+          content?: string | null
+          course_id?: string
+          created_at?: string
+          id?: string
+          order_index?: number
+          pdf_url?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_lessons_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          created_at: string
+          currency: string
+          description: string | null
+          fb_page_id: string
+          id: string
+          is_active: boolean
+          payment_instructions: string | null
+          price: number
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          description?: string | null
+          fb_page_id: string
+          id?: string
+          is_active?: boolean
+          payment_instructions?: string | null
+          price?: number
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          description?: string | null
+          fb_page_id?: string
+          id?: string
+          is_active?: boolean
+          payment_instructions?: string | null
+          price?: number
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courses_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages_safe"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       credit_transactions: {
         Row: {
@@ -545,8 +785,10 @@ export type Database = {
           is_active: boolean
           last_sync_at: string | null
           page_access_token: string
+          page_category: Database["public"]["Enums"]["page_category"] | null
           page_name: string | null
           page_picture_url: string | null
+          pending_delete_at: string | null
           subscribed_fields: string[] | null
           subscription_error: string | null
           subscription_status: string | null
@@ -566,8 +808,10 @@ export type Database = {
           is_active?: boolean
           last_sync_at?: string | null
           page_access_token: string
+          page_category?: Database["public"]["Enums"]["page_category"] | null
           page_name?: string | null
           page_picture_url?: string | null
+          pending_delete_at?: string | null
           subscribed_fields?: string[] | null
           subscription_error?: string | null
           subscription_status?: string | null
@@ -587,8 +831,10 @@ export type Database = {
           is_active?: boolean
           last_sync_at?: string | null
           page_access_token?: string
+          page_category?: Database["public"]["Enums"]["page_category"] | null
           page_name?: string | null
           page_picture_url?: string | null
+          pending_delete_at?: string | null
           subscribed_fields?: string[] | null
           subscription_error?: string | null
           subscription_status?: string | null
@@ -648,6 +894,7 @@ export type Database = {
           category: Database["public"]["Enums"]["business_category"]
           conversation_id: string | null
           created_at: string
+          fb_page_id: string | null
           id: string
           name: string | null
           notes: string | null
@@ -664,6 +911,7 @@ export type Database = {
           category: Database["public"]["Enums"]["business_category"]
           conversation_id?: string | null
           created_at?: string
+          fb_page_id?: string | null
           id?: string
           name?: string | null
           notes?: string | null
@@ -680,6 +928,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["business_category"]
           conversation_id?: string | null
           created_at?: string
+          fb_page_id?: string | null
           id?: string
           name?: string | null
           notes?: string | null
@@ -697,6 +946,20 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -791,6 +1054,7 @@ export type Database = {
           customer_address: string | null
           customer_name: string | null
           customer_phone: string | null
+          fb_page_id: string | null
           id: string
           items: Json
           notes: string | null
@@ -805,6 +1069,7 @@ export type Database = {
           customer_address?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          fb_page_id?: string | null
           id?: string
           items?: Json
           notes?: string | null
@@ -819,6 +1084,7 @@ export type Database = {
           customer_address?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          fb_page_id?: string | null
           id?: string
           items?: Json
           notes?: string | null
@@ -833,6 +1099,20 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -943,6 +1223,7 @@ export type Database = {
           created_at: string
           description: string | null
           description_bn: string | null
+          fb_page_id: string | null
           id: string
           image_url: string | null
           is_active: boolean
@@ -963,6 +1244,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           description_bn?: string | null
+          fb_page_id?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -983,6 +1265,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           description_bn?: string | null
+          fb_page_id?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -997,7 +1280,22 @@ export type Database = {
           user_id?: string | null
           variants?: Json | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages_safe"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -1082,6 +1380,7 @@ export type Database = {
           content: string
           conversation_id: string | null
           created_at: string
+          fb_page_id: string | null
           id: string
           message_type: string
           scheduled_at: string
@@ -1093,6 +1392,7 @@ export type Database = {
           content: string
           conversation_id?: string | null
           created_at?: string
+          fb_page_id?: string | null
           id?: string
           message_type?: string
           scheduled_at: string
@@ -1104,6 +1404,7 @@ export type Database = {
           content?: string
           conversation_id?: string | null
           created_at?: string
+          fb_page_id?: string | null
           id?: string
           message_type?: string
           scheduled_at?: string
@@ -1119,6 +1420,20 @@ export type Database = {
             referencedRelation: "conversations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "scheduled_messages_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_messages_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       services: {
@@ -1129,6 +1444,7 @@ export type Database = {
           description: string | null
           duration_text: string | null
           faqs: Json
+          fb_page_id: string | null
           id: string
           image_url: string | null
           name: string
@@ -1144,6 +1460,7 @@ export type Database = {
           description?: string | null
           duration_text?: string | null
           faqs?: Json
+          fb_page_id?: string | null
           id?: string
           image_url?: string | null
           name: string
@@ -1159,6 +1476,7 @@ export type Database = {
           description?: string | null
           duration_text?: string | null
           faqs?: Json
+          fb_page_id?: string | null
           id?: string
           image_url?: string | null
           name?: string
@@ -1167,7 +1485,22 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "services_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "services_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages_safe"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       suppressed_emails: {
         Row: {
@@ -1196,6 +1529,7 @@ export type Database = {
       training_suggestions: {
         Row: {
           created_at: string
+          fb_page_id: string | null
           id: string
           kind: string
           payload: Json
@@ -1207,6 +1541,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          fb_page_id?: string | null
           id?: string
           kind: string
           payload?: Json
@@ -1218,6 +1553,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          fb_page_id?: string | null
           id?: string
           kind?: string
           payload?: Json
@@ -1227,7 +1563,22 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "training_suggestions_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_suggestions_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages_safe"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_credits: {
         Row: {
@@ -1305,6 +1656,7 @@ export type Database = {
         Row: {
           content: string | null
           created_at: string
+          fb_page_id: string | null
           id: string
           page_url: string
           source_url: string
@@ -1316,6 +1668,7 @@ export type Database = {
         Insert: {
           content?: string | null
           created_at?: string
+          fb_page_id?: string | null
           id?: string
           page_url: string
           source_url: string
@@ -1327,6 +1680,7 @@ export type Database = {
         Update: {
           content?: string | null
           created_at?: string
+          fb_page_id?: string | null
           id?: string
           page_url?: string
           source_url?: string
@@ -1335,7 +1689,22 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "website_knowledge_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "website_knowledge_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages_safe"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -1443,6 +1812,7 @@ export type Database = {
         | "processing"
         | "delivered"
         | "cancelled"
+      page_category: "ecommerce" | "service" | "content_creator"
       scheduled_message_status: "pending" | "sent" | "failed" | "cancelled"
     }
     CompositeTypes: {
@@ -1580,6 +1950,7 @@ export const Constants = {
         "delivered",
         "cancelled",
       ],
+      page_category: ["ecommerce", "service", "content_creator"],
       scheduled_message_status: ["pending", "sent", "failed", "cancelled"],
     },
   },
