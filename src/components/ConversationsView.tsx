@@ -3,12 +3,12 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, User, Clock, ArrowLeft, GraduationCap, Send, AlertTriangle, Check, CheckCheck, Image as ImageIcon, Inbox } from "lucide-react";
+import { MessageSquare, User, Clock, ArrowLeft, GraduationCap, Send, AlertTriangle, Check, CheckCheck, Inbox, Bell, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import TrainBotDialog from "@/components/TrainBotDialog";
@@ -20,6 +20,9 @@ type Conversation = {
   last_message: string | null;
   last_message_at: string | null;
   created_at: string;
+  needs_human?: boolean;
+  followup_reason?: string | null;
+  alert_seen_at?: string | null;
 };
 
 type Message = {
@@ -32,25 +35,40 @@ type Message = {
   created_at: string;
 };
 
-type ImageRow = {
-  id: string;
-  conversation_id: string;
-  created_at: string;
-  read_at: string | null;
-};
+const FB_24H_MSG = "Facebook 24-hour rule: you can only reply within 24 hours of the customer's last message. They must message you again to reopen the chat.";
 
 const ConversationsView = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const qc = useQueryClient();
-  const [view, setView] = useState<"all" | "images">(() =>
-    typeof window !== "undefined" && window.location.hash === "#conversations:images" ? "images" : "all"
+  const [view, setView] = useState<"all" | "alerts">(() =>
+    typeof window !== "undefined" && (window.location.hash === "#conversations:alerts" || window.location.hash === "#conversations:images") ? "alerts" : "all"
   );
   const [selectedConvo, setSelectedConvo] = useState<string | null>(null);
   const [trainOpen, setTrainOpen] = useState(false);
   const [trainData, setTrainData] = useState<{ customer: string; wrong: string }>({ customer: "", wrong: "" });
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
+
+  // Load profile dismiss flags
+  const { data: profile } = useQuery({
+    queryKey: ["profile-dismiss", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("alert_box_intro_dismissed, fb_24h_notice_dismissed")
+        .eq("id", user!.id)
+        .maybeSingle();
+      return data as { alert_box_intro_dismissed: boolean; fb_24h_notice_dismissed: boolean } | null;
+    },
+  });
+
+  const dismissFlag = async (col: "alert_box_intro_dismissed" | "fb_24h_notice_dismissed") => {
+    if (!user?.id) return;
+    await supabase.from("profiles").update({ [col]: true } as any).eq("id", user.id);
+    qc.invalidateQueries({ queryKey: ["profile-dismiss", user.id] });
+  };
 
   const { data: conversations, isLoading } = useQuery({
     queryKey: ["conversations", user?.id],
@@ -66,55 +84,26 @@ const ConversationsView = () => {
     refetchInterval: 10000,
   });
 
-  // Image messages — used for badge, filtering, and ordering in image view
-  const { data: imageRows = [] } = useQuery({
-    queryKey: ["conversation-images", user?.id],
-    enabled: !!user?.id,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("messages")
-        .select("id, conversation_id, created_at, read_at")
-        .eq("user_id", user!.id)
-        .eq("direction", "incoming")
-        .not("image_url", "is", null)
-        .order("created_at", { ascending: false })
-        .limit(500);
-      if (error) throw error;
-      return (data || []) as ImageRow[];
-    },
-    refetchInterval: 15000,
-  });
+  const isUnreadAlert = (c: Conversation) =>
+    !!c.needs_human && (!c.alert_seen_at || (c.last_message_at && c.alert_seen_at < c.last_message_at));
 
-  const unreadImageCount = imageRows.filter(r => !r.read_at).length;
+  const alertConvos = (conversations || []).filter(c => c.needs_human);
+  const unreadAlertCount = (conversations || []).filter(isUnreadAlert).length;
 
-  // Latest image per conversation, for image-view sorting
-  const latestImageAt = new Map<string, string>();
-  for (const r of imageRows) {
-    if (!latestImageAt.has(r.conversation_id)) latestImageAt.set(r.conversation_id, r.created_at);
-  }
+  const displayedConversations = view === "all" ? (conversations || []) : alertConvos;
 
-  const displayedConversations = (() => {
-    if (!conversations) return [];
-    if (view === "all") return conversations;
-    return conversations
-      .filter(c => latestImageAt.has(c.id))
-      .sort((a, b) => (latestImageAt.get(b.id)! > latestImageAt.get(a.id)! ? 1 : -1));
-  })();
-
-  // Mark images read when entering image view
+  // Mark an alert seen when opened
   useEffect(() => {
-    if (view !== "images" || !user?.id || unreadImageCount === 0) return;
-    (async () => {
-      await supabase
-        .from("messages")
-        .update({ read_at: new Date().toISOString() })
-        .eq("user_id", user.id)
-        .eq("direction", "incoming")
-        .not("image_url", "is", null)
-        .is("read_at", null);
-      qc.invalidateQueries({ queryKey: ["conversation-images", user.id] });
-    })();
-  }, [view, user?.id, unreadImageCount, qc]);
+    if (!selectedConvo || !user?.id) return;
+    const c = conversations?.find(x => x.id === selectedConvo);
+    if (c && isUnreadAlert(c)) {
+      supabase.from("conversations")
+        .update({ alert_seen_at: new Date().toISOString() })
+        .eq("id", selectedConvo)
+        .then(() => qc.invalidateQueries({ queryKey: ["conversations", user.id] }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedConvo]);
 
   const { data: messages } = useQuery({
     queryKey: ["messages", selectedConvo],
@@ -129,6 +118,8 @@ const ConversationsView = () => {
   });
 
   const selectedConversation = conversations?.find(c => c.id === selectedConvo);
+  const showAlertIntro = view === "alerts" && profile && !profile.alert_box_intro_dismissed;
+  const show24hBanner = profile && !profile.fb_24h_notice_dismissed;
 
   return (
     <div className="space-y-4">
@@ -147,17 +138,33 @@ const ConversationsView = () => {
           <span className="text-xs text-muted-foreground">({conversations?.length || 0})</span>
         </button>
         <button
-          onClick={() => { setView("images"); setSelectedConvo(null); }}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors relative ${view === "images" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          onClick={() => { setView("alerts"); setSelectedConvo(null); }}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors relative ${view === "alerts" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
         >
-          <ImageIcon className="h-4 w-4" /> Image Inbox
-          {unreadImageCount > 0 && (
+          <Bell className="h-4 w-4" /> Alert Box
+          {unreadAlertCount > 0 && (
             <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 text-[10px] font-bold">
-              {unreadImageCount}
+              {unreadAlertCount}
             </Badge>
           )}
         </button>
       </div>
+
+      {/* Alert Box first-time explainer */}
+      {showAlertIntro && (
+        <div className="flex items-start gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+          <Bell className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="font-medium">What is the Alert Box?</p>
+            <p className="text-muted-foreground mt-0.5">
+              When the bot isn't sure how to reply, or a customer sends something it can't handle (like an image on the free plan), the conversation lands here so you can reply yourself.
+            </p>
+          </div>
+          <button onClick={() => dismissFlag("alert_box_intro_dismissed")} className="text-muted-foreground hover:text-foreground" aria-label="Dismiss">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[600px]">
         <Card className={`md:col-span-1 overflow-hidden ${selectedConvo ? "hidden md:block" : ""}`}>
@@ -168,10 +175,10 @@ const ConversationsView = () => {
               </div>
             ) : displayedConversations.length === 0 ? (
               <div className="p-8 text-center">
-                {view === "images" ? (
+                {view === "alerts" ? (
                   <>
-                    <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                    <p className="text-sm text-muted-foreground">No image messages yet.</p>
+                    <Bell className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                    <p className="text-sm text-muted-foreground">No alerts. The bot is handling everything.</p>
                   </>
                 ) : (
                   <>
@@ -182,9 +189,7 @@ const ConversationsView = () => {
               </div>
             ) : (
               <div className="divide-y">
-                {displayedConversations.map(c => {
-                  const hasImg = latestImageAt.has(c.id);
-                  return (
+                {displayedConversations.map(c => (
                   <button
                     key={c.id}
                     onClick={() => setSelectedConvo(c.id)}
@@ -197,16 +202,15 @@ const ConversationsView = () => {
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-sm truncate flex items-center gap-2">
                           {c.sender_name || `${t("analytics.customer")} ${c.fb_sender_id.slice(-6)}`}
-                          {hasImg && view === "images" && <ImageIcon className="h-3 w-3 text-purple-500" />}
-                          {(c as any).needs_human && (
+                          {c.needs_human && (
                             <span className="text-[10px] font-semibold bg-destructive text-destructive-foreground px-1.5 py-0.5 rounded">
                               REPLY ME
                             </span>
                           )}
                         </p>
                         <p className="text-xs text-muted-foreground truncate">{c.last_message || "No messages"}</p>
-                        {(c as any).followup_reason && (
-                          <p className="text-xs text-destructive truncate mt-0.5">⚠ {(c as any).followup_reason}</p>
+                        {c.followup_reason && (
+                          <p className="text-xs text-destructive truncate mt-0.5">⚠ {c.followup_reason}</p>
                         )}
                         {c.last_message_at && (
                           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
@@ -217,8 +221,7 @@ const ConversationsView = () => {
                       </div>
                     </div>
                   </button>
-                  );
-                })}
+                ))}
               </div>
             )}
           </ScrollArea>
@@ -291,6 +294,10 @@ const ConversationsView = () => {
                 const outsideWindow = hoursSince > 24;
                 const sendReply = async () => {
                   if (!selectedConvo || !replyText.trim()) return;
+                  if (outsideWindow) {
+                    toast.error(FB_24H_MSG);
+                    return;
+                  }
                   setSending(true);
                   try {
                     const { error } = await supabase.functions.invoke("send-fb-message", {
@@ -304,16 +311,19 @@ const ConversationsView = () => {
                 };
                 return (
                   <div className="border-t p-3 space-y-2">
-                    {outsideWindow && (
+                    {show24hBanner && (
                       <div className="flex items-start gap-2 text-xs bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 text-amber-900 dark:text-amber-200 rounded-md p-2">
                         <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                        <span>Outside Meta's 24-hour messaging window. Facebook will reject this send. Customer must message you first.</span>
+                        <span className="flex-1">{FB_24H_MSG}</span>
+                        <button onClick={() => dismissFlag("fb_24h_notice_dismissed")} className="opacity-70 hover:opacity-100" aria-label="Dismiss">
+                          <X className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     )}
                     <div className="flex gap-2">
                       <Textarea value={replyText} onChange={e => setReplyText(e.target.value)} placeholder="Type a reply..." className="min-h-[40px] max-h-32 resize-none text-sm" rows={1}
                         onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendReply(); } }} />
-                      <Button size="icon" onClick={sendReply} disabled={!replyText.trim() || sending || outsideWindow}>
+                      <Button size="icon" onClick={sendReply} disabled={!replyText.trim() || sending}>
                         <Send className="h-4 w-4" />
                       </Button>
                     </div>
