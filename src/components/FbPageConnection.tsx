@@ -114,11 +114,16 @@ const FbPageConnection = () => {
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["fb-pages"] });
+      queryClient.invalidateQueries({ queryKey: ["active-pages"] });
       setPickerOpen(false);
       setSessionToken(null);
       setSelectedPage(null);
-      if (data.status === "active") toast.success("Facebook Page Connected Successfully");
+      if (data.status === "active") toast.success(data.restored ? "Page reconnected — history restored" : "Facebook Page Connected Successfully");
       else toast.warning(`Connected, but webhook subscription failed: ${data.error ?? ""}`);
+      if (data.needs_category && data.row_id) {
+        setCategoryDialogPageId(data.row_id);
+        setCategoryDialogPageName(data.page?.name ?? null);
+      }
     },
     onError: (e: any) => toast.error(e.message || "Could not connect page"),
   });
