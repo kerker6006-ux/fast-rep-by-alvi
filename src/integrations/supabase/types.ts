@@ -918,6 +918,7 @@ export type Database = {
           business_info: Json
           created_at: string
           display_name: string | null
+          free_until: string
           id: string
           is_approved: boolean
           stripe_customer_id: string | null
@@ -936,6 +937,7 @@ export type Database = {
           business_info?: Json
           created_at?: string
           display_name?: string | null
+          free_until?: string
           id: string
           is_approved?: boolean
           stripe_customer_id?: string | null
@@ -954,6 +956,7 @@ export type Database = {
           business_info?: Json
           created_at?: string
           display_name?: string | null
+          free_until?: string
           id?: string
           is_approved?: boolean
           stripe_customer_id?: string | null
