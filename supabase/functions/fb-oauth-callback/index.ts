@@ -30,6 +30,7 @@ Deno.serve(async (req) => {
 
     const verified = await verifyState(appSecret, state);
     if (!verified) return htmlRedirect(`${appOrigin}/?fb_error=bad_state`, "Invalid state");
+    if (verified.origin && isAllowedOrigin(verified.origin)) appOrigin = verified.origin;
 
     // Exchange code -> short-lived user token
     const tokenRes = await fetch(
