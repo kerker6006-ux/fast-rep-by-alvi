@@ -1,34 +1,27 @@
 project_id = "urtpathqupraeokaigzz"
 
-[functions.fb-oauth-callback]
-verify_jwt = false
-
-[functions.fb-login-start]
-verify_jwt = false
-
-[functions.fb-login-callback]
-verify_jwt = false
-
-[functions.fb-webhook]
-verify_jwt = false
-
-[functions.send-scheduled]
-verify_jwt = false
-
-[functions.ai-product-wizard]
-verify_jwt = true
-
-[functions.ai-product-details]
-verify_jwt = true
-
-[functions.ai-training-chat]
-verify_jwt = true
-
-[functions.create-checkout-session]
-verify_jwt = true
-
-[functions.stripe-webhook]
-verify_jwt = false
-
-[functions.process-email-queue]
-verify_jwt = true
+[functions]
+  [functions.ai-product-details]
+    verify_jwt = true
+  [functions.ai-product-wizard]
+    verify_jwt = true
+  [functions.ai-training-chat]
+    verify_jwt = true
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.create-checkout-session]
+    verify_jwt = true
+  [functions.fb-login-callback]
+    verify_jwt = false
+  [functions.fb-login-start]
+    verify_jwt = false
+  [functions.fb-oauth-callback]
+    verify_jwt = false
+  [functions.fb-webhook]
+    verify_jwt = false
+  [functions.process-email-queue]
+    verify_jwt = true
+  [functions.send-scheduled]
+    verify_jwt = false
+  [functions.stripe-webhook]
+    verify_jwt = false
