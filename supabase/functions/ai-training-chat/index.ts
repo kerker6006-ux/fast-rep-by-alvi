@@ -305,6 +305,7 @@ RULES FOR YOU:
     const data = await response.json();
     const reply = data.choices?.[0]?.message?.content || "Sorry, I couldn't process that. Please try again.";
 
+    await logTrainingUsage(req, "google/gemini-2.5-flash");
     return new Response(JSON.stringify({ reply }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
