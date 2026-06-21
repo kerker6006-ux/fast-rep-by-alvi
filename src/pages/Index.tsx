@@ -3,6 +3,7 @@ import DashboardSidebar from "@/components/DashboardSidebar";
 import CategoryOnboarding from "@/components/CategoryOnboarding";
 import NotificationBell from "@/components/NotificationBell";
 import PaywallCard from "@/components/PaywallCard";
+import PageSwitcher from "@/components/PageSwitcher";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 
 // Lazy-load every dashboard tab — only the active one downloads.
@@ -12,6 +13,8 @@ const AiUsageDashboard = lazy(() => import("@/components/AiUsageDashboard"));
 const AiTraining = lazy(() => import("@/components/AiTraining"));
 const ProductsManager = lazy(() => import("@/components/ProductsManager"));
 const ServicesManager = lazy(() => import("@/components/ServicesManager"));
+const CoursesManager = lazy(() => import("@/components/CoursesManager"));
+const EnrollmentsManager = lazy(() => import("@/components/EnrollmentsManager"));
 const LeadsManager = lazy(() => import("@/components/LeadsManager"));
 const PendingProducts = lazy(() => import("@/components/PendingProducts"));
 const ProductSuggestions = lazy(() => import("@/components/ProductSuggestions"));
@@ -33,6 +36,8 @@ const tabs: Record<string, React.ComponentType> = {
   "ai-training": AiTraining,
   products: ProductsManager,
   services: ServicesManager,
+  courses: CoursesManager,
+  enrollments: EnrollmentsManager,
   leads: LeadsManager,
   "pending-products": PendingProducts,
   suggestions: ProductSuggestions,
