@@ -657,6 +657,45 @@ export type Database = {
         }
         Relationships: []
       }
+      data_deletion_requests: {
+        Row: {
+          completed_at: string | null
+          confirmation_code: string
+          created_at: string
+          error: string | null
+          id: string
+          signed_request: string | null
+          status: string
+          updated_at: string
+          user_facebook_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          confirmation_code: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          signed_request?: string | null
+          status?: string
+          updated_at?: string
+          user_facebook_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          confirmation_code?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          signed_request?: string | null
+          status?: string
+          updated_at?: string
+          user_facebook_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
