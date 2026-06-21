@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Video, FileText, GraduationCap, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Video, FileText, GraduationCap, Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { useSubscription, showFreeImageNoticeOnce } from "@/hooks/useSubscription";
 
 type Course = {
   id: string;
@@ -161,12 +162,44 @@ const CoursesManager = () => {
 const CourseDialog = ({ open, course, onClose, onSave, saving }: {
   open: boolean; course: Course | null; onClose: () => void; onSave: (c: any) => void; saving: boolean;
 }) => {
-  const [form, setForm] = useState<any>(course || { title: "", description: "", price: 0, currency: "USD", thumbnail_url: "", payment_instructions: "", is_active: true });
-  // Reset form when dialog opens
+  const { hasActiveSub } = useSubscription();
+  const initial = () => course || { title: "", description: "", price: 0, currency: "USD", thumbnail_url: "", payment_instructions: "", is_active: true };
+  const [form, setForm] = useState<any>(initial());
+  const [thumbFile, setThumbFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+
   const handleOpenChange = (v: boolean) => {
-    if (v) setForm(course || { title: "", description: "", price: 0, currency: "USD", thumbnail_url: "", payment_instructions: "", is_active: true });
+    if (v) { setForm(initial()); setThumbFile(null); }
     else onClose();
   };
+
+  const handlePickFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0] || null;
+    setThumbFile(f);
+    if (f) showFreeImageNoticeOnce(hasActiveSub);
+  };
+
+  const handleSubmit = async () => {
+    try {
+      let thumbnail_url = form.thumbnail_url || null;
+      if (thumbFile) {
+        setUploading(true);
+        const ext = thumbFile.name.split(".").pop();
+        const path = `course-thumbs/${crypto.randomUUID()}.${ext}`;
+        const { error } = await supabase.storage.from("product-images").upload(path, thumbFile);
+        if (error) throw error;
+        const { data } = supabase.storage.from("product-images").getPublicUrl(path);
+        thumbnail_url = data.publicUrl;
+      }
+      onSave({ ...form, thumbnail_url, id: course?.id });
+    } catch (err: any) {
+      toast.error("Thumbnail upload failed: " + err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const previewUrl = thumbFile ? URL.createObjectURL(thumbFile) : form.thumbnail_url || null;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -180,9 +213,20 @@ const CourseDialog = ({ open, course, onClose, onSave, saving }: {
             <div><Label>Currency</Label><Input value={form.currency} onChange={e => setForm({ ...form, currency: e.target.value.toUpperCase() })} /></div>
           </div>
           <div>
-            <Label>Course thumbnail URL</Label>
-            <Input value={form.thumbnail_url || ""} onChange={e => setForm({ ...form, thumbnail_url: e.target.value })} placeholder="https://example.com/course-image.jpg" />
-            <p className="text-xs text-muted-foreground mt-1">Paste a direct image link. The thumbnail shows at the top of the course card.</p>
+            <Label>Course thumbnail</Label>
+            <div className="flex items-center gap-3 mt-1">
+              {previewUrl ? (
+                <img src={previewUrl} alt="" className="h-20 w-20 rounded-xl object-cover border-2 border-border shadow-sm" />
+              ) : (
+                <div className="h-20 w-20 rounded-xl bg-muted flex items-center justify-center border-2 border-dashed border-border">
+                  <Upload className="h-5 w-5 text-muted-foreground/60" />
+                </div>
+              )}
+              <div className="flex-1">
+                <Input type="file" accept="image/*" onChange={handlePickFile} />
+                <p className="text-xs text-muted-foreground mt-1">Upload an image. It shows at the top of the course card.</p>
+              </div>
+            </div>
           </div>
           <div>
             <Label>Payment instructions</Label>
@@ -192,8 +236,8 @@ const CourseDialog = ({ open, course, onClose, onSave, saving }: {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button disabled={!form.title || saving} onClick={() => onSave({ ...form, id: course?.id })}>
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+          <Button disabled={!form.title || saving || uploading} onClick={handleSubmit}>
+            {(saving || uploading) ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
           </Button>
         </DialogFooter>
       </DialogContent>
