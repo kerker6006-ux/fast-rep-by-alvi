@@ -908,7 +908,6 @@ const AiTraining = () => {
                 </p>
                 <div className="grid gap-1.5">
                   {quickAdd
-                    .map(({ qKey, aKey }) => ({ q: t(qKey), a: t(aKey) }))
                     .filter((s) => !faqList.some((f: any) => f.q === s.q))
                     .map((s, i) => (
                       <button
