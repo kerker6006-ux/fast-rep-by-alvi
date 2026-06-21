@@ -224,7 +224,7 @@ async function handleCommentEvent(
       if (userId) productQuery = productQuery.eq("user_id", userId);
       const { data: products } = await productQuery;
 
-      const productList = (products || []).map((p: any) => `${p.name}: ৳${p.price}`).join(", ");
+      const productList = (products || []).map((p: any) => `${p.name}: $${p.price}`).join(", ");
       const lang = isBangla ? "Bangla" : "English";
 
       const aiRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -748,8 +748,8 @@ async function handleProductImageRequest(
   const variantsArr = (matchedProduct.variants || []) as {color: string; image_url: string}[];
   const hasMultipleColors = variantsArr.filter(v => v?.color).length > 1;
   const caption = hasMultipleColors
-    ? `${productName} — ৳${matchedProduct.price}। আর কোন রং দেখবেন?`
-    : `${productName} — ৳${matchedProduct.price}।`;
+    ? `${productName} — $${matchedProduct.price}। আর কোন রং দেখবেন?`
+    : `${productName} — $${matchedProduct.price}।`;
 
   await sendFbImage(pageAccessToken, senderId, matchedProduct.image_url);
   await sendFbMessage(pageAccessToken, senderId, caption);
@@ -1134,9 +1134,9 @@ ${businessInfoObj.faqs ? `\nFAQs: ${businessInfoObj.faqs}` : ""}
         : "";
       const sizeVars = (p.size_variants || []) as {size: string; price: number}[];
       const sizeSection = sizeVars.length
-        ? ` | Size options: ${sizeVars.map(s => `${s.size}=৳${s.price}`).join(", ")}`
+        ? ` | Size options: ${sizeVars.map(s => `${s.size}=$${s.price}`).join(", ")}`
         : "";
-      return `  - ${p.name}${p.name_bn ? ` (${p.name_bn})` : ""}: ৳${p.price}${sizeSection}${colorSection}${p.size ? ` | Size: ${p.size}` : ""}${p.material ? ` | Material: ${p.material}` : ""}${p.description ? ` — ${p.description}` : ""}${p.keywords?.length ? ` [${p.keywords.join(", ")}]` : ""}`;
+      return `  - ${p.name}${p.name_bn ? ` (${p.name_bn})` : ""}: $${p.price}${sizeSection}${colorSection}${p.size ? ` | Size: ${p.size}` : ""}${p.material ? ` | Material: ${p.material}` : ""}${p.description ? ` — ${p.description}` : ""}${p.keywords?.length ? ` [${p.keywords.join(", ")}]` : ""}`;
     }).join("\n");
     return `📁 ${category} (${items.length} items):\n${itemList}`;
   }).join("\n\n") || "No products available.";
@@ -1149,8 +1149,8 @@ ${businessInfoObj.faqs ? `\nFAQs: ${businessInfoObj.faqs}` : ""}
     }))];
     const sizes = [...new Set(items.map((p: any) => p.size).filter(Boolean))];
     const priceRange = items.length > 1
-      ? `৳${Math.min(...items.map((p: any) => p.price))} - ৳${Math.max(...items.map((p: any) => p.price))}`
-      : `৳${items[0].price}`;
+      ? `$${Math.min(...items.map((p: any) => p.price))} - $${Math.max(...items.map((p: any) => p.price))}`
+      : `$${items[0].price}`;
     return `- ${cat}: ${items.length} variants${allColors.length ? `, Colors: ${allColors.join(", ")}` : ""}${sizes.length ? `, Sizes: ${sizes.join(", ")}` : ""}, Price: ${priceRange}`;
   }).join("\n");
 
@@ -1166,7 +1166,7 @@ ${businessInfoObj.faqs ? `\nFAQs: ${businessInfoObj.faqs}` : ""}
   // Build product image references
   const productsWithImages = products?.filter((p: any) => p.image_url) || [];
   const productImageList = productsWithImages
-    .map((p: any) => `${p.name}${p.name_bn ? ` (${p.name_bn})` : ""} [${p.category || 'uncategorized'}] — ৳${p.price}`)
+    .map((p: any) => `${p.name}${p.name_bn ? ` (${p.name_bn})` : ""} [${p.category || 'uncategorized'}] — $${p.price}`)
     .join("\n") || "";
 
   // When customer sends an image, include product images so AI can visually compare
@@ -1191,7 +1191,7 @@ ${businessInfoObj.faqs ? `\nFAQs: ${businessInfoObj.faqs}` : ""}
       for (const p of productsWithImages.slice(0, 10)) {
         contentParts.push({
           type: "text",
-          text: `Product: ${p.name}${p.name_bn ? ` (${p.name_bn})` : ""} — ৳${p.price}`
+          text: `Product: ${p.name}${p.name_bn ? ` (${p.name_bn})` : ""} — $${p.price}`
         });
         contentParts.push({ type: "image_url", image_url: { url: p.image_url } });
       }
@@ -1478,7 +1478,7 @@ async function detectAndProcessOrder(
     let productQuery = supabase.from("products").select("name, name_bn, price").eq("is_active", true);
     if (userId) productQuery = productQuery.eq("user_id", userId);
     const { data: products } = await productQuery;
-    const productList = (products || []).map((p: any) => `${p.name}${p.name_bn ? ` (${p.name_bn})` : ""}: ৳${p.price}`).join(", ");
+    const productList = (products || []).map((p: any) => `${p.name}${p.name_bn ? ` (${p.name_bn})` : ""}: $${p.price}`).join(", ");
 
     // Check if there's already an existing order for this conversation
     const { data: existingOrder } = await supabase
@@ -1490,7 +1490,7 @@ async function detectAndProcessOrder(
       .maybeSingle();
 
     const existingOrderInfo = existingOrder
-      ? `\n\nEXISTING ORDER (already in system):\n- Status: ${existingOrder.status}\n- Items: ${JSON.stringify(existingOrder.items)}\n- Total: ৳${existingOrder.total}\n- Name: ${existingOrder.customer_name || "N/A"}\n- Phone: ${existingOrder.customer_phone || "N/A"}\n- Address: ${existingOrder.customer_address || "N/A"}`
+      ? `\n\nEXISTING ORDER (already in system):\n- Status: ${existingOrder.status}\n- Items: ${JSON.stringify(existingOrder.items)}\n- Total: $${existingOrder.total}\n- Name: ${existingOrder.customer_name || "N/A"}\n- Phone: ${existingOrder.customer_phone || "N/A"}\n- Address: ${existingOrder.customer_address || "N/A"}`
       : "\n\nNo existing order for this conversation.";
 
     const extractResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

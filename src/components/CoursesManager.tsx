@@ -69,7 +69,7 @@ const CoursesManager = () => {
       } else {
         const { error } = await supabase.from("courses").insert({
           user_id: user.id, fb_page_id: pageId,
-          title: c.title!, description: c.description, price: c.price ?? 0, currency: c.currency ?? "BDT",
+          title: c.title!, description: c.description, price: c.price ?? 0, currency: c.currency ?? "USD",
           thumbnail_url: c.thumbnail_url, payment_instructions: c.payment_instructions, is_active: c.is_active ?? true,
         });
         if (error) throw error;
@@ -161,10 +161,10 @@ const CoursesManager = () => {
 const CourseDialog = ({ open, course, onClose, onSave, saving }: {
   open: boolean; course: Course | null; onClose: () => void; onSave: (c: any) => void; saving: boolean;
 }) => {
-  const [form, setForm] = useState<any>(course || { title: "", description: "", price: 0, currency: "BDT", thumbnail_url: "", payment_instructions: "", is_active: true });
+  const [form, setForm] = useState<any>(course || { title: "", description: "", price: 0, currency: "USD", thumbnail_url: "", payment_instructions: "", is_active: true });
   // Reset form when dialog opens
   const handleOpenChange = (v: boolean) => {
-    if (v) setForm(course || { title: "", description: "", price: 0, currency: "BDT", thumbnail_url: "", payment_instructions: "", is_active: true });
+    if (v) setForm(course || { title: "", description: "", price: 0, currency: "USD", thumbnail_url: "", payment_instructions: "", is_active: true });
     else onClose();
   };
 
@@ -182,7 +182,7 @@ const CourseDialog = ({ open, course, onClose, onSave, saving }: {
           <div><Label>Thumbnail URL</Label><Input value={form.thumbnail_url || ""} onChange={e => setForm({ ...form, thumbnail_url: e.target.value })} placeholder="https://..." /></div>
           <div>
             <Label>Payment instructions</Label>
-            <Textarea rows={3} value={form.payment_instructions || ""} onChange={e => setForm({ ...form, payment_instructions: e.target.value })} placeholder="bKash: 01XXXXXXXXX (Send Money). After payment send the transaction ID." />
+            <Textarea rows={3} value={form.payment_instructions || ""} onChange={e => setForm({ ...form, payment_instructions: e.target.value })} placeholder="Pay via Stripe / PayPal at checkout. After payment, share your transaction ID." />
             <p className="text-xs text-muted-foreground mt-1">The bot sends this to buyers along with the price.</p>
           </div>
         </div>

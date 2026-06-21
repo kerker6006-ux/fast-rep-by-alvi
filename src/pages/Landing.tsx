@@ -107,7 +107,7 @@ const Landing = () => {
                 </div>
                 <div className="flex justify-end">
                   <div className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground px-4 py-2 rounded-2xl rounded-br-sm max-w-[75%] text-sm">
-                    Yes! Red is in stock — 1,250৳. Want me to confirm your order? 🛍️
+                    Yes! Red is in stock — $19. Want me to confirm your order? 🛍️
                   </div>
                 </div>
                 <div className="flex">

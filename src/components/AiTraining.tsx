@@ -85,8 +85,8 @@ const QUICK_ADD_BY_CAT: Record<BusinessCategory, { qKey: string; aKey: string }[
 // Starter templates per niche — applied only to EMPTY fields (never overwrites edits).
 const PRESET_TEMPLATES: Record<BusinessCategory, SettingsMap> = {
   ecommerce: {
-    delivery_info: "Inside Dhaka 60৳, outside Dhaka 120৳. Standard delivery 1–3 days.",
-    payment_methods: "Cash on Delivery, bKash, Nagad, Bank Transfer.",
+    delivery_info: "Flat $5 shipping. Standard delivery 3–5 business days.",
+    payment_methods: "Credit/Debit card, PayPal, Cash on Delivery.",
     return_policy: "7-day return for unused items in original packaging. Buyer pays return shipping.",
     reply_tone: "Friendly, direct, helpful.",
   },
