@@ -49,6 +49,8 @@ const FbPageConnection = () => {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedPage, setSelectedPage] = useState<string | null>(null);
   const [disconnectId, setDisconnectId] = useState<string | null>(null);
+  const [categoryDialogPageId, setCategoryDialogPageId] = useState<string | null>(null);
+  const [categoryDialogPageName, setCategoryDialogPageName] = useState<string | null>(null);
 
   // Detect oauth return
   useEffect(() => {
