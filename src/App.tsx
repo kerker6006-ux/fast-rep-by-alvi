@@ -55,30 +55,32 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Suspense fallback={<RouteFallback />}>
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/welcome" element={<ProtectedRoute><Welcome /></ProtectedRoute>} />
-              
-              <Route path="/admin/login" element={<AdminLogin />} />
-              <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
-                <Route index element={<AdminOverview />} />
-                <Route path="users" element={<AdminUsers />} />
-                <Route path="recharges" element={<AdminRecharges />} />
-                <Route path="payments" element={<AdminPayments />} />
-                <Route path="pricing" element={<AdminPricing />} />
-                <Route path="fb-pages" element={<AdminFbPages />} />
-                <Route path="announcements" element={<AdminAnnouncements />} />
-                <Route path="analytics" element={<AdminAnalytics />} />
-                <Route path="settings" element={<AdminSettings />} />
-              </Route>
-              <Route path="/" element={<Landing />} />
-              <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-              <Route path="/unsubscribe" element={<Unsubscribe />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
+          <ActivePageProvider>
+            <Suspense fallback={<RouteFallback />}>
+              <Routes>
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/welcome" element={<ProtectedRoute><Welcome /></ProtectedRoute>} />
+
+                <Route path="/admin/login" element={<AdminLogin />} />
+                <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+                  <Route index element={<AdminOverview />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="recharges" element={<AdminRecharges />} />
+                  <Route path="payments" element={<AdminPayments />} />
+                  <Route path="pricing" element={<AdminPricing />} />
+                  <Route path="fb-pages" element={<AdminFbPages />} />
+                  <Route path="announcements" element={<AdminAnnouncements />} />
+                  <Route path="analytics" element={<AdminAnalytics />} />
+                  <Route path="settings" element={<AdminSettings />} />
+                </Route>
+                <Route path="/" element={<Landing />} />
+                <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                <Route path="/unsubscribe" element={<Unsubscribe />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </ActivePageProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
