@@ -204,9 +204,11 @@ const Landing = () => {
             <img src={logoAsset.url} alt="LeadPilot logo" className="w-4 h-4 object-contain" width={16} height={16} />
             <span>© {new Date().getFullYear()} LeadPilot. All rights reserved.</span>
           </div>
-          <div className="flex gap-6">
+          <div className="flex gap-6 flex-wrap justify-center">
             <Link to="/auth" className="hover:text-foreground">Sign in</Link>
-            <Link to="/auth" className="hover:text-foreground">Get started</Link>
+            <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
+            <Link to="/terms" className="hover:text-foreground">Terms</Link>
+            <Link to="/data-deletion" className="hover:text-foreground">Data Deletion</Link>
           </div>
         </div>
       </footer>
