@@ -182,7 +182,7 @@ const CourseDialog = ({ open, course, onClose, onSave, saving }: {
           <div><Label>Thumbnail URL</Label><Input value={form.thumbnail_url || ""} onChange={e => setForm({ ...form, thumbnail_url: e.target.value })} placeholder="https://..." /></div>
           <div>
             <Label>Payment instructions</Label>
-            <Textarea rows={3} value={form.payment_instructions || ""} onChange={e => setForm({ ...form, payment_instructions: e.target.value })} placeholder="bKash: 01XXXXXXXXX (Send Money). After payment send the transaction ID." />
+            <Textarea rows={3} value={form.payment_instructions || ""} onChange={e => setForm({ ...form, payment_instructions: e.target.value })} placeholder="Pay via Stripe / PayPal at checkout. After payment, share your transaction ID." />
             <p className="text-xs text-muted-foreground mt-1">The bot sends this to buyers along with the price.</p>
           </div>
         </div>
