@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { lovable } from "@/integrations/lovable";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Bot, Loader2, Sparkles, Zap, Globe } from "lucide-react";
+import { Bot, Loader2, Sparkles, Zap, Globe, Mail } from "lucide-react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const GoogleIcon = () => (
@@ -24,6 +28,10 @@ const FacebookIcon = () => (
 const Auth = () => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
 
   const handleGoogle = async () => {
     setLoading(true);
@@ -59,6 +67,60 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toast.error("Email and password are required");
+      return;
+    }
+    setLoading(true);
+    try {
+      if (mode === "signup") {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/dashboard`,
+            data: { display_name: displayName || email.split("@")[0] },
+          },
+        });
+        if (error) { toast.error(error.message); return; }
+        // Fire welcome email (best-effort; ignore errors silently)
+        supabase.functions.invoke("send-transactional-email", {
+          body: {
+            templateName: "welcome",
+            recipientEmail: email,
+            idempotencyKey: `welcome-${data.user?.id ?? email}`,
+            templateData: { name: displayName || null, appUrl: window.location.origin },
+          },
+        }).catch(() => {});
+        if (data.session) {
+          window.location.href = "/dashboard";
+        } else {
+          toast.success("Account created! Check your email to confirm, then sign in.");
+          setMode("signin");
+        }
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) { toast.error(error.message); return; }
+        window.location.href = "/dashboard";
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgot = async () => {
+    if (!email) { toast.error("Enter your email first"); return; }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) toast.error(error.message);
+    else toast.success("Password reset link sent");
+  };
+
+
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-soft">
