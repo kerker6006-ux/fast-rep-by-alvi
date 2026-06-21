@@ -46,9 +46,7 @@ Deno.serve(async (req) => {
     authUrl.searchParams.set("client_id", appId);
     authUrl.searchParams.set("redirect_uri", callbackUrl());
     authUrl.searchParams.set("state", state);
-    authUrl.searchParams.set("scope", "public_profile");
     authUrl.searchParams.set("response_type", "code");
-    authUrl.searchParams.set("auth_type", "rerequest");
 
     return new Response(JSON.stringify({ url: authUrl.toString() }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
