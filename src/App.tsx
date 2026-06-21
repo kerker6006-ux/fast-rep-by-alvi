@@ -17,6 +17,8 @@ const Unsubscribe = lazy(() => import("./pages/Unsubscribe.tsx"));
 const Privacy = lazy(() => import("./pages/Legal.tsx").then(m => ({ default: m.Privacy })));
 const Terms = lazy(() => import("./pages/Legal.tsx").then(m => ({ default: m.Terms })));
 const DataDeletion = lazy(() => import("./pages/Legal.tsx").then(m => ({ default: m.DataDeletion })));
+const DataDeletionStatus = lazy(() => import("./pages/DataDeletionStatus.tsx"));
+const ReviewerGuide = lazy(() => import("./pages/ReviewerGuide.tsx"));
 
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const Index = lazy(() => import("./pages/Index.tsx"));
@@ -82,6 +84,8 @@ const App = () => (
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/data-deletion" element={<DataDeletion />} />
+                <Route path="/data-deletion-status" element={<DataDeletionStatus />} />
+                <Route path="/reviewer-guide" element={<ReviewerGuide />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
