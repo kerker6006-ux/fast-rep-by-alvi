@@ -1,49 +1,40 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { lovable } from "@/integrations/lovable";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Zap, Globe, Mail } from "lucide-react";
+import { Loader2, Sparkles, Zap, Globe } from "lucide-react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import logoAsset from "@/assets/logo.png.asset.json";
 
-
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.75h3.57c2.08-1.92 3.28-4.74 3.28-8.07z"/>
-    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.75c-.99.66-2.25 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-    <path fill="#FBBC05" d="M5.84 14.12A6.6 6.6 0 0 1 5.5 12c0-.74.13-1.46.34-2.12V7.04H2.18A11 11 0 0 0 1 12c0 1.78.43 3.46 1.18 4.96l3.66-2.84z"/>
-    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.65l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.04l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z"/>
+    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.75h3.57c2.08-1.92 3.28-4.74 3.28-8.07z" />
+    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.75c-.99.66-2.25 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+    <path fill="#FBBC05" d="M5.84 14.12A6.6 6.6 0 0 1 5.5 12c0-.74.13-1.46.34-2.12V7.04H2.18A11 11 0 0 0 1 12c0 1.78.43 3.46 1.18 4.96l3.66-2.84z" />
+    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.65l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.04l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z" />
   </svg>
 );
 
 const FacebookIcon = () => (
   <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-    <path fill="#1877F2" d="M24 12a12 12 0 1 0-13.875 11.854V15.47H7.078V12h3.047V9.356c0-3.007 1.792-4.668 4.533-4.668 1.313 0 2.686.234 2.686.234v2.953H15.83c-1.49 0-1.955.925-1.955 1.874V12h3.328l-.532 3.47h-2.796v8.384A12.003 12.003 0 0 0 24 12z"/>
+    <path fill="#1877F2" d="M24 12a12 12 0 1 0-13.875 11.854V15.47H7.078V12h3.047V9.356c0-3.007 1.792-4.668 4.533-4.668 1.313 0 2.686.234 2.686.234v2.953H15.83c-1.49 0-1.955.925-1.955 1.874V12h3.328l-.532 3.47h-2.796v8.384A12.003 12.003 0 0 0 24 12z" />
   </svg>
 );
 
 const Auth = () => {
   const { t } = useTranslation();
-  const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
+  const [loading, setLoading] = useState<null | "google" | "facebook">(null);
 
   const handleGoogle = async () => {
-    setLoading(true);
+    setLoading("google");
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
       extraParams: { prompt: "select_account" },
     });
     if (result.error) {
       toast.error(result.error.message ?? "Could not start Google sign-in");
-      setLoading(false);
+      setLoading(null);
       return;
     }
     if (result.redirected) return;
@@ -51,7 +42,7 @@ const Auth = () => {
   };
 
   const handleFacebook = async () => {
-    setLoading(true);
+    setLoading("facebook");
     try {
       const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string) ?? "";
       const redirectTo = `${window.location.origin}/dashboard`;
@@ -61,69 +52,15 @@ const Auth = () => {
       const data = await res.json();
       if (!res.ok || !data?.url) {
         toast.error(data?.error ?? "Could not start Facebook sign-in");
-        setLoading(false);
+        setLoading(null);
         return;
       }
       window.location.href = data.url;
     } catch (e) {
       toast.error((e as Error).message);
-      setLoading(false);
+      setLoading(null);
     }
   };
-
-  const handleEmailSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) {
-      toast.error("Email and password are required");
-      return;
-    }
-    setLoading(true);
-    try {
-      if (mode === "signup") {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/dashboard`,
-            data: { display_name: displayName || email.split("@")[0] },
-          },
-        });
-        if (error) { toast.error(error.message); return; }
-        // Fire welcome email (best-effort; ignore errors silently)
-        supabase.functions.invoke("send-transactional-email", {
-          body: {
-            templateName: "welcome",
-            recipientEmail: email,
-            idempotencyKey: `welcome-${data.user?.id ?? email}`,
-            templateData: { name: displayName || null, appUrl: window.location.origin },
-          },
-        }).catch(() => {});
-        if (data.session) {
-          window.location.href = "/dashboard";
-        } else {
-          toast.success("Account created! Check your email to confirm, then sign in.");
-          setMode("signin");
-        }
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) { toast.error(error.message); return; }
-        window.location.href = "/dashboard";
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleForgot = async () => {
-    if (!email) { toast.error("Enter your email first"); return; }
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    if (error) toast.error(error.message);
-    else toast.success("Password reset link sent");
-  };
-
-
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-soft">
@@ -185,74 +122,47 @@ const Auth = () => {
             <div className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-8 shadow-elevated">
               <div className="space-y-1.5 mb-6 text-center">
                 <h2 className="font-display text-2xl font-bold tracking-tight">Welcome to LeadPilot</h2>
-                <p className="text-sm text-muted-foreground">Sign in or create your account to continue.</p>
-              </div>
-
-              <Tabs value={mode} onValueChange={(v) => setMode(v as "signin" | "signup")} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-4">
-                  <TabsTrigger value="signin">Sign in</TabsTrigger>
-                  <TabsTrigger value="signup">Sign up</TabsTrigger>
-                </TabsList>
-
-                <form onSubmit={handleEmailSubmit} className="space-y-3">
-                  {mode === "signup" && (
-                    <div className="space-y-1.5">
-                      <Label htmlFor="name">Name</Label>
-                      <Input id="name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your name" />
-                    </div>
-                  )}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="password">Password</Label>
-                    <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
-                  </div>
-                  <Button type="submit" disabled={loading} className="w-full h-11 rounded-xl gap-2 text-base font-medium">
-                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Mail className="h-4 w-4" />}
-                    {mode === "signup" ? "Create account" : "Sign in"}
-                  </Button>
-                  {mode === "signin" && (
-                    <button type="button" onClick={handleForgot} className="text-xs text-muted-foreground hover:text-foreground w-full text-center">
-                      Forgot password?
-                    </button>
-                  )}
-                </form>
-              </Tabs>
-
-              <div className="relative my-5">
-                <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
-                <div className="relative flex justify-center text-[11px] uppercase tracking-wider"><span className="bg-card px-2 text-muted-foreground">or continue with</span></div>
+                <p className="text-sm text-muted-foreground">Sign in to continue.</p>
               </div>
 
               <div className="space-y-3">
                 <Button
                   type="button"
-                  onClick={handleGoogle}
-                  disabled={loading}
                   variant="outline"
-                  className="w-full h-12 rounded-xl gap-3 bg-white text-slate-900 hover:bg-slate-50 border-slate-200 text-base font-medium"
+                  className="w-full h-12 bg-white hover:bg-slate-50 text-slate-900 border-slate-200 font-medium"
+                  onClick={handleGoogle}
+                  disabled={loading !== null}
                 >
-                  {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <GoogleIcon />}
-                  Continue with Google
+                  {loading === "google" ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <span className="inline-flex items-center gap-3">
+                      <GoogleIcon />
+                      Continue with Google
+                    </span>
+                  )}
                 </Button>
 
                 <Button
                   type="button"
+                  className="w-full h-12 bg-[#1877F2] hover:bg-[#0f65d6] text-white font-medium"
                   onClick={handleFacebook}
-                  disabled={loading}
-                  className="w-full h-12 rounded-xl gap-3 bg-[#1877F2] text-white hover:bg-[#166FE5] border-0 text-base font-medium"
+                  disabled={loading !== null}
                 >
-                  {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <FacebookIcon />}
-                  Continue with Facebook
+                  {loading === "facebook" ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <span className="inline-flex items-center gap-3">
+                      <FacebookIcon />
+                      Continue with Facebook
+                    </span>
+                  )}
                 </Button>
               </div>
 
-              <p className="mt-6 text-center text-[11px] text-muted-foreground">
-                By continuing you agree to our terms and acknowledge our privacy practices.
+              <p className="text-xs text-center text-muted-foreground mt-6">
+                By continuing, you agree to our Terms and Privacy Policy.
               </p>
-
             </div>
           </div>
         </div>

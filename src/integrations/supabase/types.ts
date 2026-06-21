@@ -1007,12 +1007,15 @@ export type Database = {
             | Database["public"]["Enums"]["business_category"]
             | null
           business_info: Json
+          country: string | null
           created_at: string
           display_name: string | null
           fb_24h_notice_dismissed: boolean
           free_until: string
+          full_name: string | null
           id: string
           is_approved: boolean
+          onboarded_at: string | null
           stripe_customer_id: string | null
           subscription_current_period_end: string | null
           subscription_id: string | null
@@ -1020,6 +1023,7 @@ export type Database = {
           subscription_status: string | null
           suspended: boolean
           updated_at: string
+          user_type: string | null
         }
         Insert: {
           alert_box_intro_dismissed?: boolean
@@ -1028,12 +1032,15 @@ export type Database = {
             | Database["public"]["Enums"]["business_category"]
             | null
           business_info?: Json
+          country?: string | null
           created_at?: string
           display_name?: string | null
           fb_24h_notice_dismissed?: boolean
           free_until?: string
+          full_name?: string | null
           id: string
           is_approved?: boolean
+          onboarded_at?: string | null
           stripe_customer_id?: string | null
           subscription_current_period_end?: string | null
           subscription_id?: string | null
@@ -1041,6 +1048,7 @@ export type Database = {
           subscription_status?: string | null
           suspended?: boolean
           updated_at?: string
+          user_type?: string | null
         }
         Update: {
           alert_box_intro_dismissed?: boolean
@@ -1049,12 +1057,15 @@ export type Database = {
             | Database["public"]["Enums"]["business_category"]
             | null
           business_info?: Json
+          country?: string | null
           created_at?: string
           display_name?: string | null
           fb_24h_notice_dismissed?: boolean
           free_until?: string
+          full_name?: string | null
           id?: string
           is_approved?: boolean
+          onboarded_at?: string | null
           stripe_customer_id?: string | null
           subscription_current_period_end?: string | null
           subscription_id?: string | null
@@ -1062,6 +1073,7 @@ export type Database = {
           subscription_status?: string | null
           suspended?: boolean
           updated_at?: string
+          user_type?: string | null
         }
         Relationships: []
       }

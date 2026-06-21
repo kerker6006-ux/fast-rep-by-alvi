@@ -1,61 +1,68 @@
 ## Goal
+Switch auth to Google + Facebook only, collect onboarding info from new users, and show a full user detail view in the admin panel.
 
-Replace "Image Inbox" with a unified "Alert Box" for conversations the bot couldn't or wouldn't handle, and clean up the 24-hour Facebook warning so it shows clearly only when it matters.
+## 1. Auth page (`src/pages/Auth.tsx`)
+- Remove the email/password tabs (sign-in + sign-up), the `displayName`/`email`/`password` state, and `handleEmailSubmit`.
+- Keep only two big buttons: **Continue with Google** and **Continue with Facebook**.
+- Keep language switcher, logo, and the small "By continuing you agree to…" footer.
+- Forgot-password UI (if any) removed.
 
-## 1. Replace Image Inbox with Alert Box
+Note: email/password remains enabled in the backend so existing accounts still work; we only hide it from the UI. (If you want it fully disabled at the backend level too, say so and I'll add that.)
 
-In `src/components/ConversationsView.tsx` and `src/components/DashboardSidebar.tsx`:
+## 2. Onboarding for new users
+Add a new page `src/pages/Onboarding.tsx` shown the first time a user lands after Google/Facebook sign-in when their profile is missing the required fields.
 
-- Rename the second tab from "Image Inbox" to **"Alert Box"** (icon: `Bell` or `AlertCircle`).
-- Remove the image-only filter logic. The Alert Box lists every conversation flagged as **needs human reply**, which includes:
-  - Bot didn't understand / low confidence (already tracked via `conversations.needs_human` + `followup_reason`).
-  - Customer sent an image while **image analysis is OFF** (free plan default, or user-disabled).
-- Sort by most recent alert first. Red badge count = unread alerts. Count decreases as user opens each alert conversation (mark `needs_human=false` or add a `seen_at` once viewed).
-- Delete the separate `ImageInbox.tsx` route/component usage from the sidebar.
+Fields collected:
+- **Full name** (prefilled from Google profile, editable)
+- **What do you do?** — radio: `Business owner`, `Content creator`, `Other`
+- **Country** — searchable select (full ISO country list)
 
-## 2. Bot behavior — route to Alert Box instead of replying
+On submit → update `public.profiles` and route to `/dashboard`.
 
-In `supabase/functions/fb-webhook/index.ts`:
+Routing:
+- In `AuthContext` (or a small `OnboardingGate` wrapper around protected routes), after session is loaded fetch the user's profile; if `business_info.onboarded !== true`, redirect to `/onboarding`.
+- `/onboarding` itself is auth-required but skips the gate.
 
-- When an incoming message has an **image attachment** AND the user's plan has image analysis disabled (free plan, or `bot_settings.image_analysis_enabled = false`):
-  - Do **not** call the AI.
-  - Do **not** send any reply to the customer.
-  - Set `conversations.needs_human = true`, `followup_reason = "Image received — image analysis is off"`.
-- When AI confidence is low / bot has no good answer (existing "needs_human" path):
-  - Same: don't reply, flag the conversation for the Alert Box.
+## 3. Database (migration)
+Add columns to `public.profiles`:
+- `full_name text`
+- `user_type text` check in (`business`, `creator`, `other`)
+- `country text` (ISO-2 code)
+- `onboarded_at timestamptz`
 
-## 3. First-time explainer (dismiss forever)
+Update `handle_new_user()` trigger to also copy `full_name` from `raw_user_meta_data->>'full_name'` / `name` when present.
 
-When the user opens the Alert Box for the very first time, show a small info banner at the top:
+(No new RLS needed — existing profile policies already cover these columns.)
 
-> **What is the Alert Box?**
-> When the bot isn't sure how to reply, or a customer sends something it can't handle (like an image on the free plan), the conversation lands here so you can reply yourself.
+## 4. Admin Users panel (`src/pages/admin/AdminUsers.tsx`)
+Change the list view to a compact table showing only **Name** and **Email** per row, plus a small status dot (approved/suspended). Clicking a row opens a **User Details** dialog.
 
-- A small **×** dismiss button.
-- Persist dismissal in `profiles` via a new boolean column `alert_box_intro_dismissed` (migration). Once dismissed, never show again on any device.
+User Details dialog content:
+- Header: avatar, full name, email, country flag + name, user type, joined date, approved/suspended badges.
+- Stats grid:
+  - **Balance** (credits)
+  - **Connected FB pages** (count + list with page name)
+  - **Products** count
+  - **Orders** count
+  - **Messages** count (last 30d)
+  - **Total spent on AI** (sum of `ai_usage.cost`)
+- Action buttons (kept from current page): Add credits, Remove credits, Suspend/Unsuspend, Delete, Reset password (if applicable).
 
-## 4. Clear, dismissible 24-hour Facebook warning
+Data source: extend the existing `admin-list-users` edge function (or add a new `admin-user-details` function) to return the per-user aggregates in one call when a user is opened. The list query stays light (name + email + status only) for speed.
 
-In `ConversationsView.tsx` (and the same pattern when sending scheduled/manual messages elsewhere):
-
-- Replace the current amber paragraph with a shorter, plain-English version:
-
-  > **Facebook 24-hour rule:** You can only reply within 24 hours of the customer's last message. They need to message you again to reopen the chat.
-
-- Add a small **×** to dismiss. Persist dismissal in `profiles.fb_24h_notice_dismissed` (same migration).
-- Behavior:
-  - **Once dismissed**, the banner never shows again at the top of conversations.
-  - **However**, if the user actually tries to send a reply outside the 24h window (here or from any other send surface), the same one-line message pops up as a **toast** to explain why the send was blocked — every time they attempt it (this is the failure reason, not the banner).
-
-## 5. Free plan default
-
-- New signups: `bot_settings.image_analysis_enabled = false` by default (already set in the prior plan's migration — confirm and keep).
-- Toggling it ON still requires an active subscription (existing gating stays).
+## 5. i18n
+Add new strings (English + Korean + Bangla + Spanish) for:
+- Auth page tagline ("Sign in to Lead Pilot")
+- Onboarding ("Welcome", "What's your name", "What do you do", "Where are you from", "Continue")
+- Admin details labels (Balance, Pages, Products, Orders, Messages, AI spend, Country, User type)
 
 ## Technical notes
+- Country list: ship a small static `src/data/countries.ts` (ISO-2 + name + emoji flag), no API call.
+- The Facebook OAuth flow already exists via `fb-login-start` edge function — unchanged.
+- Onboarding gate logic lives in `AuthContext` so it covers every protected route automatically.
+- Admin details dialog fetches aggregates lazily on open (one RPC) so the user list stays fast even with many users.
 
-- Migration: add two boolean columns to `profiles` — `alert_box_intro_dismissed`, `fb_24h_notice_dismissed`, both default `false`.
-- Sidebar label key: rename `chats.imageInbox` → `chats.alertBox` across `en/bn/ko/es` locale files.
-- The unread-alert badge query: `conversations` where `needs_human = true AND (alert_seen_at IS NULL OR alert_seen_at < last_message_at)` — add `alert_seen_at timestamptz` to `conversations` so reopening an alert reduces the count without losing the "needs human" status until the user replies.
-- `fb-webhook`: short-circuit before AI call when image + image_analysis disabled; record incoming message normally so it appears in the thread, then flag conversation.
-- Remove `ImageInbox.tsx` import/route; keep file deletion out of scope only if referenced elsewhere — otherwise delete.
+## Out of scope (ask if you want them)
+- Disabling email/password at the backend / blocking existing email-based logins.
+- Editing the onboarding answers later from the user's own settings page.
+- Showing per-page analytics inside the admin details dialog.
