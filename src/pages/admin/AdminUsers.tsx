@@ -300,6 +300,12 @@ const UserDetailsDialog = ({
           <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
             <AdjustCreditsDialog userId={user.id} displayName={displayName} mode="add" onDone={onAction} />
             <AdjustCreditsDialog userId={user.id} displayName={displayName} mode="remove" onDone={onAction} />
+            <GrantSubscriptionDialog
+              userId={user.id}
+              displayName={displayName}
+              currentUntil={user.subscription_current_period_end ?? user.free_until}
+              onDone={onAction}
+            />
             <Button size="sm" variant="outline" onClick={() => suspend.mutate()} disabled={suspend.isPending}>
               {user.suspended
                 ? <><CheckCircle2 className="h-3.5 w-3.5 mr-1" />{t("admin.users.unsuspend")}</>
