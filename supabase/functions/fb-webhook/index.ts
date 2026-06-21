@@ -533,6 +533,35 @@ async function handleMessagingEvent(
   );
   if (imageRequestHandled) return;
 
+  // Check subscription / trial status — bot only replies for active subs or users still in free trial.
+  // Comment triggers (separate handler) still run when locked.
+  if (userId) {
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("subscription_status, free_until")
+      .eq("id", userId)
+      .maybeSingle();
+    const inTrial = !!prof?.free_until && new Date(prof.free_until as string).getTime() > Date.now();
+    const hasActiveSub = (prof as any)?.subscription_status === "active";
+    if (!inTrial && !hasActiveSub) {
+      // Lock: do not call AI, do not reply. Flag for human follow-up so it surfaces in the Alert Box.
+      await supabase.from("conversations").update({
+        needs_human: true,
+        followup_reason: "Bot is paused — free month ended and no active subscription.",
+        last_message_at: new Date().toISOString(),
+      }).eq("id", conversationId);
+      await supabase.from("notifications").insert({
+        user_id: userId,
+        type: "alert_box",
+        title: "Bot paused — subscription required",
+        body: "A customer messaged you. Subscribe or top up to let the bot reply automatically.",
+        link: "#credits",
+        metadata: { conversation_id: conversationId },
+      });
+      return;
+    }
+  }
+
   // Check credit balance before AI reply
   if (userId) {
     const { data: creditRow } = await supabase
