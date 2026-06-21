@@ -69,7 +69,7 @@ export const COUNTRIES: Country[] = [
   { code: "IR", name: "Iran", flag: "🇮🇷" },
   { code: "IQ", name: "Iraq", flag: "🇮🇶" },
   { code: "AF", name: "Afghanistan", flag: "🇦🇫" },
-];
+].sort((a, b) => a.name.localeCompare(b.name));
 
 export const countryByCode = (code?: string | null): Country | undefined =>
   code ? COUNTRIES.find((c) => c.code === code.toUpperCase()) : undefined;
