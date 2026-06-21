@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { Globe, Plus, Trash2, Copy, Check, RefreshCw, Loader2, Facebook, ChevronRight, Activity, Instagram, AlertTriangle, ExternalLink } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useTranslation } from "react-i18next";
+import PageCategoryDialog from "@/components/PageCategoryDialog";
 
 type FbPage = {
   id: string;
