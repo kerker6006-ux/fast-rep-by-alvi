@@ -209,7 +209,7 @@ const CommentTriggers = () => {
             </div>
             <div className="space-y-2">
               <Label>DM Message *</Label>
-              <Textarea value={form.dm_message} onChange={e => setForm({ ...form, dm_message: e.target.value })} placeholder="Thanks for your interest! Our price is ৳1500. To order, please share your name, phone & address." className="min-h-[100px]" />
+              <Textarea value={form.dm_message} onChange={e => setForm({ ...form, dm_message: e.target.value })} placeholder="Thanks for your interest! Our price is $19. To order, please share your name, phone & address." className="min-h-[100px]" />
             </div>
             <div className="space-y-2">
               <Label>DM Image URL (optional)</Label>
