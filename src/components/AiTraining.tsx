@@ -1004,7 +1004,7 @@ const AiTraining = () => {
 
 // ----- Live Business Profile Summary -----
 type ProfileSummaryProps = {
-  cat: BusinessCategory;
+  cat: Cat;
   settings: SettingsMap;
   catFields: CatField[];
   onAsk: (label: string) => void;
@@ -1019,7 +1019,7 @@ const ProfileSummaryPanel = ({ cat, settings, catFields, onAsk }: ProfileSummary
     { key: "reply_tone", label: t("aiTraining.replyTone") },
     { key: "welcome_message", label: t("aiTraining.welcomeMessage") },
   ];
-  const nicheFields = catFields.map((f) => ({ key: f.key, label: t(f.labelKey) }));
+  const nicheFields = catFields.map((f) => ({ key: f.key, label: f.label }));
 
   // FAQ + Never-say counts treated as fields too
   const faqCount = parseSettingsJson<{ q: string; a: string }[]>(settings.faq_list, []).length;
