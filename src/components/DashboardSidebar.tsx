@@ -72,17 +72,15 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
   const category = activePage?.page_category;
 
   const { data: unreadAlerts = 0 } = useQuery({
-    queryKey: ["sidebar-unread-alerts", user?.id, activePage?.id],
+    queryKey: ["sidebar-unread-alerts", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
-      let q = supabase
+      const { count } = await supabase
         .from("conversations")
         .select("*", { count: "exact", head: true })
         .eq("user_id", user!.id)
         .eq("needs_human", true)
         .or("alert_seen_at.is.null,alert_seen_at.lt.last_message_at");
-      if (activePage?.id) q = q.eq("fb_page_id", activePage.id);
-      const { count } = await q;
       return count || 0;
     },
     refetchInterval: 20000,
