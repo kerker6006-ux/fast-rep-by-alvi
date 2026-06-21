@@ -241,14 +241,11 @@ const CreditDashboard = () => {
             </div>
             <Button
               onClick={() => startCheckout("topup")}
-              disabled={loadingFlow !== null || data?.subscription?.subscription_status !== "active"}
+              disabled={loadingFlow !== null}
             >
               {loadingFlow === "topup" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Top up"}
             </Button>
           </div>
-          {data?.subscription?.subscription_status !== "active" && (
-            <p className="text-xs text-amber-600">Subscribe to the Basic plan first to enable top-ups.</p>
-          )}
           <div className="flex gap-2">
             {[5, 10, 20, 50].map((v) => (
               <Button key={v} type="button" size="sm" variant="outline" onClick={() => setTopupAmount(String(v))}>
