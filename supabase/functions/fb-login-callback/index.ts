@@ -82,14 +82,13 @@ Deno.serve(async (req) => {
     const meRes = await fetch(`${FB_GRAPH}/me?fields=id,email,name,picture&access_token=${encodeURIComponent(accessToken)}`);
     const me = await meRes.json();
     if (!meRes.ok) return errorPage(me?.error?.message ?? "Could not load Facebook profile.", redirectTo);
-    if (!me.email) {
-      return errorPage("Your Facebook account doesn't have an email on file. Please use Google sign-in instead.", redirectTo);
-    }
 
-    const email = String(me.email).toLowerCase();
+    const fbId = me.id;
+    // Fall back to a stable synthetic email when FB doesn't return one
+    // (happens when the app doesn't have the `email` permission approved).
+    const email = String(me.email ?? `fb_${fbId}@users.facebook.local`).toLowerCase();
     const fullName = me.name ?? "";
     const avatarUrl = me.picture?.data?.url ?? "";
-    const fbId = me.id;
 
     const admin = createClient(supaUrl, serviceKey, { auth: { persistSession: false } });
 
