@@ -2,14 +2,19 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import {
   BarChart3, Package, ShoppingCart, MessageSquare,
-  Zap, Clock, Settings, Bot, Brain, ChevronLeft, ChevronRight, LogOut, Globe, Activity, Coins, AlertTriangle, Inbox, Lightbulb, Briefcase, UserPlus, Image as ImageIcon, Megaphone,
+  Zap, Clock, Settings, Bot, Brain, ChevronLeft, ChevronRight, LogOut, Globe, Activity, Coins, AlertTriangle, Inbox, Lightbulb, Briefcase, UserPlus, Megaphone,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useBusinessCategory } from "@/hooks/useBusinessCategory";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+
+
 
 
 type NavItem = { id: string; labelKey: string; icon: React.ElementType; adminOnly?: boolean; show?: (cat: string | null | undefined) => boolean };
@@ -31,7 +36,6 @@ const navItems: NavItem[] = [
   { id: "orders", labelKey: "nav.orders", icon: ShoppingCart, show: (c) => !c || isEcom(c) },
   { id: "complaints", labelKey: "nav.complaints", icon: AlertTriangle },
   { id: "conversations", labelKey: "nav.chats", icon: MessageSquare },
-  { id: "image-inbox", labelKey: "nav.imageInbox", icon: ImageIcon },
   { id: "auto-reply", labelKey: "nav.autoReply", icon: Zap },
   { id: "comment-triggers", labelKey: "nav.commentTriggers", icon: Megaphone },
   { id: "scheduled", labelKey: "nav.scheduled", icon: Clock },
