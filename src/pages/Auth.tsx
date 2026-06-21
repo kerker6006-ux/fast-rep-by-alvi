@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Bot, Loader2, Sparkles, Zap, Globe, Mail } from "lucide-react";
+import { Loader2, Sparkles, Zap, Globe, Mail } from "lucide-react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import logoAsset from "@/assets/logo.png.asset.json";
+
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
