@@ -164,6 +164,9 @@ serve(async (req) => {
             // Future: mentions, message_reactions
           } else if (change.field === "feed") {
             if (change.value?.item === "comment") {
+              // 1) Run user-defined keyword triggers first (ManyChat-style)
+              await handleCommentTriggers(supabase, change.value, PAGE_ACCESS_TOKEN, userId, entryId);
+              // 2) Then fall through to AI/text comment auto-reply
               await handleCommentEvent(supabase, change.value, PAGE_ACCESS_TOKEN, settings, userId, LOVABLE_API_KEY);
             } else if (change.value?.item === "photo" || change.value?.item === "status") {
               await handlePagePostEvent(supabase, change.value, userId, LOVABLE_API_KEY, entryId, settings);
@@ -439,6 +442,23 @@ async function handleMessagingEvent(
   const senderId = event.sender?.id;
   if (!senderId) return;
   if (senderId === pageId) return;
+
+  // ---- Delivery & Read receipts ----
+  if (event.delivery?.mids?.length) {
+    const ts = new Date(event.delivery.watermark || Date.now()).toISOString();
+    await supabase.from("messages").update({ delivered_at: ts }).in("fb_message_id", event.delivery.mids);
+    return;
+  }
+  if (event.read?.watermark) {
+    const ts = new Date(event.read.watermark).toISOString();
+    await supabase.from("messages")
+      .update({ read_at: ts })
+      .eq("direction", "outgoing")
+      .lte("created_at", ts)
+      .is("read_at", null);
+    return;
+  }
+
   if (!event.message) return;
   if (event.message.is_echo) return;
 
@@ -480,6 +500,14 @@ async function handleMessagingEvent(
     last_message: messageText || "[Image]",
     last_message_at: new Date().toISOString(),
   }).eq("id", conversationId);
+
+  // Image analysis toggle: if image-only and analysis is disabled → route to Image Inbox, no AI cost.
+  if (imageUrl && !messageText && settings.enable_image_analysis === "false") {
+    await supabase.from("conversations")
+      .update({ needs_human: true, followup_reason: "Customer sent an image (image analysis is OFF)", updated_at: new Date().toISOString() })
+      .eq("id", conversationId);
+    return;
+  }
 
   // Check auto-reply rules (user-specific)
   const autoReply = await checkAutoReplyRules(supabase, messageText, userId);
