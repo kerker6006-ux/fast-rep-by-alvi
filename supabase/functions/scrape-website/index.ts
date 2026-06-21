@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
               model: "google/gemini-2.5-flash",
               messages: [{
                 role: "user",
-                content: `Extract product info from this page. Return JSON: {name, name_bn, description, description_bn, category, price (number BDT, 0 if unknown), image_url (best product image url), keywords (array)}.\n\nURL: ${p.metadata?.sourceURL}\nTitle: ${p.metadata?.title}\n\n${md}`,
+                content: `Extract product info from this page. Return JSON: {name, name_bn, description, description_bn, category, price (number USD, 0 if unknown), image_url (best product image url), keywords (array)}.\n\nURL: ${p.metadata?.sourceURL}\nTitle: ${p.metadata?.title}\n\n${md}`,
               }],
               response_format: { type: "json_object" },
             }),
