@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { FB_GRAPH, callbackUrl, getOrigin, verifyState } from "../_shared/fb.ts";
+import { FB_GRAPH, callbackUrl, getOrigin, verifyState, isAllowedOrigin } from "../_shared/fb.ts";
 
 function htmlRedirect(url: string, msg: string) {
   return new Response(null, {
