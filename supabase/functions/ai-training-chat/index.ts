@@ -229,16 +229,14 @@ Rules:
     const missingList = missing.length ? missing.join(", ") : "(everything is filled — confirm and offer to save)";
 
     const wizardByCategory: Record<string, string> = {
-      ecommerce: `You are training an AI Shopkeeper for a Facebook Messenger online store.`,
-      dental: `You are training an AI Receptionist for a DENTAL CLINIC.`,
-      hvac: `You are training an AI Dispatcher for an HVAC / HOME-SERVICES company.`,
-      salon: `You are training an AI Receptionist for a BEAUTY SALON / MED SPA.`,
+      ecommerce: `You are training an AI Shopkeeper for a Facebook Messenger online store. The bot pitches products, sends images, captures name/phone/address/quantity, and confirms orders before saving.`,
+      service: `You are training an AI Front-Desk Receptionist for a SERVICE BUSINESS (clinic, salon, repair shop, home services, consulting, etc.). The bot qualifies the request, captures name/phone/service-needed/preferred-date, and books appointments.`,
+      content_creator: `You are training an AI Course Assistant for a CONTENT CREATOR / COACH selling online courses and digital products. The bot pitches the right course, captures name + email/phone + course of interest, and answers enrollment/access questions.`,
     };
     const offLimitsByCategory: Record<string, string> = {
-      ecommerce: `DO NOT ask about appointments, insurance, service area, or clinic hours.`,
-      dental: `DO NOT ask about delivery, returns, payment methods for goods, product catalog, or order collection.`,
-      hvac: `DO NOT ask about delivery, returns, product catalog, or shopkeeper-style orders.`,
-      salon: `DO NOT ask about delivery, returns, payment methods for goods, product catalog, or order collection.`,
+      ecommerce: `DO NOT ask about appointments, service areas, course enrollment, or clinic hours.`,
+      service: `DO NOT ask about delivery, returns, product catalog, course refunds, or shopkeeper-style orders.`,
+      content_creator: `DO NOT ask about delivery, physical returns, appointment booking, or clinic hours.`,
     };
 
     const languageRule = chatLangName
