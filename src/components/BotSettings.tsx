@@ -12,7 +12,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
-import { Save, Globe, MessageCircle, Info, Briefcase } from "lucide-react";
+import { Save, Globe, MessageCircle, Info, Briefcase, AlertTriangle, ShoppingBag, Stethoscope, Wrench, Sparkles } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const BotSettings = () => {
   const { t } = useTranslation();
@@ -92,23 +93,23 @@ const BotSettings = () => {
       </div>
 
       <div className="grid gap-6">
-        <Card>
+        <Card className="border-primary/30 shadow-soft">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Briefcase className="h-5 w-5" /> {t("botSettings.businessCategory")}</CardTitle>
-            <CardDescription>{t("botSettings.businessCategoryDesc")}</CardDescription>
+            <CardTitle className="flex items-center gap-2"><Briefcase className="h-5 w-5" /> Change Category</CardTitle>
+            <CardDescription>
+              Pick what your business does. The bot instantly rewires its brain — persona, lead questions, tone, and knowledge base all change to match.
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Select
-              value={category || ""}
-              onValueChange={(v) => setCategory.mutate(v as BusinessCategory, { onSuccess: () => toast.success(t("onboarding.saved")) })}
-            >
-              <SelectTrigger><SelectValue placeholder={t("onboarding.pickOne")} /></SelectTrigger>
-              <SelectContent>
-                {BUSINESS_CATEGORIES.map((c) => (
-                  <SelectItem key={c} value={c}>{t(`category.${c}.name`)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <CardContent className="space-y-3">
+            <CategoryPicker
+              value={category || null}
+              onPick={(v) => setCategory.mutate(v, { onSuccess: () => toast.success("Category updated — bot retrained") })}
+              isSaving={setCategory.isPending}
+            />
+            <p className="text-xs text-muted-foreground flex items-start gap-2 pt-1">
+              <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-600" />
+              Changing this immediately changes how the bot talks to every customer.
+            </p>
           </CardContent>
         </Card>
 
@@ -280,6 +281,138 @@ const BotSettings = () => {
         </Button>
       </div>
     </div>
+  );
+};
+
+const CATEGORY_META: Record<BusinessCategory, {
+  icon: any;
+  title: string;
+  tagline: string;
+  bullets: string[];
+}> = {
+  ecommerce: {
+    icon: ShoppingBag,
+    title: "E-commerce store",
+    tagline: "Online shop that takes orders on Messenger.",
+    bullets: [
+      "Acts as a sharp shopkeeper — pitches products, sends images, takes orders",
+      "Collects: name, phone, full address, product, quantity",
+      "Confirms the order before saving",
+    ],
+  },
+  dental: {
+    icon: Stethoscope,
+    title: "Dental clinic",
+    tagline: "Front-desk receptionist for a dental practice.",
+    bullets: [
+      "Answers treatment, hours, insurance and address questions only from your knowledge base",
+      "Books appointments — captures patient name, phone, service, preferred date",
+      "Never invents prices or medical advice",
+    ],
+  },
+  hvac: {
+    icon: Wrench,
+    title: "HVAC / home services",
+    tagline: "Dispatch coordinator for AC, plumbing, electrical jobs.",
+    bullets: [
+      "Triages job type and urgency, quotes only from your pricing policy",
+      "Captures: name, phone, address, service needed, preferred visit date",
+      "Handles emergency vs scheduled requests differently",
+    ],
+  },
+  salon: {
+    icon: Sparkles,
+    title: "Beauty salon / med spa",
+    tagline: "Front-desk concierge for hair, facial, botox, fillers.",
+    bullets: [
+      "Recommends services, explains deposit and cancellation policies",
+      "Books: name, phone, service, preferred date",
+      "Warm, polished tone — never pushy",
+    ],
+  },
+};
+
+const CategoryPicker = ({
+  value,
+  onPick,
+  isSaving,
+}: {
+  value: BusinessCategory | null;
+  onPick: (v: BusinessCategory) => void;
+  isSaving: boolean;
+}) => {
+  const [pending, setPending] = useState<BusinessCategory | null>(null);
+
+  return (
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {BUSINESS_CATEGORIES.map((c) => {
+          const meta = CATEGORY_META[c];
+          const Icon = meta.icon;
+          const isActive = value === c;
+          return (
+            <button
+              key={c}
+              type="button"
+              disabled={isSaving}
+              onClick={() => {
+                if (isActive) return;
+                if (value) setPending(c);
+                else onPick(c);
+              }}
+              className={`text-left p-4 rounded-xl border transition-all ${
+                isActive
+                  ? "border-primary bg-primary/5 shadow-glow ring-2 ring-primary/30"
+                  : "border-border hover:border-primary/50 hover:bg-muted/50"
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${isActive ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-sm">{meta.title}</p>
+                    {isActive && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-primary/10 text-primary">Active</span>}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">{meta.tagline}</p>
+                  <ul className="mt-2 space-y-1">
+                    {meta.bullets.map((b) => (
+                      <li key={b} className="text-[11px] text-muted-foreground leading-snug flex gap-1.5">
+                        <span className="text-primary">•</span>
+                        <span>{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <AlertDialog open={!!pending} onOpenChange={(o) => !o && setPending(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Switch category to {pending ? CATEGORY_META[pending].title : ""}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The bot will instantly retrain — its persona, lead questions and replies will all switch. Your products, services and knowledge stay safe.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pending) onPick(pending);
+                setPending(null);
+              }}
+            >
+              Yes, retrain the bot
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
