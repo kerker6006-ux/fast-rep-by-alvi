@@ -6,6 +6,30 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const TRAINING_CALL_COST = 0.0015;
+
+async function logTrainingUsage(req: Request, model: string) {
+  try {
+    const authHeader = req.headers.get("Authorization") || "";
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    if (!token) return;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, serviceKey);
+    const { data: userData } = await supabase.auth.getUser(token);
+    const userId = userData?.user?.id;
+    if (!userId) return;
+    await supabase.from("ai_usage").insert({
+      user_id: userId,
+      call_type: "training",
+      model,
+      estimated_cost: TRAINING_CALL_COST,
+    });
+  } catch (e) {
+    console.error("Failed to log training usage:", e);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
