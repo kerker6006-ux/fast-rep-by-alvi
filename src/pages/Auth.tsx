@@ -15,6 +15,12 @@ const GoogleIcon = () => (
   </svg>
 );
 
+const FacebookIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+    <path fill="#1877F2" d="M24 12a12 12 0 1 0-13.875 11.854V15.47H7.078V12h3.047V9.356c0-3.007 1.792-4.668 4.533-4.668 1.313 0 2.686.234 2.686.234v2.953H15.83c-1.49 0-1.955.925-1.955 1.874V12h3.328l-.532 3.47h-2.796v8.384A12.003 12.003 0 0 0 24 12z"/>
+  </svg>
+);
+
 const Auth = () => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
@@ -31,6 +37,27 @@ const Auth = () => {
     }
     if (result.redirected) return;
     window.location.href = "/dashboard";
+  };
+
+  const handleFacebook = async () => {
+    setLoading(true);
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const redirectTo = `${window.location.origin}/dashboard`;
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/fb-login-start?redirect_to=${encodeURIComponent(redirectTo)}`,
+      );
+      const data = await res.json();
+      if (!res.ok || !data?.url) {
+        toast.error(data?.error ?? "Could not start Facebook sign-in");
+        setLoading(false);
+        return;
+      }
+      window.location.href = data.url;
+    } catch (e) {
+      toast.error((e as Error).message);
+      setLoading(false);
+    }
   };
 
   return (
@@ -93,18 +120,29 @@ const Auth = () => {
             <div className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-8 shadow-elevated">
               <div className="space-y-1.5 mb-6 text-center">
                 <h2 className="font-display text-2xl font-bold tracking-tight">Welcome to LeadPilot</h2>
-                <p className="text-sm text-muted-foreground">Sign in with your Google account to continue.</p>
+                <p className="text-sm text-muted-foreground">Sign in with Google or Facebook to continue.</p>
               </div>
 
-              <Button
-                onClick={handleGoogle}
-                disabled={loading}
-                variant="outline"
-                className="w-full h-12 rounded-xl gap-3 bg-white text-slate-900 hover:bg-slate-50 border-slate-200 text-base font-medium"
-              >
-                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <GoogleIcon />}
-                Continue with Google
-              </Button>
+              <div className="space-y-3">
+                <Button
+                  onClick={handleGoogle}
+                  disabled={loading}
+                  variant="outline"
+                  className="w-full h-12 rounded-xl gap-3 bg-white text-slate-900 hover:bg-slate-50 border-slate-200 text-base font-medium"
+                >
+                  {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <GoogleIcon />}
+                  Continue with Google
+                </Button>
+
+                <Button
+                  onClick={handleFacebook}
+                  disabled={loading}
+                  className="w-full h-12 rounded-xl gap-3 bg-[#1877F2] text-white hover:bg-[#166FE5] border-0 text-base font-medium"
+                >
+                  {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <FacebookIcon />}
+                  Continue with Facebook
+                </Button>
+              </div>
 
               <p className="mt-6 text-center text-[11px] text-muted-foreground">
                 By continuing you agree to our terms and acknowledge our privacy practices.
