@@ -5,13 +5,14 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ActivePageProvider } from "@/contexts/ActivePageContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminRoute from "@/components/AdminRoute";
+import Welcome from "./pages/Welcome.tsx";
 
 // Lazy-load every route so the initial bundle stays tiny.
 const Landing = lazy(() => import("./pages/Landing.tsx"));
 const Auth = lazy(() => import("./pages/Auth.tsx"));
-const Welcome = lazy(() => import("./pages/Welcome.tsx"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe.tsx"));
 
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
