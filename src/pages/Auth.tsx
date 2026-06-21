@@ -35,8 +35,21 @@ const Auth = () => {
 
   const handleGoogle = async () => {
     setLoading(true);
+
+    const isInIframe = window.self !== window.top;
+    if (isInIframe) {
+      const params = new URLSearchParams({
+        provider: "google",
+        redirect_uri: window.location.origin,
+        prompt: "select_account",
+      });
+      window.top.location.href = `${window.location.origin}/~oauth/initiate?${params.toString()}`;
+      return;
+    }
+
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: `${window.location.origin}/dashboard`,
+      redirect_uri: window.location.origin,
+      extraParams: { prompt: "select_account" },
     });
     if (result.error) {
       toast.error(result.error.message ?? "Could not start Google sign-in");
