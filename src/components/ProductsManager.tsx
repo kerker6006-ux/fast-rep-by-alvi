@@ -405,7 +405,7 @@ const ProductsManager = () => {
                     <img src={imageFile ? URL.createObjectURL(imageFile) : editingProduct?.image_url || ""} alt="Preview" className="h-20 w-20 rounded-xl object-cover border-2 border-border shadow-sm" />
                   )}
                   <div className="flex-1">
-                    <Input type="file" accept="image/*" onChange={e => setImageFile(e.target.files?.[0] || null)} />
+                    <Input type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0] || null; setImageFile(f); if (f) showFreeImageNoticeOnce(hasActiveSub); }} />
                   </div>
                 </div>
               </div>
