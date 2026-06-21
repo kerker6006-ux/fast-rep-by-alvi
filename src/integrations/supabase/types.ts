@@ -1419,6 +1419,7 @@ export type Database = {
           content: string
           conversation_id: string | null
           created_at: string
+          error: string | null
           fb_page_id: string | null
           id: string
           message_type: string
@@ -1431,6 +1432,7 @@ export type Database = {
           content: string
           conversation_id?: string | null
           created_at?: string
+          error?: string | null
           fb_page_id?: string | null
           id?: string
           message_type?: string
@@ -1443,6 +1445,7 @@ export type Database = {
           content?: string
           conversation_id?: string | null
           created_at?: string
+          error?: string | null
           fb_page_id?: string | null
           id?: string
           message_type?: string
