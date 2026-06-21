@@ -1,12 +1,14 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, Wallet, CreditCard, Megaphone, Globe, Settings as Cog,
-  BarChart3, Tag, LogOut, Bot, ChevronRight,
+  BarChart3, Tag, LogOut, ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import logoAsset from "@/assets/logo.png.asset.json";
+
 
 const items = [
   { to: "/admin", icon: LayoutDashboard, key: "admin.nav.overview", end: true },
