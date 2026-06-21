@@ -100,6 +100,76 @@ const AdjustCreditsDialog = ({ userId, displayName, mode, onDone }: { userId: st
   );
 };
 
+const GrantSubscriptionDialog = ({ userId, displayName, currentUntil, onDone }: { userId: string; displayName: string; currentUntil: string | null; onDone: () => void }) => {
+  const [open, setOpen] = useState(false);
+  const [days, setDays] = useState("30");
+  const [until, setUntil] = useState("");
+  const [note, setNote] = useState("");
+
+  const grant = useMutation({
+    mutationFn: async () => {
+      const body: any = { user_id: userId, mode: "grant", note };
+      if (until) body.until = new Date(until).toISOString();
+      else body.days = Number(days);
+      const { data, error } = await supabase.functions.invoke("admin-grant-subscription", { body });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => { toast.success("Paid access granted"); setOpen(false); onDone(); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const revoke = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("admin-grant-subscription", {
+        body: { user_id: userId, mode: "revoke", note },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => { toast.success("Paid access revoked"); setOpen(false); onDone(); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="text-emerald-700 border-emerald-300">
+          <Sparkles className="h-3.5 w-3.5 mr-1" />Grant paid access
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Grant paid access — {displayName}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 pt-2">
+          {currentUntil && (
+            <p className="text-xs text-muted-foreground">
+              Current access ends: <span className="font-medium text-foreground">{new Date(currentUntil).toLocaleString()}</span>
+            </p>
+          )}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium">Number of days from now</label>
+            <Input type="number" min="1" placeholder="e.g. 30" value={days} onChange={(e) => { setDays(e.target.value); setUntil(""); }} />
+          </div>
+          <div className="text-center text-xs text-muted-foreground">— or —</div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium">Exact end date</label>
+            <Input type="datetime-local" value={until} onChange={(e) => { setUntil(e.target.value); }} />
+          </div>
+          <Input placeholder="Internal note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
+          <Button className="w-full" disabled={grant.isPending || (!until && (!days || Number(days) <= 0))} onClick={() => grant.mutate()}>
+            Activate paid access
+          </Button>
+          <Button variant="ghost" className="w-full text-destructive" disabled={revoke.isPending} onClick={() => revoke.mutate()}>
+            Revoke paid access
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const StatTile = ({ icon: Icon, label, value, accent }: { icon: any; label: string; value: string | number; accent?: string }) => (
   <div className="rounded-xl border border-border bg-card/60 p-4">
     <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
