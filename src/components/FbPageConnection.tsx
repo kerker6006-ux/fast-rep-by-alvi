@@ -136,7 +136,8 @@ const FbPageConnection = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fb-pages"] });
-      toast.success("Page disconnected");
+      queryClient.invalidateQueries({ queryKey: ["active-pages"] });
+      toast.success("Page disconnected — data kept for 7 days");
       setDisconnectId(null);
     },
     onError: (e: any) => toast.error(e.message),
