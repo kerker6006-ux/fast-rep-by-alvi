@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Bot, Send, ImageIcon, Loader2, Sparkles, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
+import { useSubscription, showFreeImageNoticeOnce } from "@/hooks/useSubscription";
 
 type WizardMessage = {
   role: "user" | "assistant";
@@ -46,6 +47,7 @@ interface ProductAiWizardProps {
 
 const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts }: ProductAiWizardProps) => {
   const { t, i18n } = useTranslation();
+  const { hasActiveSub } = useSubscription();
   const [messages, setMessages] = useState<WizardMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -89,6 +91,7 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
     const previews = newFiles.map(f => URL.createObjectURL(f));
     setStagedPreviews(prev => [...prev, ...previews]);
     if (fileInputRef.current) fileInputRef.current.value = "";
+    showFreeImageNoticeOnce(hasActiveSub);
   };
 
   const removeStagedFile = (index: number) => {
@@ -97,8 +100,17 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
     setStagedPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
+  const requireSub = (): boolean => {
+    if (hasActiveSub) return true;
+    toast.error("AI Wizard is a paid feature. Subscribe to use the Product AI Wizard.", {
+      action: { label: "Subscribe", onClick: () => { window.location.hash = "#credits"; } },
+    });
+    return false;
+  };
+
   const sendStagedImages = async () => {
     if (stagedFiles.length === 0) return;
+    if (!requireSub()) return;
     setUploadingImage(true);
     try {
       const urls: string[] = [];
@@ -166,6 +178,7 @@ const ProductAiWizard = ({ open, onOpenChange, onProductReady, existingProducts 
 
   const handleSend = async () => {
     if (!input.trim() && sessionImages.length === 0) return;
+    if (!requireSub()) return;
 
     const userMsg: WizardMessage = {
       role: "user",
