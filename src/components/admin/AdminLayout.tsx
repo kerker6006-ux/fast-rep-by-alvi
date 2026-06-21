@@ -32,8 +32,8 @@ const AdminLayout = () => {
       {/* Sidebar */}
       <aside className="w-64 shrink-0 bg-slate-900 text-slate-100 flex flex-col">
         <div className="h-16 flex items-center gap-2 px-5 border-b border-slate-800">
-          <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
-            <Bot className="h-5 w-5 text-white" />
+          <div className="h-9 w-9 rounded-lg bg-white flex items-center justify-center overflow-hidden">
+            <img src={logoAsset.url} alt="LeadPilot logo" className="h-6 w-6 object-contain" width={36} height={36} />
           </div>
           <div>
             <p className="font-display font-bold text-base leading-none">LeadPilot</p>
