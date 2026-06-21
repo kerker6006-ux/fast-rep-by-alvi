@@ -26,7 +26,15 @@ const FacebookIcon = () => (
 
 const Auth = () => {
   const { t } = useTranslation();
+  const { session, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState<null | "google" | "facebook">(null);
+
+  useEffect(() => {
+    if (!authLoading && session) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [session, authLoading, navigate]);
 
   const handleGoogle = async () => {
     setLoading("google");
