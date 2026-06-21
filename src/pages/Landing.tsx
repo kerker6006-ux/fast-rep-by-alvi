@@ -201,7 +201,7 @@ const Landing = () => {
       <footer className="border-t border-border py-10">
         <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <Plane className="w-4 h-4 -rotate-45 text-primary" />
+            <img src={logoAsset.url} alt="LeadPilot logo" className="w-4 h-4 object-contain" width={16} height={16} />
             <span>© {new Date().getFullYear()} LeadPilot. All rights reserved.</span>
           </div>
           <div className="flex gap-6">
