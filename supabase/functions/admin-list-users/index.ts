@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     }
 
     const [{ data: profiles }, { data: credits }, { data: products }, { data: orders }, { data: conversations }, { data: pages }, { data: aiUsage }] = await Promise.all([
-      admin.from("profiles").select("id, display_name, full_name, country, user_type, created_at, suspended, onboarded_at").order("created_at", { ascending: false }),
+      admin.from("profiles").select("id, display_name, full_name, country, user_type, created_at, suspended, onboarded_at, subscription_status, subscription_plan, subscription_current_period_end, free_until").order("created_at", { ascending: false }),
       admin.from("user_credits").select("user_id, balance"),
       admin.from("products").select("user_id"),
       admin.from("orders").select("user_id"),

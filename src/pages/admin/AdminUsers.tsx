@@ -28,6 +28,10 @@ type AdminUser = {
   created_at: string;
   suspended: boolean;
   onboarded_at: string | null;
+  subscription_status: string | null;
+  subscription_plan: string | null;
+  subscription_current_period_end: string | null;
+  free_until: string | null;
   balance: number;
   productCount: number;
   orderCount: number;
@@ -89,6 +93,76 @@ const AdjustCreditsDialog = ({ userId, displayName, mode, onDone }: { userId: st
             onClick={() => mutate.mutate()}
           >
             {mode === "add" ? `+ $${amount || 0}` : `− $${amount || 0}`}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const GrantSubscriptionDialog = ({ userId, displayName, currentUntil, onDone }: { userId: string; displayName: string; currentUntil: string | null; onDone: () => void }) => {
+  const [open, setOpen] = useState(false);
+  const [days, setDays] = useState("30");
+  const [until, setUntil] = useState("");
+  const [note, setNote] = useState("");
+
+  const grant = useMutation({
+    mutationFn: async () => {
+      const body: any = { user_id: userId, mode: "grant", note };
+      if (until) body.until = new Date(until).toISOString();
+      else body.days = Number(days);
+      const { data, error } = await supabase.functions.invoke("admin-grant-subscription", { body });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => { toast.success("Paid access granted"); setOpen(false); onDone(); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const revoke = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("admin-grant-subscription", {
+        body: { user_id: userId, mode: "revoke", note },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => { toast.success("Paid access revoked"); setOpen(false); onDone(); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="text-emerald-700 border-emerald-300">
+          <Sparkles className="h-3.5 w-3.5 mr-1" />Grant paid access
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Grant paid access — {displayName}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 pt-2">
+          {currentUntil && (
+            <p className="text-xs text-muted-foreground">
+              Current access ends: <span className="font-medium text-foreground">{new Date(currentUntil).toLocaleString()}</span>
+            </p>
+          )}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium">Number of days from now</label>
+            <Input type="number" min="1" placeholder="e.g. 30" value={days} onChange={(e) => { setDays(e.target.value); setUntil(""); }} />
+          </div>
+          <div className="text-center text-xs text-muted-foreground">— or —</div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium">Exact end date</label>
+            <Input type="datetime-local" value={until} onChange={(e) => { setUntil(e.target.value); }} />
+          </div>
+          <Input placeholder="Internal note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
+          <Button className="w-full" disabled={grant.isPending || (!until && (!days || Number(days) <= 0))} onClick={() => grant.mutate()}>
+            Activate paid access
+          </Button>
+          <Button variant="ghost" className="w-full text-destructive" disabled={revoke.isPending} onClick={() => revoke.mutate()}>
+            Revoke paid access
           </Button>
         </div>
       </DialogContent>
@@ -165,6 +239,17 @@ const UserDetailsDialog = ({
           <div className="flex flex-wrap items-center gap-2">
             {user.suspended && <Badge variant="destructive">Suspended</Badge>}
             {!user.onboarded_at && <Badge variant="outline">Onboarding incomplete</Badge>}
+            {(() => {
+              const end = user.subscription_current_period_end ?? user.free_until;
+              const active = user.subscription_status === "active" || (end && new Date(end).getTime() > Date.now());
+              if (!end) return null;
+              return (
+                <Badge variant={active ? "default" : "outline"} className="gap-1.5">
+                  <Sparkles className="h-3 w-3" />
+                  {active ? "Paid until" : "Expired"} {new Date(end).toLocaleDateString()}
+                </Badge>
+              );
+            })()}
             <Badge variant="secondary" className="gap-1.5">
               <UTIcon className="h-3 w-3" />{ut.label}
             </Badge>
@@ -215,6 +300,12 @@ const UserDetailsDialog = ({
           <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
             <AdjustCreditsDialog userId={user.id} displayName={displayName} mode="add" onDone={onAction} />
             <AdjustCreditsDialog userId={user.id} displayName={displayName} mode="remove" onDone={onAction} />
+            <GrantSubscriptionDialog
+              userId={user.id}
+              displayName={displayName}
+              currentUntil={user.subscription_current_period_end ?? user.free_until}
+              onDone={onAction}
+            />
             <Button size="sm" variant="outline" onClick={() => suspend.mutate()} disabled={suspend.isPending}>
               {user.suspended
                 ? <><CheckCircle2 className="h-3.5 w-3.5 mr-1" />{t("admin.users.unsuspend")}</>
