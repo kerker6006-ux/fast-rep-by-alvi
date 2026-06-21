@@ -167,7 +167,7 @@ const AiUsageDashboard = () => {
         <CardContent>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground">Text Reply</span><span className="font-medium">${(data?.costText ?? 0).toFixed(3)} / message</span></div>
-            <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground">Image Analysis</span><span className="font-medium">${(data?.costImage ?? 0).toFixed(3)} / image</span></div>
+            <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground">Image Analysis</span>{hasActiveSub ? (<span className="font-medium">${(data?.costImage ?? 0).toFixed(3)} / image</span>) : (<span className="font-medium text-amber-600 flex items-center gap-1"><Lock className="h-3 w-3" /> Not active — subscribe to unlock</span>)}</div>
             <div className="flex justify-between border-b pb-2"><span className="text-muted-foreground">Order Detection</span><span className="font-medium text-emerald-600">Free</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Auto-Reply Keywords</span><span className="font-medium text-emerald-600">Free</span></div>
           </div>
