@@ -239,6 +239,17 @@ const UserDetailsDialog = ({
           <div className="flex flex-wrap items-center gap-2">
             {user.suspended && <Badge variant="destructive">Suspended</Badge>}
             {!user.onboarded_at && <Badge variant="outline">Onboarding incomplete</Badge>}
+            {(() => {
+              const end = user.subscription_current_period_end ?? user.free_until;
+              const active = user.subscription_status === "active" || (end && new Date(end).getTime() > Date.now());
+              if (!end) return null;
+              return (
+                <Badge variant={active ? "default" : "outline"} className="gap-1.5">
+                  <Sparkles className="h-3 w-3" />
+                  {active ? "Paid until" : "Expired"} {new Date(end).toLocaleDateString()}
+                </Badge>
+              );
+            })()}
             <Badge variant="secondary" className="gap-1.5">
               <UTIcon className="h-3 w-3" />{ut.label}
             </Badge>
