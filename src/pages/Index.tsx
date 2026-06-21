@@ -76,7 +76,7 @@ const Index = () => {
     "credits",
     "comment-triggers",
     "fb-pages",
-    "admin",
+
     "analytics",
   ]);
   const showPaywall = isLocked && !allowedWhenLocked.has(activeTab);
