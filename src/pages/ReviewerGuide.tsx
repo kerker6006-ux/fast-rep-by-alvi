@@ -40,7 +40,7 @@ const ReviewerGuide = () => (
         <h2 className="text-xl font-semibold mb-3 flex items-center gap-2"><ShieldCheck className="w-5 h-5" /> Test credentials</h2>
         <div className="rounded-lg border border-border p-5 font-mono text-sm space-y-1 bg-muted/30">
           <div><span className="text-muted-foreground">URL: </span>https://leadpilot.life/auth</div>
-          <div><span className="text-muted-foreground">Email: </span>meta-reviewer@leadpilot.life</div>
+          <div><span className="text-muted-foreground">Email: </span>leadpilot24@gmail.com</div>
           <div><span className="text-muted-foreground">Password: </span>MetaReview2026!</div>
         </div>
         <p className="text-xs text-muted-foreground mt-2">

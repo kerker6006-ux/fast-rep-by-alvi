@@ -85,7 +85,7 @@ const DataDeletionStatus = () => {
               {status === "completed"
                 ? "All Facebook data associated with your account has been removed from LeadPilot."
                 : status === "failed"
-                ? "We could not complete the deletion automatically. Email fastrepbyalvi@gmail.com and we'll process it manually within 30 days."
+                ? "We could not complete the deletion automatically. Email leadpilot24@gmail.com and we'll process it manually within 30 days."
                 : "Your request is being processed. This usually completes within a few minutes."}
             </p>
           </div>
