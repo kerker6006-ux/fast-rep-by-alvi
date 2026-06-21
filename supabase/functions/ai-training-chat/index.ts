@@ -143,6 +143,7 @@ IMPORTANT:
       }
 
       const generatedSettings = JSON.parse(toolCall.function.arguments);
+      await logTrainingUsage(req, "google/gemini-2.5-flash");
       return new Response(JSON.stringify({ settings: generatedSettings }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -194,6 +195,7 @@ Rules:
         faqs = [];
       }
 
+      await logTrainingUsage(req, "google/gemini-2.5-flash-lite");
       return new Response(JSON.stringify({ faqs }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
