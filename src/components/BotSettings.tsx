@@ -30,6 +30,20 @@ const BotSettings = () => {
     },
   });
 
+  const { data: subProfile } = useQuery({
+    queryKey: ["sub-profile", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("subscription_status")
+        .eq("id", user!.id)
+        .maybeSingle();
+      return data as { subscription_status: string | null } | null;
+    },
+  });
+  const hasActiveSub = subProfile?.subscription_status === "active";
+
   useEffect(() => {
     if (dbSettings) {
       const map: Record<string, string> = {};
@@ -229,12 +243,16 @@ const BotSettings = () => {
               />
             </div>
             <div className="flex items-center justify-between pt-2 border-t">
-              <div>
+              <div className="flex-1 pr-3">
                 <Label>Enable Image Analysis</Label>
-                <p className="text-xs text-muted-foreground">When customers send images, use AI to analyze them. Turn OFF to save costs — bot will route images to Image Inbox for manual reply.</p>
+                <p className="text-xs text-muted-foreground">When customers send images, use AI to analyze them. Turn OFF to save costs — images route to Image Inbox for manual reply.</p>
+                {!hasActiveSub && (
+                  <p className="text-xs text-amber-600 mt-1">🔒 Subscribe to the $20/mo plan to enable image analysis.</p>
+                )}
               </div>
               <Switch
-                checked={settings.enable_image_analysis !== "false"}
+                disabled={!hasActiveSub}
+                checked={hasActiveSub && settings.enable_image_analysis === "true"}
                 onCheckedChange={(v) => update("enable_image_analysis", v ? "true" : "false")}
               />
             </div>
