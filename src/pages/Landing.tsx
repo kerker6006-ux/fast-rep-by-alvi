@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
-  Plane,
   MessageSquare,
   Brain,
   Target,
@@ -15,6 +14,8 @@ import {
   Instagram,
   Facebook,
 } from "lucide-react";
+import logoAsset from "@/assets/logo.png.asset.json";
+
 
 const features = [
   { icon: MessageSquare, title: "Instant Auto-Replies", desc: "Replies to every DM on Facebook & Instagram instantly. 24/7. No customer is ever ignored." },
@@ -32,8 +33,8 @@ const Landing = () => {
       <nav className="sticky top-0 z-50 backdrop-blur-xl bg-background/70 border-b border-border/50">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary-glow grid place-items-center shadow-glow">
-              <Plane className="w-5 h-5 text-primary-foreground -rotate-45" />
+            <div className="w-9 h-9 rounded-xl bg-white grid place-items-center shadow-soft overflow-hidden">
+              <img src={logoAsset.url} alt="LeadPilot logo" className="w-6 h-6 object-contain" width={36} height={36} />
             </div>
             <span className="font-display text-xl font-bold tracking-tight">LeadPilot</span>
           </Link>
@@ -200,7 +201,7 @@ const Landing = () => {
       <footer className="border-t border-border py-10">
         <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <Plane className="w-4 h-4 -rotate-45 text-primary" />
+            <img src={logoAsset.url} alt="LeadPilot logo" className="w-4 h-4 object-contain" width={16} height={16} />
             <span>© {new Date().getFullYear()} LeadPilot. All rights reserved.</span>
           </div>
           <div className="flex gap-6">

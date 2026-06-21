@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Bot, Loader2, Sparkles, Zap, Globe, Mail } from "lucide-react";
+import { Loader2, Sparkles, Zap, Globe, Mail } from "lucide-react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import logoAsset from "@/assets/logo.png.asset.json";
+
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
@@ -156,8 +158,8 @@ const Auth = () => {
       <div className="relative min-h-screen flex">
         <div className="hidden lg:flex flex-1 flex-col justify-between p-12 xl:p-16">
           <div className="flex items-center gap-3">
-            <div className="h-11 w-11 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-glow">
-              <Bot className="h-6 w-6 text-white" />
+            <div className="h-11 w-11 rounded-2xl bg-white flex items-center justify-center shadow-soft overflow-hidden">
+              <img src={logoAsset.url} alt="LeadPilot logo" className="h-8 w-8 object-contain" width={44} height={44} />
             </div>
             <span className="font-display text-xl font-bold">LeadPilot</span>
           </div>
@@ -194,8 +196,8 @@ const Auth = () => {
         <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
           <div className="w-full max-w-md">
             <div className="lg:hidden flex items-center gap-3 mb-8 justify-center">
-              <div className="h-11 w-11 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-glow">
-                <Bot className="h-6 w-6 text-white" />
+              <div className="h-11 w-11 rounded-2xl bg-white flex items-center justify-center shadow-soft overflow-hidden">
+                <img src={logoAsset.url} alt="LeadPilot logo" className="h-8 w-8 object-contain" width={44} height={44} />
               </div>
               <span className="font-display text-xl font-bold">LeadPilot</span>
             </div>

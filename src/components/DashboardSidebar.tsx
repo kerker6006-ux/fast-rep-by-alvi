@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import {
   BarChart3, Package, ShoppingCart, MessageSquare,
-  Zap, Clock, Settings, Bot, Brain, ChevronLeft, ChevronRight, LogOut, Globe, Activity, Coins, AlertTriangle, Inbox, Lightbulb, Briefcase, UserPlus, Megaphone,
+  Zap, Clock, Settings, Brain, ChevronLeft, ChevronRight, LogOut, Globe, Activity, Coins, AlertTriangle, Inbox, Lightbulb, Briefcase, UserPlus, Megaphone,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,8 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import logoAsset from "@/assets/logo.png.asset.json";
+
 
 
 
@@ -89,8 +91,8 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border shrink-0">
-        <div className="h-9 w-9 rounded-xl bg-gradient-primary flex items-center justify-center shrink-0 shadow-glow">
-          <Bot className="h-5 w-5 text-white" />
+        <div className="h-9 w-9 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-soft overflow-hidden">
+          <img src={logoAsset.url} alt="LeadPilot logo" className="h-6 w-6 object-contain" width={36} height={36} />
         </div>
         {!collapsed && (
           <div className="animate-fade-in overflow-hidden">

@@ -1,12 +1,14 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, Wallet, CreditCard, Megaphone, Globe, Settings as Cog,
-  BarChart3, Tag, LogOut, Bot, ChevronRight,
+  BarChart3, Tag, LogOut, ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import logoAsset from "@/assets/logo.png.asset.json";
+
 
 const items = [
   { to: "/admin", icon: LayoutDashboard, key: "admin.nav.overview", end: true },
@@ -30,8 +32,8 @@ const AdminLayout = () => {
       {/* Sidebar */}
       <aside className="w-64 shrink-0 bg-slate-900 text-slate-100 flex flex-col">
         <div className="h-16 flex items-center gap-2 px-5 border-b border-slate-800">
-          <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
-            <Bot className="h-5 w-5 text-white" />
+          <div className="h-9 w-9 rounded-lg bg-white flex items-center justify-center overflow-hidden">
+            <img src={logoAsset.url} alt="LeadPilot logo" className="h-6 w-6 object-contain" width={36} height={36} />
           </div>
           <div>
             <p className="font-display font-bold text-base leading-none">LeadPilot</p>
