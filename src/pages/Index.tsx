@@ -27,7 +27,7 @@ const CommentTriggers = lazy(() => import("@/components/CommentTriggers"));
 const ScheduledMessages = lazy(() => import("@/components/ScheduledMessages"));
 const FbPageConnection = lazy(() => import("@/components/FbPageConnection"));
 const BotSettings = lazy(() => import("@/components/BotSettings"));
-const AdminPanel = lazy(() => import("@/components/AdminPanel"));
+
 
 const tabs: Record<string, React.ComponentType> = {
   analytics: AnalyticsDashboard,
@@ -50,7 +50,7 @@ const tabs: Record<string, React.ComponentType> = {
   scheduled: ScheduledMessages,
   "fb-pages": FbPageConnection,
   settings: BotSettings,
-  admin: AdminPanel,
+  
 };
 
 const TabFallback = () => (
@@ -76,7 +76,7 @@ const Index = () => {
     "credits",
     "comment-triggers",
     "fb-pages",
-    "admin",
+
     "analytics",
   ]);
   const showPaywall = isLocked && !allowedWhenLocked.has(activeTab);
