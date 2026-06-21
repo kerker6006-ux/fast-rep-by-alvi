@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Pencil, Trash2, ImageIcon, FolderOpen, Search, Package, Sparkles, Loader2, Eye, EyeOff, Grid3X3, LayoutList, Bot } from "lucide-react";
 import { toast } from "sonner";
 import ProductAiWizard from "@/components/ProductAiWizard";
+import { useSubscription, showFreeImageNoticeOnce } from "@/hooks/useSubscription";
 
 type ProductVariant = { color: string; image_url: string };
 type SizeVariant = { size: string; price: number };
@@ -42,6 +43,7 @@ const ProductsManager = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { hasActiveSub } = useSubscription();
   const [isOpen, setIsOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -450,7 +452,7 @@ const ProductsManager = () => {
                             </div>
                             <div className="space-y-1">
                               <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("products.variantPhotoLabel")}</Label>
-                              <Input type="file" accept="image/*" className="h-8 text-xs" onChange={e => setVariants(vs => vs.map((vv, ii) => ii === i ? {...vv, file: e.target.files?.[0] || null} : vv))} />
+                              <Input type="file" accept="image/*" className="h-8 text-xs" onChange={e => { const f = e.target.files?.[0] || null; setVariants(vs => vs.map((vv, ii) => ii === i ? {...vv, file: f} : vv)); if (f) showFreeImageNoticeOnce(hasActiveSub); }} />
                             </div>
                           </div>
                           <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-destructive shrink-0 hover:bg-destructive/10" onClick={() => setVariants(vs => vs.filter((_, ii) => ii !== i))}>
