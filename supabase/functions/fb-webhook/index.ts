@@ -1057,32 +1057,38 @@ async function generateAiReply(
   if (userId) productQuery = productQuery.eq("user_id", userId);
   const { data: products } = await productQuery;
 
-  // ----- AI Receptionist: load business category + services -----
+  // ----- AI Receptionist: load page category (ecommerce | service | content_creator) -----
   let businessCategory: string | null = null;
   let businessInfoObj: any = {};
   let servicesList: any[] = [];
   if (userId) {
     const { data: prof } = await supabase
-      .from("profiles").select("business_category, business_info").eq("id", userId).maybeSingle();
-    businessCategory = prof?.business_category || null;
+      .from("profiles").select("business_info").eq("id", userId).maybeSingle();
     businessInfoObj = prof?.business_info || {};
-    if (businessCategory && businessCategory !== "ecommerce") {
+
+    // Source of truth = fb_pages.page_category (set per page, editable in Bot Settings)
+    const { data: pageRow } = await supabase
+      .from("fb_pages").select("page_category").eq("user_id", userId).eq("is_active", true)
+      .order("created_at", { ascending: true }).limit(1).maybeSingle();
+    businessCategory = (pageRow?.page_category as string | null) || null;
+
+    if (businessCategory === "service") {
       const { data: svcs } = await supabase
         .from("services").select("name, description, price_text, duration_text, service_area")
-        .eq("user_id", userId).eq("category", businessCategory).eq("active", true);
+        .eq("user_id", userId).eq("active", true);
       servicesList = svcs || [];
     }
   }
 
   const leadFieldsByCategory: Record<string, string[]> = {
-    ecommerce: ["Customer Name", "Phone Number", "Product Interested In"],
-    dental:    ["Patient Name", "Phone Number", "Interested Service", "Preferred Appointment Date"],
-    hvac:      ["Customer Name", "Phone Number", "Address", "Service Needed", "Preferred Visit Date"],
-    salon:     ["Customer Name", "Phone Number", "Service Interested In", "Appointment Date"],
+    ecommerce:       ["Customer Name", "Phone Number", "Full Address", "Product", "Quantity"],
+    service:         ["Customer Name", "Phone Number", "Service Needed", "Preferred Date"],
+    content_creator: ["Customer Name", "Phone or Email", "Course / Product Interested In"],
   };
   const categoryLabel: Record<string, string> = {
-    ecommerce: "online store", dental: "dental clinic",
-    hvac: "HVAC / home services company", salon: "beauty salon / med spa",
+    ecommerce: "online store",
+    service: "service business",
+    content_creator: "online educator selling courses & digital products",
   };
   const receptionistPreamble = businessCategory ? `#############################
 # ROLE — AI RECEPTIONIST (HIGHEST PRIORITY)
