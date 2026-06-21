@@ -524,6 +524,9 @@ const AiTraining = () => {
         </div>
       </div>
 
+      <TrainingSpendCard />
+
+
       <Tabs defaultValue="wizard" className="space-y-4">
         <TabsList className="grid w-full grid-cols-3 h-10">
           <TabsTrigger value="wizard" className="gap-1.5 text-sm">
