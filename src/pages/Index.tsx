@@ -1,6 +1,7 @@
 import { lazy, Suspense, useState } from "react";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import CategoryOnboarding from "@/components/CategoryOnboarding";
+import NotificationBell from "@/components/NotificationBell";
 
 // Lazy-load every dashboard tab — only the active one downloads.
 const AnalyticsDashboard = lazy(() => import("@/components/AnalyticsDashboard"));
@@ -16,7 +17,9 @@ const WebsiteImport = lazy(() => import("@/components/WebsiteImport"));
 const OrdersManager = lazy(() => import("@/components/OrdersManager"));
 const ComplaintsManager = lazy(() => import("@/components/ComplaintsManager"));
 const ConversationsView = lazy(() => import("@/components/ConversationsView"));
+const ImageInbox = lazy(() => import("@/components/ImageInbox"));
 const AutoReplyRules = lazy(() => import("@/components/AutoReplyRules"));
+const CommentTriggers = lazy(() => import("@/components/CommentTriggers"));
 const ScheduledMessages = lazy(() => import("@/components/ScheduledMessages"));
 const FbPageConnection = lazy(() => import("@/components/FbPageConnection"));
 const BotSettings = lazy(() => import("@/components/BotSettings"));
@@ -36,7 +39,9 @@ const tabs: Record<string, React.ComponentType> = {
   orders: OrdersManager,
   complaints: ComplaintsManager,
   conversations: ConversationsView,
+  "image-inbox": ImageInbox,
   "auto-reply": AutoReplyRules,
+  "comment-triggers": CommentTriggers,
   scheduled: ScheduledMessages,
   "fb-pages": FbPageConnection,
   settings: BotSettings,
@@ -73,6 +78,9 @@ const Index = () => {
         className="transition-all duration-300"
         style={{ marginLeft: sidebarCollapsed ? 72 : 240 }}
       >
+        <div className="sticky top-0 z-30 flex justify-end items-center gap-2 px-6 lg:px-8 py-3 bg-background/80 backdrop-blur border-b">
+          <NotificationBell />
+        </div>
         <div className="max-w-6xl mx-auto px-6 lg:px-8 py-8">
           <Suspense fallback={<TabFallback />}>
             <ActiveComponent />

@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import {
   BarChart3, Package, ShoppingCart, MessageSquare,
-  Zap, Clock, Settings, Bot, Brain, ChevronLeft, ChevronRight, LogOut, Globe, Activity, Coins, AlertTriangle, Inbox, Lightbulb, Briefcase, UserPlus,
+  Zap, Clock, Settings, Bot, Brain, ChevronLeft, ChevronRight, LogOut, Globe, Activity, Coins, AlertTriangle, Inbox, Lightbulb, Briefcase, UserPlus, Image as ImageIcon, Megaphone,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,7 +31,9 @@ const navItems: NavItem[] = [
   { id: "orders", labelKey: "nav.orders", icon: ShoppingCart, show: (c) => !c || isEcom(c) },
   { id: "complaints", labelKey: "nav.complaints", icon: AlertTriangle },
   { id: "conversations", labelKey: "nav.chats", icon: MessageSquare },
+  { id: "image-inbox", labelKey: "nav.imageInbox", icon: ImageIcon },
   { id: "auto-reply", labelKey: "nav.autoReply", icon: Zap },
+  { id: "comment-triggers", labelKey: "nav.commentTriggers", icon: Megaphone },
   { id: "scheduled", labelKey: "nav.scheduled", icon: Clock },
   { id: "fb-pages", labelKey: "nav.fbPages", icon: Globe },
   { id: "settings", labelKey: "nav.settings", icon: Settings },

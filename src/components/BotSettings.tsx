@@ -228,6 +228,16 @@ const BotSettings = () => {
                 onCheckedChange={(v) => update("auto_create_leads", v ? "true" : "false")}
               />
             </div>
+            <div className="flex items-center justify-between pt-2 border-t">
+              <div>
+                <Label>Enable Image Analysis</Label>
+                <p className="text-xs text-muted-foreground">When customers send images, use AI to analyze them. Turn OFF to save costs — bot will route images to Image Inbox for manual reply.</p>
+              </div>
+              <Switch
+                checked={settings.enable_image_analysis !== "false"}
+                onCheckedChange={(v) => update("enable_image_analysis", v ? "true" : "false")}
+              />
+            </div>
           </CardContent>
         </Card>
 
