@@ -284,7 +284,9 @@ const BotSettings = () => {
   );
 };
 
-const CATEGORY_META: Record<BusinessCategory, {
+const PAGE_CATEGORIES: PageCategory[] = ["ecommerce", "service", "content_creator"];
+
+const CATEGORY_META: Record<PageCategory, {
   icon: any;
   title: string;
   tagline: string;
@@ -295,39 +297,29 @@ const CATEGORY_META: Record<BusinessCategory, {
     title: "E-commerce store",
     tagline: "Online shop that takes orders on Messenger.",
     bullets: [
-      "Acts as a sharp shopkeeper — pitches products, sends images, takes orders",
+      "Sharp shopkeeper — pitches products, sends images, takes orders",
       "Collects: name, phone, full address, product, quantity",
-      "Confirms the order before saving",
+      "Confirms the order before saving it",
     ],
   },
-  dental: {
-    icon: Stethoscope,
-    title: "Dental clinic",
-    tagline: "Front-desk receptionist for a dental practice.",
+  service: {
+    icon: Briefcase,
+    title: "Service business",
+    tagline: "Clinic, salon, home services, repair, consulting — anything you book.",
     bullets: [
-      "Answers treatment, hours, insurance and address questions only from your knowledge base",
-      "Books appointments — captures patient name, phone, service, preferred date",
-      "Never invents prices or medical advice",
+      "Acts as a professional front-desk receptionist",
+      "Captures: name, phone, service needed, preferred date",
+      "Answers only from your knowledge base — never invents prices or policies",
     ],
   },
-  hvac: {
-    icon: Wrench,
-    title: "HVAC / home services",
-    tagline: "Dispatch coordinator for AC, plumbing, electrical jobs.",
-    bullets: [
-      "Triages job type and urgency, quotes only from your pricing policy",
-      "Captures: name, phone, address, service needed, preferred visit date",
-      "Handles emergency vs scheduled requests differently",
-    ],
-  },
-  salon: {
+  content_creator: {
     icon: Sparkles,
-    title: "Beauty salon / med spa",
-    tagline: "Front-desk concierge for hair, facial, botox, fillers.",
+    title: "Content creator / coach",
+    tagline: "You sell online courses, coaching or digital products.",
     bullets: [
-      "Recommends services, explains deposit and cancellation policies",
-      "Books: name, phone, service, preferred date",
-      "Warm, polished tone — never pushy",
+      "Pitches your courses, handles enrollment & access questions",
+      "Captures: name, phone or email, course of interest",
+      "Never impersonates the creator, never invents course content",
     ],
   },
 };
@@ -337,16 +329,16 @@ const CategoryPicker = ({
   onPick,
   isSaving,
 }: {
-  value: BusinessCategory | null;
-  onPick: (v: BusinessCategory) => void;
+  value: PageCategory | null;
+  onPick: (v: PageCategory) => void;
   isSaving: boolean;
 }) => {
-  const [pending, setPending] = useState<BusinessCategory | null>(null);
+  const [pending, setPending] = useState<PageCategory | null>(null);
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {BUSINESS_CATEGORIES.map((c) => {
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {PAGE_CATEGORIES.map((c) => {
           const meta = CATEGORY_META[c];
           const Icon = meta.icon;
           const isActive = value === c;
