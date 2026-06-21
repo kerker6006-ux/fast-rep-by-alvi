@@ -481,23 +481,32 @@ const FbPageConnection = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Disconnect confirm */}
+      {/* Disconnect confirm — 7-day soft delete */}
       <AlertDialog open={!!disconnectId} onOpenChange={(o) => !o && setDisconnectId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Disconnect this page?</AlertDialogTitle>
             <AlertDialogDescription>
-              The bot will stop replying on this page. You can reconnect anytime with one click.
+              All conversations, orders, products and other data for this page will be hidden immediately
+              and <strong>permanently deleted after 7 days</strong>. Reconnect the same page within 7 days
+              and everything will be restored automatically.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => disconnectId && disconnect.mutate(disconnectId)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Disconnect
+              Disconnect for 7 days
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Page category dialog — opens after a fresh connection */}
+      <PageCategoryDialog
+        pageId={categoryDialogPageId}
+        pageName={categoryDialogPageName}
+        onDone={() => { setCategoryDialogPageId(null); setCategoryDialogPageName(null); }}
+      />
     </div>
   );
 };
