@@ -501,11 +501,21 @@ async function handleMessagingEvent(
     last_message_at: new Date().toISOString(),
   }).eq("id", conversationId);
 
-  // Image analysis toggle: if image-only and analysis is disabled → route to Image Inbox, no AI cost.
-  if (imageUrl && !messageText && settings.enable_image_analysis === "false") {
+  // Image analysis toggle: if image and analysis is disabled → route to Image Inbox, no AI cost, push notification.
+  if (imageUrl && settings.enable_image_analysis === "false") {
     await supabase.from("conversations")
       .update({ needs_human: true, followup_reason: "Customer sent an image (image analysis is OFF)", updated_at: new Date().toISOString() })
       .eq("id", conversationId);
+    if (userId) {
+      await supabase.from("notifications").insert({
+        user_id: userId,
+        type: "image_received",
+        title: "New image from customer",
+        body: "A customer sent an image. Open Image Inbox to reply.",
+        link: "#conversations:images",
+        metadata: { conversation_id: conversationId },
+      });
+    }
     return;
   }
 

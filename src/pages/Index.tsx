@@ -17,7 +17,6 @@ const WebsiteImport = lazy(() => import("@/components/WebsiteImport"));
 const OrdersManager = lazy(() => import("@/components/OrdersManager"));
 const ComplaintsManager = lazy(() => import("@/components/ComplaintsManager"));
 const ConversationsView = lazy(() => import("@/components/ConversationsView"));
-const ImageInbox = lazy(() => import("@/components/ImageInbox"));
 const AutoReplyRules = lazy(() => import("@/components/AutoReplyRules"));
 const CommentTriggers = lazy(() => import("@/components/CommentTriggers"));
 const ScheduledMessages = lazy(() => import("@/components/ScheduledMessages"));
@@ -39,7 +38,6 @@ const tabs: Record<string, React.ComponentType> = {
   orders: OrdersManager,
   complaints: ComplaintsManager,
   conversations: ConversationsView,
-  "image-inbox": ImageInbox,
   "auto-reply": AutoReplyRules,
   "comment-triggers": CommentTriggers,
   scheduled: ScheduledMessages,

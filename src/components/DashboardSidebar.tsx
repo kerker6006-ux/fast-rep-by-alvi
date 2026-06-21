@@ -2,14 +2,19 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import {
   BarChart3, Package, ShoppingCart, MessageSquare,
-  Zap, Clock, Settings, Bot, Brain, ChevronLeft, ChevronRight, LogOut, Globe, Activity, Coins, AlertTriangle, Inbox, Lightbulb, Briefcase, UserPlus, Image as ImageIcon, Megaphone,
+  Zap, Clock, Settings, Bot, Brain, ChevronLeft, ChevronRight, LogOut, Globe, Activity, Coins, AlertTriangle, Inbox, Lightbulb, Briefcase, UserPlus, Megaphone,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useBusinessCategory } from "@/hooks/useBusinessCategory";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+
+
 
 
 type NavItem = { id: string; labelKey: string; icon: React.ElementType; adminOnly?: boolean; show?: (cat: string | null | undefined) => boolean };
@@ -31,7 +36,6 @@ const navItems: NavItem[] = [
   { id: "orders", labelKey: "nav.orders", icon: ShoppingCart, show: (c) => !c || isEcom(c) },
   { id: "complaints", labelKey: "nav.complaints", icon: AlertTriangle },
   { id: "conversations", labelKey: "nav.chats", icon: MessageSquare },
-  { id: "image-inbox", labelKey: "nav.imageInbox", icon: ImageIcon },
   { id: "auto-reply", labelKey: "nav.autoReply", icon: Zap },
   { id: "comment-triggers", labelKey: "nav.commentTriggers", icon: Megaphone },
   { id: "scheduled", labelKey: "nav.scheduled", icon: Clock },
@@ -53,11 +57,28 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
   const { category } = useBusinessCategory();
   const navigate = useNavigate();
 
+  const { data: unreadImages = 0 } = useQuery({
+    queryKey: ["sidebar-unread-images", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("messages")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user!.id)
+        .eq("direction", "incoming")
+        .not("image_url", "is", null)
+        .is("read_at", null);
+      return count || 0;
+    },
+    refetchInterval: 20000,
+  });
+
   const visibleItems = navItems.filter((item) => {
     if (item.adminOnly && !isAdmin) return false;
     if (item.show && !item.show(category)) return false;
     return true;
   });
+
 
   return (
     <aside
@@ -107,7 +128,10 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
               )}
             >
               <item.icon className="h-[18px] w-[18px] shrink-0" />
-              {!collapsed && <span className="truncate animate-fade-in">{t(labelKey)}</span>}
+              {!collapsed && <span className="truncate animate-fade-in flex-1">{t(labelKey)}</span>}
+              {item.id === "conversations" && unreadImages > 0 && (
+                <Badge variant="destructive" className={cn("h-5 min-w-[20px] px-1.5 text-[10px] font-bold", collapsed && "absolute top-1 right-1")}>{unreadImages}</Badge>
+              )}
             </button>
           );
           if (collapsed) {

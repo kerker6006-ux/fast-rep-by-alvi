@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageSquare, Image as ImageIcon, ShoppingCart, DollarSign, TrendingUp, Calendar, Type, Coins } from "lucide-react";
+import { MessageSquare, Image as ImageIcon, ShoppingCart, DollarSign, TrendingUp, Calendar, Type, Coins, Brain } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 
 const AiUsageDashboard = () => {
@@ -29,16 +29,19 @@ const AiUsageDashboard = () => {
       const textRows = rows.filter((r: any) => r.call_type === "text");
       const imageRows = rows.filter((r: any) => r.call_type === "image");
       const orderRows = rows.filter((r: any) => r.call_type === "order_detection");
+      const trainingRows = rows.filter((r: any) => r.call_type === "training");
 
       const textCost = textRows.reduce((s: number, r: any) => s + (Number(r.estimated_cost) || 0), 0);
       const imageCost = imageRows.reduce((s: number, r: any) => s + (Number(r.estimated_cost) || 0), 0);
-      const totalCost = textCost + imageCost + orderRows.reduce((s: number, r: any) => s + (Number(r.estimated_cost) || 0), 0);
+      const trainingCost = trainingRows.reduce((s: number, r: any) => s + (Number(r.estimated_cost) || 0), 0);
+      const totalCost = textCost + imageCost + trainingCost + orderRows.reduce((s: number, r: any) => s + (Number(r.estimated_cost) || 0), 0);
       const totalTokens = textRows.reduce((s: number, r: any) => s + (Number(r.tokens_used) || 0), 0);
 
       const today = new Date(); today.setHours(0,0,0,0);
       const todayRows = rows.filter((r: any) => new Date(r.created_at) >= today);
       const todayTextCost = todayRows.filter((r: any) => r.call_type === "text").reduce((s: number, r: any) => s + (Number(r.estimated_cost) || 0), 0);
       const todayImageCost = todayRows.filter((r: any) => r.call_type === "image").reduce((s: number, r: any) => s + (Number(r.estimated_cost) || 0), 0);
+      const todayTrainingCost = todayRows.filter((r: any) => r.call_type === "training").reduce((s: number, r: any) => s + (Number(r.estimated_cost) || 0), 0);
 
       const dailyMap: Record<string, { date: string; text: number; image: number; textCost: number; imageCost: number }> = {};
       for (let i = 6; i >= 0; i--) {
@@ -54,9 +57,9 @@ const AiUsageDashboard = () => {
       }
 
       return {
-        textCount: textRows.length, imageCount: imageRows.length, orderCount: orderRows.length,
-        textCost, imageCost, totalCost, totalTokens,
-        todayTextCost, todayImageCost,
+        textCount: textRows.length, imageCount: imageRows.length, orderCount: orderRows.length, trainingCount: trainingRows.length,
+        textCost, imageCost, trainingCost, totalCost, totalTokens,
+        todayTextCost, todayImageCost, todayTrainingCost,
         chartData: Object.values(dailyMap),
         costText, costImage,
       };
@@ -77,7 +80,7 @@ const AiUsageDashboard = () => {
       </div>
 
       {/* PRIMARY COST CARDS — split by type */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="border-l-4 border-l-blue-500">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Type className="h-4 w-4 text-blue-500" /> Text AI Cost</CardTitle></CardHeader>
           <CardContent>
@@ -93,6 +96,15 @@ const AiUsageDashboard = () => {
             <div className="text-3xl font-bold">{fmt(data?.imageCost || 0)}</div>
             <p className="text-xs text-muted-foreground mt-1">{data?.imageCount || 0} images analyzed</p>
             <p className="text-xs text-emerald-600 mt-0.5">Today: {fmt(data?.todayImageCost || 0)}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-amber-500">
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Brain className="h-4 w-4 text-amber-500" /> AI Training Cost</CardTitle></CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{fmt(data?.trainingCost || 0)}</div>
+            <p className="text-xs text-muted-foreground mt-1">{data?.trainingCount || 0} training calls</p>
+            <p className="text-xs text-emerald-600 mt-0.5">Today: {fmt(data?.todayTrainingCost || 0)}</p>
           </CardContent>
         </Card>
 
