@@ -70,14 +70,7 @@ Deno.serve(async (req) => {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      // Require active subscription for top-ups
-      const { data: prof2 } = await supabase
-        .from("profiles").select("subscription_status").eq("id", user.id).maybeSingle();
-      if (prof2?.subscription_status !== "active") {
-        return new Response(JSON.stringify({ error: "Subscribe to the Basic plan before topping up." }), {
-          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      // Top-ups available to all users (no subscription required)
       session = await stripe.checkout.sessions.create({
         customer: customerId,
         mode: "payment",
