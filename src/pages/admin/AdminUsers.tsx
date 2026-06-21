@@ -28,6 +28,10 @@ type AdminUser = {
   created_at: string;
   suspended: boolean;
   onboarded_at: string | null;
+  subscription_status: string | null;
+  subscription_plan: string | null;
+  subscription_current_period_end: string | null;
+  free_until: string | null;
   balance: number;
   productCount: number;
   orderCount: number;
