@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageSquare, User, Clock, ArrowLeft, GraduationCap, Send, AlertTriangle, Check, CheckCheck } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { MessageSquare, User, Clock, ArrowLeft, GraduationCap, Send, AlertTriangle, Check, CheckCheck, Image as ImageIcon, Inbox } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import TrainBotDialog from "@/components/TrainBotDialog";
@@ -31,9 +32,20 @@ type Message = {
   created_at: string;
 };
 
+type ImageRow = {
+  id: string;
+  conversation_id: string;
+  created_at: string;
+  read_at: string | null;
+};
+
 const ConversationsView = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const qc = useQueryClient();
+  const [view, setView] = useState<"all" | "images">(() =>
+    typeof window !== "undefined" && window.location.hash === "#conversations:images" ? "images" : "all"
+  );
   const [selectedConvo, setSelectedConvo] = useState<string | null>(null);
   const [trainOpen, setTrainOpen] = useState(false);
   const [trainData, setTrainData] = useState<{ customer: string; wrong: string }>({ customer: "", wrong: "" });
@@ -53,6 +65,56 @@ const ConversationsView = () => {
     },
     refetchInterval: 10000,
   });
+
+  // Image messages — used for badge, filtering, and ordering in image view
+  const { data: imageRows = [] } = useQuery({
+    queryKey: ["conversation-images", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("messages")
+        .select("id, conversation_id, created_at, read_at")
+        .eq("user_id", user!.id)
+        .eq("direction", "incoming")
+        .not("image_url", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      return (data || []) as ImageRow[];
+    },
+    refetchInterval: 15000,
+  });
+
+  const unreadImageCount = imageRows.filter(r => !r.read_at).length;
+
+  // Latest image per conversation, for image-view sorting
+  const latestImageAt = new Map<string, string>();
+  for (const r of imageRows) {
+    if (!latestImageAt.has(r.conversation_id)) latestImageAt.set(r.conversation_id, r.created_at);
+  }
+
+  const displayedConversations = (() => {
+    if (!conversations) return [];
+    if (view === "all") return conversations;
+    return conversations
+      .filter(c => latestImageAt.has(c.id))
+      .sort((a, b) => (latestImageAt.get(b.id)! > latestImageAt.get(a.id)! ? 1 : -1));
+  })();
+
+  // Mark images read when entering image view
+  useEffect(() => {
+    if (view !== "images" || !user?.id || unreadImageCount === 0) return;
+    (async () => {
+      await supabase
+        .from("messages")
+        .update({ read_at: new Date().toISOString() })
+        .eq("user_id", user.id)
+        .eq("direction", "incoming")
+        .not("image_url", "is", null)
+        .is("read_at", null);
+      qc.invalidateQueries({ queryKey: ["conversation-images", user.id] });
+    })();
+  }, [view, user?.id, unreadImageCount, qc]);
 
   const { data: messages } = useQuery({
     queryKey: ["messages", selectedConvo],
@@ -75,22 +137,54 @@ const ConversationsView = () => {
         <p className="text-muted-foreground">{t("chats.subtitle")}</p>
       </div>
 
+      {/* View tabs */}
+      <div className="inline-flex rounded-lg border bg-muted/40 p-1 gap-1">
+        <button
+          onClick={() => { setView("all"); setSelectedConvo(null); }}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${view === "all" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <Inbox className="h-4 w-4" /> All
+          <span className="text-xs text-muted-foreground">({conversations?.length || 0})</span>
+        </button>
+        <button
+          onClick={() => { setView("images"); setSelectedConvo(null); }}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors relative ${view === "images" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <ImageIcon className="h-4 w-4" /> Image Inbox
+          {unreadImageCount > 0 && (
+            <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 text-[10px] font-bold">
+              {unreadImageCount}
+            </Badge>
+          )}
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[600px]">
-        {/* Conversation list - hide on mobile when a convo is selected */}
         <Card className={`md:col-span-1 overflow-hidden ${selectedConvo ? "hidden md:block" : ""}`}>
           <ScrollArea className="h-full">
             {isLoading ? (
               <div className="p-4 space-y-3">
                 {[1, 2, 3].map(i => <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />)}
               </div>
-            ) : conversations?.length === 0 ? (
+            ) : displayedConversations.length === 0 ? (
               <div className="p-8 text-center">
-                <MessageSquare className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                <p className="text-sm text-muted-foreground">{t("chats.empty")}</p>
+                {view === "images" ? (
+                  <>
+                    <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                    <p className="text-sm text-muted-foreground">No image messages yet.</p>
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                    <p className="text-sm text-muted-foreground">{t("chats.empty")}</p>
+                  </>
+                )}
               </div>
             ) : (
               <div className="divide-y">
-                {conversations?.map(c => (
+                {displayedConversations.map(c => {
+                  const hasImg = latestImageAt.has(c.id);
+                  return (
                   <button
                     key={c.id}
                     onClick={() => setSelectedConvo(c.id)}
@@ -103,6 +197,7 @@ const ConversationsView = () => {
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-sm truncate flex items-center gap-2">
                           {c.sender_name || `${t("analytics.customer")} ${c.fb_sender_id.slice(-6)}`}
+                          {hasImg && view === "images" && <ImageIcon className="h-3 w-3 text-purple-500" />}
                           {(c as any).needs_human && (
                             <span className="text-[10px] font-semibold bg-destructive text-destructive-foreground px-1.5 py-0.5 rounded">
                               REPLY ME
@@ -122,13 +217,13 @@ const ConversationsView = () => {
                       </div>
                     </div>
                   </button>
-                ))}
+                  );
+                })}
               </div>
             )}
           </ScrollArea>
         </Card>
 
-        {/* Message thread - show on mobile when a convo is selected */}
         <Card className={`md:col-span-2 overflow-hidden flex flex-col ${selectedConvo ? "" : "hidden md:flex"}`}>
           {!selectedConvo ? (
             <div className="flex-1 flex items-center justify-center text-muted-foreground">
@@ -139,7 +234,6 @@ const ConversationsView = () => {
             </div>
           ) : (
             <>
-              {/* Header with back button */}
               <div className="p-3 border-b flex items-center gap-3">
                 <Button variant="ghost" size="icon" className="md:hidden h-8 w-8" onClick={() => setSelectedConvo(null)}>
                   <ArrowLeft className="h-4 w-4" />
@@ -191,7 +285,6 @@ const ConversationsView = () => {
                   })}
                 </div>
               </ScrollArea>
-              {/* Reply composer */}
               {(() => {
                 const lastIncoming = [...(messages ?? [])].reverse().find(m => m.direction === "incoming");
                 const hoursSince = lastIncoming ? (Date.now() - new Date(lastIncoming.created_at).getTime()) / 36e5 : Infinity;
