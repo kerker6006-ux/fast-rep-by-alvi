@@ -2,6 +2,8 @@ import { lazy, Suspense, useState } from "react";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import CategoryOnboarding from "@/components/CategoryOnboarding";
 import NotificationBell from "@/components/NotificationBell";
+import PaywallCard from "@/components/PaywallCard";
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 
 // Lazy-load every dashboard tab — only the active one downloads.
 const AnalyticsDashboard = lazy(() => import("@/components/AnalyticsDashboard"));
@@ -62,6 +64,17 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const ActiveComponent = tabs[activeTab] || AnalyticsDashboard;
+  const { isLocked } = useSubscriptionStatus();
+
+  // Tabs that remain usable when the free month has ended with no active subscription.
+  const allowedWhenLocked = new Set([
+    "credits",
+    "comment-triggers",
+    "fb-pages",
+    "admin",
+    "analytics",
+  ]);
+  const showPaywall = isLocked && !allowedWhenLocked.has(activeTab);
 
   return (
     <div className="min-h-screen bg-background">
@@ -80,9 +93,13 @@ const Index = () => {
           <NotificationBell />
         </div>
         <div className="max-w-6xl mx-auto px-6 lg:px-8 py-8">
-          <Suspense fallback={<TabFallback />}>
-            <ActiveComponent />
-          </Suspense>
+          {showPaywall ? (
+            <PaywallCard onGoToBilling={() => setActiveTab("credits")} />
+          ) : (
+            <Suspense fallback={<TabFallback />}>
+              <ActiveComponent />
+            </Suspense>
+          )}
         </div>
       </main>
     </div>
