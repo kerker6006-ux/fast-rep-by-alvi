@@ -1323,7 +1323,7 @@ ${isFirstInbound ? "→ This IS the first message: reply in English." : `→ Det
 
   let systemPrompt: string;
 
-  if (isServiceVertical) {
+  if (isServiceVertical || isContentCreator) {
     const leadFields = (leadFieldsByCategory[businessCategory!] || []).join(", ");
     systemPrompt = `${receptionistPreamble}#############################
 # IDENTITY
