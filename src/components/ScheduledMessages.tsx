@@ -138,6 +138,16 @@ const ScheduledMessages = () => {
         </Button>
       </div>
 
+      {/* Meta policy notice */}
+      <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm">
+        <p className="font-medium text-amber-700 dark:text-amber-400">Messenger Platform Policy</p>
+        <p className="text-muted-foreground mt-1">
+          Meta only allows sending messages within <strong>24 hours</strong> of the customer's last
+          message to your page. Scheduled messages outside this window will be automatically
+          <strong> skipped</strong> to keep your page compliant — never sent as spam.
+        </p>
+      </div>
+
       {/* Schedule Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
