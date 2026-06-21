@@ -37,6 +37,13 @@ Deno.serve(async (req) => {
     const page = (sess.pages as any[]).find((p) => p.id === page_id);
     if (!page) return new Response(JSON.stringify({ error: "Page not in session" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+    // Check for an existing row (soft-disconnected or active). Reconnect within 7 days restores history.
+    const { data: existing } = await admin
+      .from("fb_pages")
+      .select("id, page_category, pending_delete_at")
+      .eq("fb_page_id", page.id)
+      .maybeSingle();
+
     // Subscribe page to webhooks
     let subStatus = "active";
     let subError: string | null = null;
@@ -62,7 +69,6 @@ Deno.serve(async (req) => {
       subscribed = [];
     }
 
-    // Subscribe Instagram webhooks if this page has a linked IG Business Account
     let igSubStatus: string | null = null;
     if (page.ig_business_account_id) {
       try {
@@ -81,7 +87,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Upsert into fb_pages
+    // Restored reconnect: keep existing category so user doesn't re-pick.
+    // Fresh connect (or category was never set): clear category so frontend prompts user.
+    const restoredCategory = existing?.page_category ?? null;
+
     const { error: upErr } = await admin
       .from("fb_pages")
       .upsert(
@@ -98,6 +107,8 @@ Deno.serve(async (req) => {
           subscription_status: subStatus,
           subscription_error: subError,
           disconnected_at: null,
+          pending_delete_at: null,
+          page_category: restoredCategory,
           ig_business_account_id: page.ig_business_account_id ?? null,
           ig_username: page.ig_username ?? null,
           ig_picture_url: page.ig_picture_url ?? null,
@@ -109,11 +120,22 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: upErr.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Cleanup session
+    // Fetch back the row id so the frontend can open the category dialog
+    const { data: row } = await admin.from("fb_pages").select("id, page_category").eq("fb_page_id", page.id).maybeSingle();
+
     await admin.from("fb_oauth_sessions").delete().eq("session_token", session_token);
 
     return new Response(
-      JSON.stringify({ ok: true, status: subStatus, error: subError, ig_status: igSubStatus, page: { id: page.id, name: page.name, ig: page.ig_username } }),
+      JSON.stringify({
+        ok: true,
+        status: subStatus,
+        error: subError,
+        ig_status: igSubStatus,
+        page: { id: page.id, name: page.name, ig: page.ig_username },
+        row_id: row?.id ?? null,
+        needs_category: !row?.page_category,
+        restored: !!existing?.pending_delete_at,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
