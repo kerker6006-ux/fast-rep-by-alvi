@@ -1085,5 +1085,47 @@ const ProfileSummaryPanel = ({ cat, settings, catFields, onAsk }: ProfileSummary
   );
 };
 
+const TrainingSpendCard = () => {
+  const { user } = useAuth();
+  const { data } = useQuery({
+    queryKey: ["training-spend", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ai_usage")
+        .select("estimated_cost, created_at")
+        .eq("user_id", user!.id)
+        .eq("call_type", "training");
+      const rows = data || [];
+      const total = rows.reduce((s: number, r: any) => s + (Number(r.estimated_cost) || 0), 0);
+      const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+      const month = rows.filter((r: any) => new Date(r.created_at) >= monthStart)
+        .reduce((s: number, r: any) => s + (Number(r.estimated_cost) || 0), 0);
+      return { total, month, count: rows.length };
+    },
+  });
+  const fmt = (n: number) => `$${(n || 0).toFixed(4)}`;
+  return (
+    <Card className="border-l-4 border-l-amber-500">
+      <CardContent className="py-4 flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+            <Brain className="h-5 w-5 text-amber-600" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">AI Training spend</p>
+            <p className="text-xl font-bold">{fmt(data?.total || 0)}</p>
+          </div>
+        </div>
+        <div className="text-right text-xs text-muted-foreground">
+          <p>This month: <span className="font-semibold text-foreground">{fmt(data?.month || 0)}</span></p>
+          <p>{data?.count || 0} training calls</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 export default AiTraining;
+
 
