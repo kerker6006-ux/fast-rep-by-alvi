@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/contexts/AuthContext";
 import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -24,7 +26,15 @@ const FacebookIcon = () => (
 
 const Auth = () => {
   const { t } = useTranslation();
+  const { session, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState<null | "google" | "facebook">(null);
+
+  useEffect(() => {
+    if (!authLoading && session) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [session, authLoading, navigate]);
 
   const handleGoogle = async () => {
     setLoading("google");
