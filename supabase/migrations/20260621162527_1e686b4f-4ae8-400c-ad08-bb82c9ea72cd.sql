@@ -1,0 +1,1 @@
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.fb_pages TO authenticated; GRANT ALL ON public.fb_pages TO service_role;
