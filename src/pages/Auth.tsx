@@ -171,7 +171,25 @@ const Auth = () => {
               </div>
 
               <p className="text-xs text-center text-muted-foreground mt-6">
-                By continuing, you agree to our Terms and Privacy Policy.
+                By continuing, you agree to our{" "}
+                <a
+                  href="/terms"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium text-primary underline-offset-4 hover:underline"
+                >
+                  Terms
+                </a>{" "}
+                and{" "}
+                <a
+                  href="/privacy"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium text-primary underline-offset-4 hover:underline"
+                >
+                  Privacy Policy
+                </a>
+                .
               </p>
             </div>
           </div>
