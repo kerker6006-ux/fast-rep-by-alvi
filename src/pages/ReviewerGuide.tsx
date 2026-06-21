@@ -104,6 +104,18 @@ const ReviewerGuide = () => (
           <li>Full policy: <Link className="underline" to="/privacy">Privacy</Link> · <Link className="underline" to="/terms">Terms</Link> · <Link className="underline" to="/data-deletion">Data Deletion Instructions</Link>.</li>
         </ul>
       </section>
+
+      <section>
+        <h2 className="text-xl font-semibold mb-3">Contact &amp; support</h2>
+        <p className="text-sm text-muted-foreground">
+          For any questions, complaints, abuse reports, security issues, data deletion requests,
+          or reviewer follow-ups, contact us at{" "}
+          <a className="underline font-medium text-foreground" href="mailto:leadpilot24@gmail.com">
+            leadpilot24@gmail.com
+          </a>
+          . This inbox is monitored daily and is the official business contact for LeadPilot.
+        </p>
+      </section>
     </main>
   </div>
 );
