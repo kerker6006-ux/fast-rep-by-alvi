@@ -1314,7 +1314,7 @@ ${isFirstInbound ? "→ This IS the first message: reply in English." : `→ Det
     settings.deposit_policy ? `DEPOSIT POLICY: ${settings.deposit_policy}` : "",
     settings.pricing_policy ? `PRICING POLICY: ${settings.pricing_policy}` : "",
     settings.refund_policy ? `REFUND POLICY: ${settings.refund_policy}` : "",
-    businessCategory === "hvac" && settings.pricing_policy ? `PRICING POLICY: ${settings.pricing_policy}` : "",
+    settings.pricing_policy ? `PRICING POLICY: ${settings.pricing_policy}` : "",
   ].filter(Boolean).join("\n") : "";
 
   const servicesBlock = servicesList.length
