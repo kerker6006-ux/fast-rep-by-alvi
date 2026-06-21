@@ -1,62 +1,61 @@
-## Billing model changes
+## Goal
 
-**Signup bonus & free month**
-- New users get `$2.00` credit on signup and a `free_until = signup + 30 days` timestamp on `profiles`.
-- During free month: text replies still deduct from balance (rate unchanged). When balance hits $0, bot pauses until top-up.
-- Image analysis is **OFF by default** on the Free plan and the toggle is locked.
-- After 30 days: Stripe auto-subscribes at $20/month (existing Basic plan). If no active subscription and free month expired → bot pauses with "Subscribe to continue" banner.
-- Top-ups remain available throughout (no longer gated by subscription during the free month).
+Replace "Image Inbox" with a unified "Alert Box" for conversations the bot couldn't or wouldn't handle, and clean up the 24-hour Facebook warning so it shows clearly only when it matters.
 
-**DB migration**
-- `profiles.free_until timestamptz` (default `now() + 30 days`), backfill existing users.
-- `handle_new_user_credits` trigger: seed `user_credits.balance = 2.00` + insert `credit_transactions` row "Welcome bonus".
-- New `bot_settings.enable_image_analysis` already exists — enforce server-side that it can only be `true` when subscription is active.
+## 1. Replace Image Inbox with Alert Box
 
-## AI Training cost tracking
+In `src/components/ConversationsView.tsx` and `src/components/DashboardSidebar.tsx`:
 
-- `ai-training-chat` edge function already calls Lovable AI. Add `ai_usage` inserts with `call_type = 'training'` and cost.
-- `AiTraining.tsx`: add a small "AI training spend" card at the top showing lifetime + this-month totals (query `ai_usage` where `call_type = 'training'`).
-- `AiUsageDashboard.tsx`: add a third "Training" card alongside Text and Image.
+- Rename the second tab from "Image Inbox" to **"Alert Box"** (icon: `Bell` or `AlertCircle`).
+- Remove the image-only filter logic. The Alert Box lists every conversation flagged as **needs human reply**, which includes:
+  - Bot didn't understand / low confidence (already tracked via `conversations.needs_human` + `followup_reason`).
+  - Customer sent an image while **image analysis is OFF** (free plan default, or user-disabled).
+- Sort by most recent alert first. Red badge count = unread alerts. Count decreases as user opens each alert conversation (mark `needs_human=false` or add a `seen_at` once viewed).
+- Delete the separate `ImageInbox.tsx` route/component usage from the sidebar.
 
-## Image inbox redesign
+## 2. Bot behavior — route to Alert Box instead of replying
 
-- Move `ImageInbox` from its own sidebar entry into the **Chat / Conversations** section as a sub-tab next to "All conversations".
-- Add unread counter: count `messages` where `direction='incoming' AND image_url IS NOT NULL AND read_at IS NULL` for current user. Show as red badge on the "Image Inbox" tab and on the sidebar Chat entry.
-- Clicking the tab marks visible image messages as read (`update messages set read_at = now() where ...`) → badge decrements in realtime.
-- Sort: conversations with images sorted by their latest image `created_at DESC` (senders who sent images bubble to top).
-- When `enable_image_analysis = false` and an incoming message has an image:
-  - Skip Gemini vision call (no charge).
-  - Bot does NOT auto-reply about the image.
-  - Insert a `notifications` row: type `image_received`, link to image inbox.
-  - Image still stored and shown in Image Inbox.
+In `supabase/functions/fb-webhook/index.ts`:
 
-## Subscription gate for image analysis
+- When an incoming message has an **image attachment** AND the user's plan has image analysis disabled (free plan, or `bot_settings.image_analysis_enabled = false`):
+  - Do **not** call the AI.
+  - Do **not** send any reply to the customer.
+  - Set `conversations.needs_human = true`, `followup_reason = "Image received — image analysis is off"`.
+- When AI confidence is low / bot has no good answer (existing "needs_human" path):
+  - Same: don't reply, flag the conversation for the Alert Box.
 
-- `BotSettings.tsx`: image-analysis switch is disabled with tooltip "Subscribe to enable" when `subscription_status !== 'active'`.
-- Server-side guard in `fb-webhook`: if user has no active sub, force `enable_image_analysis = false` regardless of stored value.
+## 3. First-time explainer (dismiss forever)
 
-## Files to change
+When the user opens the Alert Box for the very first time, show a small info banner at the top:
 
-**Migrations**
-- New migration: add `free_until`, backfill, update `handle_new_user_credits` to seed $2 + transaction row.
+> **What is the Alert Box?**
+> When the bot isn't sure how to reply, or a customer sends something it can't handle (like an image on the free plan), the conversation lands here so you can reply yourself.
 
-**Edge functions**
-- `fb-webhook/index.ts` — honor `enable_image_analysis`; insert `image_received` notification when off.
-- `ai-training-chat/index.ts` — log `ai_usage` with `call_type='training'`.
-- `create-checkout-session` — keep, but remove "subscription required for top-up" gate.
+- A small **×** dismiss button.
+- Persist dismissal in `profiles` via a new boolean column `alert_box_intro_dismissed` (migration). Once dismissed, never show again on any device.
 
-**Frontend**
-- `src/components/CreditDashboard.tsx` — show $2 welcome + free-until countdown; remove "subscribe first to top up" warning.
-- `src/components/BotSettings.tsx` — disable image toggle without active sub, show upgrade CTA.
-- `src/components/AiTraining.tsx` — add training spend card.
-- `src/components/AiUsageDashboard.tsx` — add Training card.
-- `src/components/ConversationsView.tsx` — add tabs: "All" | "Image Inbox (N)"; integrate `ImageInbox` content; mark-as-read on view.
-- `src/components/DashboardSidebar.tsx` — remove standalone Image Inbox entry; show red unread badge on Chat.
-- `src/components/ImageInbox.tsx` — refactor to embedded view; sort by latest image; mark read on render.
-- `src/pages/Index.tsx` — drop the separate image-inbox route entry.
-- i18n: add new strings (en/bn/ko/es).
+## 4. Clear, dismissible 24-hour Facebook warning
 
-## Out of scope
-- Changing text-reply pricing.
-- Auto-renewal logic beyond Stripe's existing subscription (already handled by `stripe-webhook`).
-- Refunding the $2 if user subscribes early.
+In `ConversationsView.tsx` (and the same pattern when sending scheduled/manual messages elsewhere):
+
+- Replace the current amber paragraph with a shorter, plain-English version:
+
+  > **Facebook 24-hour rule:** You can only reply within 24 hours of the customer's last message. They need to message you again to reopen the chat.
+
+- Add a small **×** to dismiss. Persist dismissal in `profiles.fb_24h_notice_dismissed` (same migration).
+- Behavior:
+  - **Once dismissed**, the banner never shows again at the top of conversations.
+  - **However**, if the user actually tries to send a reply outside the 24h window (here or from any other send surface), the same one-line message pops up as a **toast** to explain why the send was blocked — every time they attempt it (this is the failure reason, not the banner).
+
+## 5. Free plan default
+
+- New signups: `bot_settings.image_analysis_enabled = false` by default (already set in the prior plan's migration — confirm and keep).
+- Toggling it ON still requires an active subscription (existing gating stays).
+
+## Technical notes
+
+- Migration: add two boolean columns to `profiles` — `alert_box_intro_dismissed`, `fb_24h_notice_dismissed`, both default `false`.
+- Sidebar label key: rename `chats.imageInbox` → `chats.alertBox` across `en/bn/ko/es` locale files.
+- The unread-alert badge query: `conversations` where `needs_human = true AND (alert_seen_at IS NULL OR alert_seen_at < last_message_at)` — add `alert_seen_at timestamptz` to `conversations` so reopening an alert reduces the count without losing the "needs human" status until the user replies.
+- `fb-webhook`: short-circuit before AI call when image + image_analysis disabled; record incoming message normally so it appears in the thread, then flag conversation.
+- Remove `ImageInbox.tsx` import/route; keep file deletion out of scope only if referenced elsewhere — otherwise delete.
