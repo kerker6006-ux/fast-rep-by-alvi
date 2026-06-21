@@ -93,23 +93,23 @@ const BotSettings = () => {
       </div>
 
       <div className="grid gap-6">
-        <Card>
+        <Card className="border-primary/30 shadow-soft">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Briefcase className="h-5 w-5" /> {t("botSettings.businessCategory")}</CardTitle>
-            <CardDescription>{t("botSettings.businessCategoryDesc")}</CardDescription>
+            <CardTitle className="flex items-center gap-2"><Briefcase className="h-5 w-5" /> Change Category</CardTitle>
+            <CardDescription>
+              Pick what your business does. The bot instantly rewires its brain — persona, lead questions, tone, and knowledge base all change to match.
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Select
-              value={category || ""}
-              onValueChange={(v) => setCategory.mutate(v as BusinessCategory, { onSuccess: () => toast.success(t("onboarding.saved")) })}
-            >
-              <SelectTrigger><SelectValue placeholder={t("onboarding.pickOne")} /></SelectTrigger>
-              <SelectContent>
-                {BUSINESS_CATEGORIES.map((c) => (
-                  <SelectItem key={c} value={c}>{t(`category.${c}.name`)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <CardContent className="space-y-3">
+            <CategoryPicker
+              value={category || null}
+              onPick={(v) => setCategory.mutate(v, { onSuccess: () => toast.success("Category updated — bot retrained") })}
+              isSaving={setCategory.isPending}
+            />
+            <p className="text-xs text-muted-foreground flex items-start gap-2 pt-1">
+              <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-600" />
+              Changing this immediately changes how the bot talks to every customer.
+            </p>
           </CardContent>
         </Card>
 
