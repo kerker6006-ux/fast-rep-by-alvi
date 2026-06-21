@@ -62,7 +62,27 @@ Deno.serve(async (req) => {
           subscription_plan: "basic",
         }).eq("id", userId);
         // $5 bonus credit on first subscription activation (idempotent via stripe_session_id)
-        await addCredits(userId, 5, "recharge", "Subscription welcome bonus", session.id);
+        const added = await addCredits(userId, 5, "recharge", "Subscription welcome bonus", session.id);
+        if (added) {
+          // Send subscription confirmation email (best-effort)
+          try {
+            const { data: prof } = await supabase
+              .from("profiles").select("display_name").eq("id", userId).maybeSingle();
+            const email = session.customer_details?.email
+              ?? session.customer_email
+              ?? (await supabase.auth.admin.getUserById(userId)).data.user?.email;
+            if (email) {
+              await supabase.functions.invoke("send-transactional-email", {
+                body: {
+                  templateName: "subscription-activated",
+                  recipientEmail: email,
+                  idempotencyKey: `sub-active-${session.id}`,
+                  templateData: { name: prof?.display_name ?? null, plan: "Basic", bonusCredit: 5 },
+                },
+              });
+            }
+          } catch (e) { console.error("subscription email failed", e); }
+        }
       } else if (flow === "topup" && session.mode === "payment") {
         const amount = Number(session.amount_total ?? 0) / 100;
         if (amount > 0) {

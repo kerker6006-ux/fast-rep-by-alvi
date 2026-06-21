@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { lovable } from "@/integrations/lovable";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Bot, Loader2, Sparkles, Zap, Globe } from "lucide-react";
+import { Bot, Loader2, Sparkles, Zap, Globe, Mail } from "lucide-react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const GoogleIcon = () => (
@@ -24,6 +28,10 @@ const FacebookIcon = () => (
 const Auth = () => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
 
   const handleGoogle = async () => {
     setLoading(true);
@@ -59,6 +67,60 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toast.error("Email and password are required");
+      return;
+    }
+    setLoading(true);
+    try {
+      if (mode === "signup") {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/dashboard`,
+            data: { display_name: displayName || email.split("@")[0] },
+          },
+        });
+        if (error) { toast.error(error.message); return; }
+        // Fire welcome email (best-effort; ignore errors silently)
+        supabase.functions.invoke("send-transactional-email", {
+          body: {
+            templateName: "welcome",
+            recipientEmail: email,
+            idempotencyKey: `welcome-${data.user?.id ?? email}`,
+            templateData: { name: displayName || null, appUrl: window.location.origin },
+          },
+        }).catch(() => {});
+        if (data.session) {
+          window.location.href = "/dashboard";
+        } else {
+          toast.success("Account created! Check your email to confirm, then sign in.");
+          setMode("signin");
+        }
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) { toast.error(error.message); return; }
+        window.location.href = "/dashboard";
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgot = async () => {
+    if (!email) { toast.error("Enter your email first"); return; }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) toast.error(error.message);
+    else toast.success("Password reset link sent");
+  };
+
+
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-soft">
@@ -120,11 +182,50 @@ const Auth = () => {
             <div className="bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-8 shadow-elevated">
               <div className="space-y-1.5 mb-6 text-center">
                 <h2 className="font-display text-2xl font-bold tracking-tight">Welcome to LeadPilot</h2>
-                <p className="text-sm text-muted-foreground">Sign in with Google or Facebook to continue.</p>
+                <p className="text-sm text-muted-foreground">Sign in or create your account to continue.</p>
+              </div>
+
+              <Tabs value={mode} onValueChange={(v) => setMode(v as "signin" | "signup")} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="signin">Sign in</TabsTrigger>
+                  <TabsTrigger value="signup">Sign up</TabsTrigger>
+                </TabsList>
+
+                <form onSubmit={handleEmailSubmit} className="space-y-3">
+                  {mode === "signup" && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="name">Name</Label>
+                      <Input id="name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your name" />
+                    </div>
+                  )}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="email">Email</Label>
+                    <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="password">Password</Label>
+                    <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+                  </div>
+                  <Button type="submit" disabled={loading} className="w-full h-11 rounded-xl gap-2 text-base font-medium">
+                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Mail className="h-4 w-4" />}
+                    {mode === "signup" ? "Create account" : "Sign in"}
+                  </Button>
+                  {mode === "signin" && (
+                    <button type="button" onClick={handleForgot} className="text-xs text-muted-foreground hover:text-foreground w-full text-center">
+                      Forgot password?
+                    </button>
+                  )}
+                </form>
+              </Tabs>
+
+              <div className="relative my-5">
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
+                <div className="relative flex justify-center text-[11px] uppercase tracking-wider"><span className="bg-card px-2 text-muted-foreground">or continue with</span></div>
               </div>
 
               <div className="space-y-3">
                 <Button
+                  type="button"
                   onClick={handleGoogle}
                   disabled={loading}
                   variant="outline"
@@ -135,6 +236,7 @@ const Auth = () => {
                 </Button>
 
                 <Button
+                  type="button"
                   onClick={handleFacebook}
                   disabled={loading}
                   className="w-full h-12 rounded-xl gap-3 bg-[#1877F2] text-white hover:bg-[#166FE5] border-0 text-base font-medium"
@@ -147,6 +249,7 @@ const Auth = () => {
               <p className="mt-6 text-center text-[11px] text-muted-foreground">
                 By continuing you agree to our terms and acknowledge our privacy practices.
               </p>
+
             </div>
           </div>
         </div>
