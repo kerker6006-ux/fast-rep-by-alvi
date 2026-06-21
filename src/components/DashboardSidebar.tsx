@@ -2,47 +2,59 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import {
   BarChart3, Package, ShoppingCart, MessageSquare,
-  Zap, Clock, Settings, Brain, ChevronLeft, ChevronRight, LogOut, Globe, Activity, Coins, AlertTriangle, Inbox, Lightbulb, Briefcase, UserPlus, Megaphone,
+  Zap, Clock, Settings, Brain, ChevronLeft, ChevronRight, LogOut, Globe, Activity, Coins,
+  AlertTriangle, Inbox, Lightbulb, Briefcase, UserPlus, Megaphone, GraduationCap, Users,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
-import { useBusinessCategory } from "@/hooks/useBusinessCategory";
-import { useNavigate } from "react-router-dom";
+import { useActivePage } from "@/contexts/ActivePageContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import logoAsset from "@/assets/logo.png.asset.json";
 
+type NavItem = {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+  // Categories that should see this item; undefined = always (and when no page connected)
+  categories?: Array<"ecommerce" | "service" | "content_creator" | "none">;
+};
 
+// Common items shown to every category
+const accountWide: NavItem[] = [
+  { id: "analytics",  label: "Overview",  icon: BarChart3 },
+  { id: "credits",    label: "Credits",   icon: Coins },
+  { id: "ai-usage",   label: "AI Usage",  icon: Activity },
+];
 
+const perPage: NavItem[] = [
+  { id: "ai-training",      label: "AI Training",       icon: Brain },
+  // Ecommerce
+  { id: "products",         label: "Products",          icon: Package,        categories: ["ecommerce"] },
+  { id: "pending-products", label: "Auto Import",       icon: Inbox,          categories: ["ecommerce"] },
+  { id: "suggestions",      label: "Suggestions",       icon: Lightbulb,      categories: ["ecommerce"] },
+  { id: "orders",           label: "Orders",            icon: ShoppingCart,   categories: ["ecommerce"] },
+  // Service
+  { id: "services",         label: "Services",          icon: Briefcase,      categories: ["service"] },
+  { id: "leads",            label: "Appointments",      icon: UserPlus,       categories: ["service"] },
+  { id: "complaints",       label: "Callbacks",         icon: AlertTriangle,  categories: ["service"] },
+  // Content creator
+  { id: "courses",          label: "Courses",           icon: GraduationCap,  categories: ["content_creator"] },
+  { id: "enrollments",      label: "Enrollments",       icon: Users,          categories: ["content_creator"] },
+  // Shared (all categories)
+  { id: "conversations",    label: "Inbox",             icon: MessageSquare },
+  { id: "auto-reply",       label: "Auto-Reply",        icon: Zap },
+  { id: "comment-triggers", label: "Comment Triggers",  icon: Megaphone },
+  { id: "scheduled",        label: "Scheduled",         icon: Clock },
+  { id: "website-import",   label: "Website Import",    icon: Globe },
+  { id: "settings",         label: "Bot Settings",      icon: Settings },
+];
 
-
-type NavItem = { id: string; labelKey: string; icon: React.ElementType; adminOnly?: boolean; show?: (cat: string | null | undefined) => boolean };
-
-const isEcom = (c: any) => c === "ecommerce";
-const isService = (c: any) => c && c !== "ecommerce";
-
-const navItems: NavItem[] = [
-  { id: "analytics", labelKey: "nav.analytics", icon: BarChart3 },
-  { id: "credits", labelKey: "nav.credits", icon: Coins },
-  { id: "ai-usage", labelKey: "nav.aiUsage", icon: Activity },
-  { id: "ai-training", labelKey: "nav.aiTraining", icon: Brain },
-  { id: "products", labelKey: "nav.products", icon: Package, show: (c) => !c || isEcom(c) },
-  { id: "services", labelKey: "nav.services", icon: Briefcase, show: (c) => isService(c) },
-  { id: "leads", labelKey: "nav.leads", icon: UserPlus, show: () => true },
-  { id: "pending-products", labelKey: "nav.autoImport", icon: Inbox, show: (c) => !c || isEcom(c) },
-  { id: "suggestions", labelKey: "nav.suggestions", icon: Lightbulb, show: (c) => !c || isEcom(c) },
-  { id: "website-import", labelKey: "nav.websiteImport", icon: Globe },
-  { id: "orders", labelKey: "nav.orders", icon: ShoppingCart, show: (c) => !c || isEcom(c) },
-  { id: "complaints", labelKey: "nav.complaints", icon: AlertTriangle },
-  { id: "conversations", labelKey: "nav.chats", icon: MessageSquare },
-  { id: "auto-reply", labelKey: "nav.autoReply", icon: Zap },
-  { id: "comment-triggers", labelKey: "nav.commentTriggers", icon: Megaphone },
-  { id: "scheduled", labelKey: "nav.scheduled", icon: Clock },
-  { id: "fb-pages", labelKey: "nav.fbPages", icon: Globe },
-  { id: "settings", labelKey: "nav.settings", icon: Settings },
+const connection: NavItem[] = [
+  { id: "fb-pages", label: "Connected Pages", icon: Globe },
 ];
 
 interface DashboardSidebarProps {
@@ -56,30 +68,65 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
   const { t } = useTranslation();
   const { signOut, user } = useAuth();
   const { isAdmin } = useIsAdmin();
-  const { category } = useBusinessCategory();
-  const navigate = useNavigate();
+  const { activePage } = useActivePage();
+  const category = activePage?.page_category;
 
   const { data: unreadAlerts = 0 } = useQuery({
-    queryKey: ["sidebar-unread-alerts", user?.id],
+    queryKey: ["sidebar-unread-alerts", user?.id, activePage?.id],
     enabled: !!user?.id,
     queryFn: async () => {
-      const { count } = await supabase
+      let q = supabase
         .from("conversations")
         .select("*", { count: "exact", head: true })
         .eq("user_id", user!.id)
         .eq("needs_human", true)
         .or("alert_seen_at.is.null,alert_seen_at.lt.last_message_at");
+      if (activePage?.id) q = q.eq("fb_page_id", activePage.id);
+      const { count } = await q;
       return count || 0;
     },
     refetchInterval: 20000,
   });
 
-  const visibleItems = navItems.filter((item) => {
-    if (item.adminOnly && !isAdmin) return false;
-    if (item.show && !item.show(category)) return false;
-    return true;
-  });
+  const filterByCat = (item: NavItem) => {
+    if (!item.categories) return true;
+    if (!category) return false;
+    return item.categories.includes(category as any);
+  };
 
+  const renderGroup = (items: NavItem[], items_filter = true) => {
+    const visible = items_filter ? items.filter(filterByCat) : items;
+    return visible.map((item) => {
+      const isActive = activeTab === item.id;
+      const button = (
+        <button
+          key={item.id}
+          onClick={() => onTabChange(item.id)}
+          className={cn(
+            "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
+            "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground active:scale-[0.97]",
+            isActive ? "bg-gradient-primary text-white shadow-glow" : "text-sidebar-foreground",
+            collapsed && "justify-center px-0",
+          )}
+        >
+          <item.icon className="h-[18px] w-[18px] shrink-0" />
+          {!collapsed && <span className="truncate animate-fade-in flex-1 text-left">{item.label}</span>}
+          {item.id === "conversations" && unreadAlerts > 0 && (
+            <Badge variant="destructive" className={cn("h-5 min-w-[20px] px-1.5 text-[10px] font-bold", collapsed && "absolute top-1 right-1")}>{unreadAlerts}</Badge>
+          )}
+        </button>
+      );
+      if (collapsed) {
+        return (
+          <Tooltip key={item.id} delayDuration={0}>
+            <TooltipTrigger asChild>{button}</TooltipTrigger>
+            <TooltipContent side="right" className="font-medium">{item.label}</TooltipContent>
+          </Tooltip>
+        );
+      }
+      return button;
+    });
+  };
 
   return (
     <aside
@@ -89,7 +136,6 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
         collapsed ? "w-[72px]" : "w-[240px]",
       )}
     >
-      {/* Logo */}
       <div className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border shrink-0">
         <div className="h-9 w-9 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-soft overflow-hidden">
           <img src={logoAsset.url} alt="LeadPilot logo" className="h-6 w-6 object-contain" width={36} height={36} />
@@ -102,58 +148,48 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
         )}
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
-        {visibleItems.map((item) => {
-          const nicheLabel = (id: string, base: string) => {
-            if (!isService(category)) return base;
-            if (id === "leads") return "nav.appointments";
-            if (id === "conversations") return `nav.chatsByCat.${category}`;
-            if (id === "complaints") return `nav.complaintsByCat.${category}`;
-            return base;
-          };
-          const labelKey = nicheLabel(item.id, item.labelKey);
-          const isActive = activeTab === item.id;
-          const button = (
+      <nav className="flex-1 py-3 px-2 space-y-3 overflow-y-auto">
+        <div className="space-y-0.5">
+          {!collapsed && <div className="px-3 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 mb-1">Account</div>}
+          {renderGroup(accountWide, false)}
+        </div>
+
+        {activePage && (
+          <div className="space-y-0.5">
+            {!collapsed && (
+              <div className="px-3 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 mb-1 truncate">
+                {activePage.page_name || "Page"}
+              </div>
+            )}
+            {renderGroup(perPage)}
+          </div>
+        )}
+
+        <div className="space-y-0.5">
+          {!collapsed && <div className="px-3 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 mb-1">Connections</div>}
+          {renderGroup(connection, false)}
+          {isAdmin && (
             <button
-              key={item.id}
-              onClick={() => onTabChange(item.id)}
+              onClick={() => onTabChange("admin")}
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
-                "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                "active:scale-[0.97]",
-                isActive
-                  ? "bg-gradient-primary text-white shadow-glow"
-                  : "text-sidebar-foreground",
+                "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
+                "hover:bg-sidebar-accent",
+                activeTab === "admin" ? "bg-gradient-primary text-white shadow-glow" : "text-sidebar-foreground",
                 collapsed && "justify-center px-0",
               )}
             >
-              <item.icon className="h-[18px] w-[18px] shrink-0" />
-              {!collapsed && <span className="truncate animate-fade-in flex-1">{t(labelKey)}</span>}
-              {item.id === "conversations" && unreadAlerts > 0 && (
-                <Badge variant="destructive" className={cn("h-5 min-w-[20px] px-1.5 text-[10px] font-bold", collapsed && "absolute top-1 right-1")}>{unreadAlerts}</Badge>
-              )}
+              <Settings className="h-[18px] w-[18px] shrink-0" />
+              {!collapsed && <span className="flex-1 text-left">Admin</span>}
             </button>
-          );
-          if (collapsed) {
-            return (
-              <Tooltip key={item.id} delayDuration={0}>
-                <TooltipTrigger asChild>{button}</TooltipTrigger>
-                <TooltipContent side="right" className="font-medium">{t(labelKey)}</TooltipContent>
-              </Tooltip>
-            );
-          }
-          return button;
-        })}
+          )}
+        </div>
       </nav>
 
-      {/* Bottom actions */}
       <div className="border-t border-sidebar-border p-2 shrink-0 space-y-0.5">
         {!collapsed && user && (
           <div className="px-3 py-2 text-[11px] text-sidebar-foreground/50 truncate">{user.email}</div>
         )}
         <LanguageSwitcher collapsed={collapsed} />
-        
         <button
           onClick={signOut}
           className={cn(
