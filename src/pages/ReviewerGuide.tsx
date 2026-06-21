@@ -40,7 +40,7 @@ const ReviewerGuide = () => (
         <h2 className="text-xl font-semibold mb-3 flex items-center gap-2"><ShieldCheck className="w-5 h-5" /> Test credentials</h2>
         <div className="rounded-lg border border-border p-5 font-mono text-sm space-y-1 bg-muted/30">
           <div><span className="text-muted-foreground">URL: </span>https://leadpilot.life/auth</div>
-          <div><span className="text-muted-foreground">Email: </span>meta-reviewer@leadpilot.life</div>
+          <div><span className="text-muted-foreground">Email: </span>leadpilot24@gmail.com</div>
           <div><span className="text-muted-foreground">Password: </span>MetaReview2026!</div>
         </div>
         <p className="text-xs text-muted-foreground mt-2">
@@ -103,6 +103,18 @@ const ReviewerGuide = () => (
           <li>Data deletion callback is implemented at our webhook endpoint and confirmation is visible at <Link className="underline" to="/data-deletion-status">/data-deletion-status</Link>.</li>
           <li>Full policy: <Link className="underline" to="/privacy">Privacy</Link> · <Link className="underline" to="/terms">Terms</Link> · <Link className="underline" to="/data-deletion">Data Deletion Instructions</Link>.</li>
         </ul>
+      </section>
+
+      <section>
+        <h2 className="text-xl font-semibold mb-3">Contact &amp; support</h2>
+        <p className="text-sm text-muted-foreground">
+          For any questions, complaints, abuse reports, security issues, data deletion requests,
+          or reviewer follow-ups, contact us at{" "}
+          <a className="underline font-medium text-foreground" href="mailto:leadpilot24@gmail.com">
+            leadpilot24@gmail.com
+          </a>
+          . This inbox is monitored daily and is the official business contact for LeadPilot.
+        </p>
       </section>
     </main>
   </div>

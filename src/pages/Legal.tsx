@@ -82,7 +82,7 @@ export const Privacy = () => (
       <h2>6. Your rights</h2>
       <p>
         You can access, export, or delete your data at any time from the dashboard, or by emailing
-        us at <a href="mailto:fastrepbyalvi@gmail.com">fastrepbyalvi@gmail.com</a>. Facebook users
+        us at <a href="mailto:leadpilot24@gmail.com">leadpilot24@gmail.com</a>. Facebook users
         whose messages were processed can request deletion via the same email or via the
         <Link to="/data-deletion"> Data Deletion</Link> page.
       </p>
@@ -104,7 +104,7 @@ export const Privacy = () => (
 
       <h2>10. Contact</h2>
       <p>
-        Questions or requests: <a href="mailto:fastrepbyalvi@gmail.com">fastrepbyalvi@gmail.com</a>
+        Questions or requests: <a href="mailto:leadpilot24@gmail.com">leadpilot24@gmail.com</a>
       </p>
     </Shell>
   </div>
@@ -183,7 +183,7 @@ export const Terms = () => (
 
       <h2>10. Contact</h2>
       <p>
-        <a href="mailto:fastrepbyalvi@gmail.com">fastrepbyalvi@gmail.com</a>
+        <a href="mailto:leadpilot24@gmail.com">leadpilot24@gmail.com</a>
       </p>
     </Shell>
   </div>
@@ -217,7 +217,7 @@ export const DataDeletion = () => (
         remove your data within 30 days.
       </p>
       <ul>
-        <li>To: <a href="mailto:fastrepbyalvi@gmail.com">fastrepbyalvi@gmail.com</a></li>
+        <li>To: <a href="mailto:leadpilot24@gmail.com">leadpilot24@gmail.com</a></li>
         <li>Subject: <strong>Facebook Data Deletion Request</strong></li>
         <li>Include: your Facebook profile name + a link to the Page you messaged.</li>
       </ul>
@@ -236,7 +236,7 @@ export const DataDeletion = () => (
 
       <h2>Contact</h2>
       <p>
-        Questions about deletion: <a href="mailto:fastrepbyalvi@gmail.com">fastrepbyalvi@gmail.com</a>
+        Questions about deletion: <a href="mailto:leadpilot24@gmail.com">leadpilot24@gmail.com</a>
       </p>
     </Shell>
   </div>
