@@ -35,31 +35,18 @@ const Auth = () => {
 
   const handleGoogle = async () => {
     setLoading(true);
-    const isInIframe = window.self !== window.top;
-
-    if (isInIframe) {
-      const params = new URLSearchParams({
-        provider: "google",
-        redirect_uri: window.location.origin,
-        prompt: "select_account",
-      });
-      window.open(`${window.location.origin}/~oauth/initiate?${params.toString()}`, "_blank", "noopener,noreferrer");
-      toast.message("Google sign-in opened in a new tab");
-      setLoading(false);
-      return;
-    }
-
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-      extraParams: { prompt: "select_account" },
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/dashboard`,
+        queryParams: { prompt: "select_account" },
+        skipBrowserRedirect: false,
+      },
     });
-    if (result.error) {
-      toast.error(result.error.message ?? "Could not start Google sign-in");
+    if (error) {
+      toast.error(error.message ?? "Could not start Google sign-in");
       setLoading(false);
-      return;
     }
-    if (result.redirected) return;
-    window.location.href = "/dashboard";
   };
 
   const handleFacebook = async () => {
