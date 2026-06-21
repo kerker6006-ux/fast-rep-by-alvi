@@ -19,7 +19,21 @@ const BotSettings = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { category, setCategory } = useBusinessCategory();
+  const { activePage, refetch: refetchPages } = useActivePage();
+  const category = (activePage?.page_category ?? null) as PageCategory | null;
+  const setCategory = useMutation({
+    mutationFn: async (cat: PageCategory) => {
+      if (!activePage) throw new Error("Connect a Facebook page first");
+      const { error } = await supabase.from("fb_pages").update({ page_category: cat }).eq("id", activePage.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      refetchPages();
+      queryClient.invalidateQueries({ queryKey: ["active-pages"] });
+      queryClient.invalidateQueries({ queryKey: ["fb-pages"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
   const [settings, setSettings] = useState<Record<string, string>>({});
 
   const { data: dbSettings, isLoading } = useQuery({
