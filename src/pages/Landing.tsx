@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
-  Plane,
   MessageSquare,
   Brain,
   Target,
@@ -15,6 +14,8 @@ import {
   Instagram,
   Facebook,
 } from "lucide-react";
+import logoAsset from "@/assets/logo.png.asset.json";
+
 
 const features = [
   { icon: MessageSquare, title: "Instant Auto-Replies", desc: "Replies to every DM on Facebook & Instagram instantly. 24/7. No customer is ever ignored." },
