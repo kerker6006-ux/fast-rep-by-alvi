@@ -179,7 +179,11 @@ const CourseDialog = ({ open, course, onClose, onSave, saving }: {
             <div><Label>Price</Label><Input type="number" value={form.price} onChange={e => setForm({ ...form, price: parseFloat(e.target.value) || 0 })} /></div>
             <div><Label>Currency</Label><Input value={form.currency} onChange={e => setForm({ ...form, currency: e.target.value.toUpperCase() })} /></div>
           </div>
-          <div><Label>Thumbnail URL</Label><Input value={form.thumbnail_url || ""} onChange={e => setForm({ ...form, thumbnail_url: e.target.value })} placeholder="https://..." /></div>
+          <div>
+            <Label>Course thumbnail URL</Label>
+            <Input value={form.thumbnail_url || ""} onChange={e => setForm({ ...form, thumbnail_url: e.target.value })} placeholder="https://example.com/course-image.jpg" />
+            <p className="text-xs text-muted-foreground mt-1">Paste a direct image link. The thumbnail shows at the top of the course card.</p>
+          </div>
           <div>
             <Label>Payment instructions</Label>
             <Textarea rows={3} value={form.payment_instructions || ""} onChange={e => setForm({ ...form, payment_instructions: e.target.value })} placeholder="Pay via Stripe / PayPal at checkout. After payment, share your transaction ID." />
