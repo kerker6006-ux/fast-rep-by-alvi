@@ -11,6 +11,7 @@ import AdminRoute from "@/components/AdminRoute";
 // Lazy-load every route so the initial bundle stays tiny.
 const Landing = lazy(() => import("./pages/Landing.tsx"));
 const Auth = lazy(() => import("./pages/Auth.tsx"));
+const Unsubscribe = lazy(() => import("./pages/Unsubscribe.tsx"));
 
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const Index = lazy(() => import("./pages/Index.tsx"));
@@ -70,6 +71,7 @@ const App = () => (
               </Route>
               <Route path="/" element={<Landing />} />
               <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/unsubscribe" element={<Unsubscribe />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
