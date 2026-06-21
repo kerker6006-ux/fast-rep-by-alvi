@@ -35,6 +35,20 @@ const Auth = () => {
 
   const handleGoogle = async () => {
     setLoading(true);
+    const isInIframe = window.self !== window.top;
+
+    if (isInIframe) {
+      const params = new URLSearchParams({
+        provider: "google",
+        redirect_uri: window.location.origin,
+        prompt: "select_account",
+      });
+      window.open(`${window.location.origin}/~oauth/initiate?${params.toString()}`, "_blank", "noopener,noreferrer");
+      toast.message("Google sign-in opened in a new tab");
+      setLoading(false);
+      return;
+    }
+
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
       extraParams: { prompt: "select_account" },
