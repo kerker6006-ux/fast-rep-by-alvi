@@ -48,6 +48,7 @@ export type Database = {
           estimated_cost: number
           id: string
           model: string
+          tokens_used: number | null
           user_id: string
         }
         Insert: {
@@ -56,6 +57,7 @@ export type Database = {
           estimated_cost?: number
           id?: string
           model?: string
+          tokens_used?: number | null
           user_id: string
         }
         Update: {
@@ -64,6 +66,7 @@ export type Database = {
           estimated_cost?: number
           id?: string
           model?: string
+          tokens_used?: number | null
           user_id?: string
         }
         Relationships: []
@@ -173,6 +176,119 @@ export type Database = {
           setting_value?: string
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      comment_trigger_logs: {
+        Row: {
+          comment_text: string | null
+          commenter_id: string | null
+          commenter_name: string | null
+          created_at: string
+          dm_sent_at: string | null
+          dm_status: string
+          error: string | null
+          fb_comment_id: string
+          fb_post_id: string | null
+          id: string
+          matched_keyword: string | null
+          trigger_id: string | null
+          user_id: string
+        }
+        Insert: {
+          comment_text?: string | null
+          commenter_id?: string | null
+          commenter_name?: string | null
+          created_at?: string
+          dm_sent_at?: string | null
+          dm_status?: string
+          error?: string | null
+          fb_comment_id: string
+          fb_post_id?: string | null
+          id?: string
+          matched_keyword?: string | null
+          trigger_id?: string | null
+          user_id: string
+        }
+        Update: {
+          comment_text?: string | null
+          commenter_id?: string | null
+          commenter_name?: string | null
+          created_at?: string
+          dm_sent_at?: string | null
+          dm_status?: string
+          error?: string | null
+          fb_comment_id?: string
+          fb_post_id?: string | null
+          id?: string
+          matched_keyword?: string | null
+          trigger_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_trigger_logs_trigger_id_fkey"
+            columns: ["trigger_id"]
+            isOneToOne: false
+            referencedRelation: "comment_triggers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comment_triggers: {
+        Row: {
+          created_at: string
+          daily_limit: number
+          dm_image_url: string | null
+          dm_message: string
+          fb_page_id: string | null
+          id: string
+          is_enabled: boolean
+          keywords: string[]
+          last_sent_at: string | null
+          match_type: string
+          name: string
+          priority: number
+          public_reply: string | null
+          sent_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          daily_limit?: number
+          dm_image_url?: string | null
+          dm_message: string
+          fb_page_id?: string | null
+          id?: string
+          is_enabled?: boolean
+          keywords?: string[]
+          last_sent_at?: string | null
+          match_type?: string
+          name: string
+          priority?: number
+          public_reply?: string | null
+          sent_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          daily_limit?: number
+          dm_image_url?: string | null
+          dm_message?: string
+          fb_page_id?: string | null
+          id?: string
+          is_enabled?: boolean
+          keywords?: string[]
+          last_sent_at?: string | null
+          match_type?: string
+          name?: string
+          priority?: number
+          public_reply?: string | null
+          sent_count?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -391,6 +507,51 @@ export type Database = {
         }
         Relationships: []
       }
+      job_queue: {
+        Row: {
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          id: string
+          last_error: string | null
+          max_attempts: number
+          payload: Json
+          run_at: string
+          started_at: string | null
+          status: string
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          max_attempts?: number
+          payload?: Json
+          run_at?: string
+          started_at?: string | null
+          status?: string
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          max_attempts?: number
+          payload?: Json
+          run_at?: string
+          started_at?: string | null
+          status?: string
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           address: string | null
@@ -455,30 +616,36 @@ export type Database = {
           content: string | null
           conversation_id: string
           created_at: string
+          delivered_at: string | null
           direction: string
           fb_message_id: string | null
           id: string
           image_url: string | null
+          read_at: string | null
           user_id: string | null
         }
         Insert: {
           content?: string | null
           conversation_id: string
           created_at?: string
+          delivered_at?: string | null
           direction: string
           fb_message_id?: string | null
           id?: string
           image_url?: string | null
+          read_at?: string | null
           user_id?: string | null
         }
         Update: {
           content?: string | null
           conversation_id?: string
           created_at?: string
+          delivered_at?: string | null
           direction?: string
           fb_message_id?: string | null
           id?: string
           image_url?: string | null
+          read_at?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -490,6 +657,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          link: string | null
+          metadata: Json | null
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          metadata?: Json | null
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          metadata?: Json | null
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       orders: {
         Row: {
@@ -927,6 +1130,39 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      webhook_failures: {
+        Row: {
+          created_at: string
+          error: string
+          id: string
+          payload: Json | null
+          resolved_at: string | null
+          retry_count: number
+          source: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error: string
+          id?: string
+          payload?: Json | null
+          resolved_at?: string | null
+          retry_count?: number
+          source: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error?: string
+          id?: string
+          payload?: Json | null
+          resolved_at?: string | null
+          retry_count?: number
+          source?: string
+          user_id?: string | null
         }
         Relationships: []
       }

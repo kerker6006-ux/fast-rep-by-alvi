@@ -6,8 +6,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, User, Clock, ArrowLeft, GraduationCap } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { MessageSquare, User, Clock, ArrowLeft, GraduationCap, Send, AlertTriangle, Check, CheckCheck } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 import TrainBotDialog from "@/components/TrainBotDialog";
 
 type Conversation = {
@@ -24,6 +26,8 @@ type Message = {
   direction: string;
   content: string | null;
   image_url: string | null;
+  read_at: string | null;
+  delivered_at: string | null;
   created_at: string;
 };
 
@@ -33,6 +37,8 @@ const ConversationsView = () => {
   const [selectedConvo, setSelectedConvo] = useState<string | null>(null);
   const [trainOpen, setTrainOpen] = useState(false);
   const [trainData, setTrainData] = useState<{ customer: string; wrong: string }>({ customer: "", wrong: "" });
+  const [replyText, setReplyText] = useState("");
+  const [sending, setSending] = useState(false);
 
   const { data: conversations, isLoading } = useQuery({
     queryKey: ["conversations", user?.id],
@@ -163,6 +169,11 @@ const ConversationsView = () => {
                         <div className="flex items-center justify-between gap-2 mt-1">
                           <p className={`text-xs ${m.direction === "outgoing" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
                             {m.direction === "outgoing" ? "🤖 Bot" : "👤 Customer"} · {new Date(m.created_at).toLocaleTimeString()}
+                            {m.direction === "outgoing" && (
+                              m.read_at ? <CheckCheck className="inline h-3 w-3 ml-1 text-blue-300" />
+                              : m.delivered_at ? <CheckCheck className="inline h-3 w-3 ml-1 opacity-70" />
+                              : <Check className="inline h-3 w-3 ml-1 opacity-50" />
+                            )}
                           </p>
                           {m.direction === "outgoing" && (
                             <button
@@ -180,6 +191,42 @@ const ConversationsView = () => {
                   })}
                 </div>
               </ScrollArea>
+              {/* Reply composer */}
+              {(() => {
+                const lastIncoming = [...(messages ?? [])].reverse().find(m => m.direction === "incoming");
+                const hoursSince = lastIncoming ? (Date.now() - new Date(lastIncoming.created_at).getTime()) / 36e5 : Infinity;
+                const outsideWindow = hoursSince > 24;
+                const sendReply = async () => {
+                  if (!selectedConvo || !replyText.trim()) return;
+                  setSending(true);
+                  try {
+                    const { error } = await supabase.functions.invoke("send-fb-message", {
+                      body: { conversation_id: selectedConvo, text: replyText.trim() },
+                    });
+                    if (error) throw error;
+                    setReplyText(""); toast.success("Sent via Facebook");
+                  } catch (e: any) {
+                    toast.error(e.message || "Failed to send");
+                  } finally { setSending(false); }
+                };
+                return (
+                  <div className="border-t p-3 space-y-2">
+                    {outsideWindow && (
+                      <div className="flex items-start gap-2 text-xs bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 text-amber-900 dark:text-amber-200 rounded-md p-2">
+                        <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                        <span>Outside Meta's 24-hour messaging window. Facebook will reject this send. Customer must message you first.</span>
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <Textarea value={replyText} onChange={e => setReplyText(e.target.value)} placeholder="Type a reply..." className="min-h-[40px] max-h-32 resize-none text-sm" rows={1}
+                        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendReply(); } }} />
+                      <Button size="icon" onClick={sendReply} disabled={!replyText.trim() || sending || outsideWindow}>
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })()}
             </>
           )}
         </Card>

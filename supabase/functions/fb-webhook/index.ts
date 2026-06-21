@@ -164,6 +164,9 @@ serve(async (req) => {
             // Future: mentions, message_reactions
           } else if (change.field === "feed") {
             if (change.value?.item === "comment") {
+              // 1) Run user-defined keyword triggers first (ManyChat-style)
+              await handleCommentTriggers(supabase, change.value, PAGE_ACCESS_TOKEN, userId, entryId);
+              // 2) Then fall through to AI/text comment auto-reply
               await handleCommentEvent(supabase, change.value, PAGE_ACCESS_TOKEN, settings, userId, LOVABLE_API_KEY);
             } else if (change.value?.item === "photo" || change.value?.item === "status") {
               await handlePagePostEvent(supabase, change.value, userId, LOVABLE_API_KEY, entryId, settings);
@@ -439,6 +442,23 @@ async function handleMessagingEvent(
   const senderId = event.sender?.id;
   if (!senderId) return;
   if (senderId === pageId) return;
+
+  // ---- Delivery & Read receipts ----
+  if (event.delivery?.mids?.length) {
+    const ts = new Date(event.delivery.watermark || Date.now()).toISOString();
+    await supabase.from("messages").update({ delivered_at: ts }).in("fb_message_id", event.delivery.mids);
+    return;
+  }
+  if (event.read?.watermark) {
+    const ts = new Date(event.read.watermark).toISOString();
+    await supabase.from("messages")
+      .update({ read_at: ts })
+      .eq("direction", "outgoing")
+      .lte("created_at", ts)
+      .is("read_at", null);
+    return;
+  }
+
   if (!event.message) return;
   if (event.message.is_echo) return;
 
@@ -480,6 +500,14 @@ async function handleMessagingEvent(
     last_message: messageText || "[Image]",
     last_message_at: new Date().toISOString(),
   }).eq("id", conversationId);
+
+  // Image analysis toggle: if image-only and analysis is disabled → route to Image Inbox, no AI cost.
+  if (imageUrl && !messageText && settings.enable_image_analysis === "false") {
+    await supabase.from("conversations")
+      .update({ needs_human: true, followup_reason: "Customer sent an image (image analysis is OFF)", updated_at: new Date().toISOString() })
+      .eq("id", conversationId);
+    return;
+  }
 
   // Check auto-reply rules (user-specific)
   const autoReply = await checkAutoReplyRules(supabase, messageText, userId);
@@ -1819,4 +1847,119 @@ async function extractAndSaveLead(supabase: any, apiKey: string, conversationId:
   } catch (e) {
     console.error("Lead extraction error:", e);
   }
+}
+
+// ---- Keyword-based Comment Triggers (ManyChat-style) ----
+async function handleCommentTriggers(
+  supabase: any, value: any, pageAccessToken: string, userId: string | null, fbPageId: string
+) {
+  if (!userId) return;
+  const commentId = value.comment_id;
+  const commentText = (value.message || "").toLowerCase().trim();
+  const commenterId = value.from?.id;
+  const commenterName = value.from?.name || null;
+  if (!commentId || !commentText || !commenterId) return;
+  // Skip comments from the page itself
+  if (commenterId === fbPageId || commenterId === value.post_id?.split("_")[0]) return;
+
+  // Idempotency: skip if already logged
+  const { data: existingLog } = await supabase
+    .from("comment_trigger_logs").select("id").eq("fb_comment_id", commentId).maybeSingle();
+  if (existingLog) return;
+
+  // Load active triggers for this user (and page if set)
+  const { data: triggers } = await supabase
+    .from("comment_triggers")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("is_enabled", true)
+    .order("priority", { ascending: false });
+
+  if (!triggers?.length) return;
+
+  for (const trigger of triggers) {
+    if (trigger.fb_page_id && trigger.fb_page_id !== fbPageId) continue;
+    const matched = matchTrigger(commentText, trigger);
+    if (!matched) continue;
+
+    // Daily limit check
+    const since = new Date(); since.setHours(0,0,0,0);
+    const { count: todayCount } = await supabase
+      .from("comment_trigger_logs")
+      .select("*", { count: "exact", head: true })
+      .eq("trigger_id", trigger.id)
+      .gte("created_at", since.toISOString());
+    if ((todayCount || 0) >= trigger.daily_limit) {
+      await supabase.from("comment_trigger_logs").insert({
+        user_id: userId, trigger_id: trigger.id, fb_comment_id: commentId, fb_post_id: value.post_id,
+        commenter_id: commenterId, commenter_name: commenterName, comment_text: commentText,
+        matched_keyword: matched, dm_status: "failed", error: "Daily limit reached",
+      });
+      return;
+    }
+
+    // Pre-insert log row to claim idempotency
+    const { error: insErr } = await supabase.from("comment_trigger_logs").insert({
+      user_id: userId, trigger_id: trigger.id, fb_comment_id: commentId, fb_post_id: value.post_id,
+      commenter_id: commenterId, commenter_name: commenterName, comment_text: commentText,
+      matched_keyword: matched, dm_status: "pending",
+    });
+    if (insErr?.code === "23505") return; // race-condition guard
+
+    let dmStatus = "sent"; let dmError: string | null = null;
+    try {
+      // Public reply (optional)
+      if (trigger.public_reply) {
+        await fetch(`https://graph.facebook.com/v21.0/${commentId}/comments?access_token=${pageAccessToken}`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: trigger.public_reply }),
+        }).catch(() => {});
+      }
+      // Private DM via Messenger Private Replies API
+      const dmPayload: any = { recipient: { comment_id: commentId } };
+      if (trigger.dm_image_url) {
+        dmPayload.message = { attachment: { type: "image", payload: { url: trigger.dm_image_url, is_reusable: true } } };
+      } else {
+        dmPayload.message = { text: trigger.dm_message };
+      }
+      const fbResp = await fetch(`https://graph.facebook.com/v21.0/me/messages?access_token=${pageAccessToken}`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(dmPayload),
+      });
+      const fbJson = await fbResp.json();
+      if (!fbResp.ok) {
+        dmStatus = "failed";
+        dmError = fbJson.error?.message || `FB ${fbResp.status}`;
+      } else if (trigger.dm_image_url && trigger.dm_message) {
+        // Send text as a follow-up (if both image and text supplied)
+        await fetch(`https://graph.facebook.com/v21.0/me/messages?access_token=${pageAccessToken}`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ recipient: { comment_id: commentId }, message: { text: trigger.dm_message } }),
+        }).catch(() => {});
+      }
+    } catch (e: any) {
+      dmStatus = "failed"; dmError = e?.message || String(e);
+    }
+
+    await supabase.from("comment_trigger_logs").update({
+      dm_status: dmStatus, dm_sent_at: new Date().toISOString(), error: dmError,
+    }).eq("fb_comment_id", commentId);
+
+    if (dmStatus === "sent") {
+      await supabase.from("comment_triggers").update({
+        sent_count: trigger.sent_count + 1, last_sent_at: new Date().toISOString(),
+      }).eq("id", trigger.id);
+    }
+    return; // only first matching trigger fires
+  }
+}
+
+function matchTrigger(text: string, trigger: any): string | null {
+  for (const kw of (trigger.keywords || [])) {
+    const k = String(kw).toLowerCase().trim();
+    if (!k) continue;
+    if (trigger.match_type === "exact" && text === k) return k;
+    if (trigger.match_type === "starts_with" && text.startsWith(k)) return k;
+    if ((trigger.match_type === "contains" || !trigger.match_type) && text.includes(k)) return k;
+  }
+  return null;
 }
