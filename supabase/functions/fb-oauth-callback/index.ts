@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { FB_GRAPH, callbackUrl, getOrigin, verifyState } from "../_shared/fb.ts";
+import { FB_GRAPH, callbackUrl, getOrigin, verifyState, isAllowedOrigin } from "../_shared/fb.ts";
 
 function htmlRedirect(url: string, msg: string) {
   return new Response(null, {
@@ -12,7 +12,8 @@ function htmlRedirect(url: string, msg: string) {
 }
 
 Deno.serve(async (req) => {
-  const appOrigin = getOrigin();
+  const defaultOrigin = getOrigin();
+  let appOrigin = defaultOrigin;
   try {
     const appId = Deno.env.get("FB_APP_ID");
     const appSecret = Deno.env.get("FB_APP_SECRET");
@@ -29,6 +30,7 @@ Deno.serve(async (req) => {
 
     const verified = await verifyState(appSecret, state);
     if (!verified) return htmlRedirect(`${appOrigin}/?fb_error=bad_state`, "Invalid state");
+    if (verified.origin && isAllowedOrigin(verified.origin)) appOrigin = verified.origin;
 
     // Exchange code -> short-lived user token
     const tokenRes = await fetch(

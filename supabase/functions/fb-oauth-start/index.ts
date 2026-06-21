@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-import { OAUTH_SCOPES, callbackUrl, signState } from "../_shared/fb.ts";
+import { OAUTH_SCOPES, callbackUrl, signState, isAllowedOrigin } from "../_shared/fb.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -31,7 +31,11 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const state = await signState(appSecret, data.claims.sub);
+    // Capture the caller's origin so we can redirect back to the same env (preview vs prod)
+    const bodyOrigin = await req.json().then((b) => b?.origin).catch(() => null);
+    const reqOrigin = req.headers.get("origin");
+    const origin = isAllowedOrigin(bodyOrigin) ? bodyOrigin : (isAllowedOrigin(reqOrigin) ? reqOrigin : null);
+    const state = await signState(appSecret, data.claims.sub, origin);
     const configId = Deno.env.get("FB_CONFIG_ID");
     const params = new URLSearchParams({
       client_id: appId,
