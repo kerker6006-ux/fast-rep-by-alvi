@@ -75,6 +75,7 @@ const Welcome = () => {
       toast.error(error.message);
       return;
     }
+    try { localStorage.setItem(`lp:onboarded:${user.id}`, "1"); } catch (_) { /* ignore */ }
     toast.success("Welcome to LeadPilot!");
     navigate("/dashboard", { replace: true });
   };

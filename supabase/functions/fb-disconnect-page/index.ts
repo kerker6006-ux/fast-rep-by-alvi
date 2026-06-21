@@ -28,22 +28,25 @@ Deno.serve(async (req) => {
     if (error || !row) return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     if (row.user_id !== userId) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-    // Best-effort unsubscribe
+    // Best-effort unsubscribe from FB webhooks
     if (row.page_access_token) {
       try {
         await fetch(`${FB_GRAPH}/${row.fb_page_id}/subscribed_apps?access_token=${encodeURIComponent(row.page_access_token)}`, { method: "DELETE" });
       } catch (_) { /* ignore */ }
     }
 
+    // Soft disconnect: keep row + all related data for 7 days. Page disappears from active queries
+    // but a reconnect within 7 days restores it (history intact).
+    const purgeAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     await admin.from("fb_pages").update({
       is_active: false,
       subscription_status: "disconnected",
       disconnected_at: new Date().toISOString(),
-      page_access_token: "",
+      pending_delete_at: purgeAt,
       subscribed_fields: [],
     }).eq("id", id);
 
-    return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ ok: true, purge_at: purgeAt }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     return new Response(JSON.stringify({ error: (e as Error).message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }

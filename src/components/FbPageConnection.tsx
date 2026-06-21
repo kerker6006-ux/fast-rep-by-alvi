@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { Globe, Plus, Trash2, Copy, Check, RefreshCw, Loader2, Facebook, ChevronRight, Activity, Instagram, AlertTriangle, ExternalLink } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useTranslation } from "react-i18next";
+import PageCategoryDialog from "@/components/PageCategoryDialog";
 
 type FbPage = {
   id: string;
@@ -48,6 +49,8 @@ const FbPageConnection = () => {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedPage, setSelectedPage] = useState<string | null>(null);
   const [disconnectId, setDisconnectId] = useState<string | null>(null);
+  const [categoryDialogPageId, setCategoryDialogPageId] = useState<string | null>(null);
+  const [categoryDialogPageName, setCategoryDialogPageName] = useState<string | null>(null);
 
   // Detect oauth return
   useEffect(() => {
@@ -111,11 +114,16 @@ const FbPageConnection = () => {
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["fb-pages"] });
+      queryClient.invalidateQueries({ queryKey: ["active-pages"] });
       setPickerOpen(false);
       setSessionToken(null);
       setSelectedPage(null);
-      if (data.status === "active") toast.success("Facebook Page Connected Successfully");
+      if (data.status === "active") toast.success(data.restored ? "Page reconnected — history restored" : "Facebook Page Connected Successfully");
       else toast.warning(`Connected, but webhook subscription failed: ${data.error ?? ""}`);
+      if (data.needs_category && data.row_id) {
+        setCategoryDialogPageId(data.row_id);
+        setCategoryDialogPageName(data.page?.name ?? null);
+      }
     },
     onError: (e: any) => toast.error(e.message || "Could not connect page"),
   });
@@ -128,7 +136,8 @@ const FbPageConnection = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fb-pages"] });
-      toast.success("Page disconnected");
+      queryClient.invalidateQueries({ queryKey: ["active-pages"] });
+      toast.success("Page disconnected — data kept for 7 days");
       setDisconnectId(null);
     },
     onError: (e: any) => toast.error(e.message),
@@ -481,23 +490,32 @@ const FbPageConnection = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Disconnect confirm */}
+      {/* Disconnect confirm — 7-day soft delete */}
       <AlertDialog open={!!disconnectId} onOpenChange={(o) => !o && setDisconnectId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Disconnect this page?</AlertDialogTitle>
             <AlertDialogDescription>
-              The bot will stop replying on this page. You can reconnect anytime with one click.
+              All conversations, orders, products and other data for this page will be hidden immediately
+              and <strong>permanently deleted after 7 days</strong>. Reconnect the same page within 7 days
+              and everything will be restored automatically.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => disconnectId && disconnect.mutate(disconnectId)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Disconnect
+              Disconnect for 7 days
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Page category dialog — opens after a fresh connection */}
+      <PageCategoryDialog
+        pageId={categoryDialogPageId}
+        pageName={categoryDialogPageName}
+        onDone={() => { setCategoryDialogPageId(null); setCategoryDialogPageName(null); }}
+      />
     </div>
   );
 };
