@@ -39,7 +39,7 @@ const CreditDashboard = () => {
         supabase.from("user_credits").select("balance").eq("user_id", user!.id).maybeSingle(),
         supabase.from("credit_transactions").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(50),
         supabase.from("bot_settings").select("setting_key, setting_value").eq("user_id", user!.id),
-        supabase.from("profiles").select("subscription_status, subscription_plan, subscription_current_period_end").eq("id", user!.id).maybeSingle(),
+        supabase.from("profiles").select("subscription_status, subscription_plan, subscription_current_period_end, free_until").eq("id", user!.id).maybeSingle(),
       ]);
 
       const settingsMap: Record<string, string> = {};
@@ -107,6 +107,37 @@ const CreditDashboard = () => {
         <h2 className="text-2xl font-bold tracking-tight">{t("credits.title")}</h2>
         <p className="text-muted-foreground">{t("credits.subtitle")}</p>
       </div>
+
+      {/* Free trial banner */}
+      {(() => {
+        const freeUntil = data?.subscription?.free_until ? new Date(data.subscription.free_until) : null;
+        const daysLeft = freeUntil ? Math.max(0, Math.ceil((freeUntil.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 0;
+        const inTrial = daysLeft > 0;
+        const isActive = data?.subscription?.subscription_status === "active";
+        if (isActive) return null;
+        return (
+          <Card className={inTrial ? "border-emerald-500/40 bg-emerald-500/5" : "border-amber-500/40 bg-amber-500/5"}>
+            <CardContent className="pt-5 pb-5 flex items-center gap-4">
+              <div className="h-12 w-12 rounded-full bg-emerald-500/15 flex items-center justify-center">
+                <Sparkles className="h-6 w-6 text-emerald-600" />
+              </div>
+              <div className="flex-1">
+                {inTrial ? (
+                  <>
+                    <p className="font-semibold">🎁 Free trial active — {daysLeft} day{daysLeft === 1 ? "" : "s"} left</p>
+                    <p className="text-xs text-muted-foreground">Your $2 welcome credit is yours to use. Text replies cost ${(data?.costText ?? 0.003).toFixed(3)} each. When credit runs out, top up to keep your bot running. After {daysLeft} days the $20/mo plan unlocks image analysis.</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-semibold">Your free month has ended</p>
+                    <p className="text-xs text-muted-foreground">Subscribe to the $20/mo plan to unlock image analysis. Text replies still work as long as you have balance.</p>
+                  </>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Balance Card */}
       <Card className="border-2 border-primary/20">
