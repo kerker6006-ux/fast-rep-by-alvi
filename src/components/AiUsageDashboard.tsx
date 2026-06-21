@@ -2,13 +2,16 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageSquare, Image as ImageIcon, ShoppingCart, DollarSign, TrendingUp, Calendar, Type, Coins, Brain } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MessageSquare, Image as ImageIcon, ShoppingCart, DollarSign, TrendingUp, Calendar, Type, Coins, Brain, Lock } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 
 const AiUsageDashboard = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { hasActiveSub } = useSubscriptionStatus();
 
   const { data, isLoading } = useQuery({
     queryKey: ["ai-usage", user?.id],
