@@ -509,10 +509,10 @@ async function handleMessagingEvent(
     if (userId) {
       await supabase.from("notifications").insert({
         user_id: userId,
-        type: "image_received",
-        title: "New image from customer",
-        body: "A customer sent an image. Open Image Inbox to reply.",
-        link: "#conversations:images",
+        type: "alert_box",
+        title: "New alert — image received",
+        body: "A customer sent an image. Open the Alert Box to reply.",
+        link: "#conversations:alerts",
         metadata: { conversation_id: conversationId },
       });
     }

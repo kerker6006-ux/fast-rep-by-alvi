@@ -341,6 +341,7 @@ export type Database = {
       }
       conversations: {
         Row: {
+          alert_seen_at: string | null
           channel: string
           created_at: string
           fb_sender_id: string
@@ -354,6 +355,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          alert_seen_at?: string | null
           channel?: string
           created_at?: string
           fb_sender_id: string
@@ -367,6 +369,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          alert_seen_at?: string | null
           channel?: string
           created_at?: string
           fb_sender_id?: string
@@ -911,6 +914,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          alert_box_intro_dismissed: boolean
           avatar_url: string | null
           business_category:
             | Database["public"]["Enums"]["business_category"]
@@ -918,6 +922,7 @@ export type Database = {
           business_info: Json
           created_at: string
           display_name: string | null
+          fb_24h_notice_dismissed: boolean
           free_until: string
           id: string
           is_approved: boolean
@@ -930,6 +935,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          alert_box_intro_dismissed?: boolean
           avatar_url?: string | null
           business_category?:
             | Database["public"]["Enums"]["business_category"]
@@ -937,6 +943,7 @@ export type Database = {
           business_info?: Json
           created_at?: string
           display_name?: string | null
+          fb_24h_notice_dismissed?: boolean
           free_until?: string
           id: string
           is_approved?: boolean
@@ -949,6 +956,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          alert_box_intro_dismissed?: boolean
           avatar_url?: string | null
           business_category?:
             | Database["public"]["Enums"]["business_category"]
@@ -956,6 +964,7 @@ export type Database = {
           business_info?: Json
           created_at?: string
           display_name?: string | null
+          fb_24h_notice_dismissed?: boolean
           free_until?: string
           id?: string
           is_approved?: boolean

@@ -57,17 +57,16 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
   const { category } = useBusinessCategory();
   const navigate = useNavigate();
 
-  const { data: unreadImages = 0 } = useQuery({
-    queryKey: ["sidebar-unread-images", user?.id],
+  const { data: unreadAlerts = 0 } = useQuery({
+    queryKey: ["sidebar-unread-alerts", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
       const { count } = await supabase
-        .from("messages")
+        .from("conversations")
         .select("*", { count: "exact", head: true })
         .eq("user_id", user!.id)
-        .eq("direction", "incoming")
-        .not("image_url", "is", null)
-        .is("read_at", null);
+        .eq("needs_human", true)
+        .or("alert_seen_at.is.null,alert_seen_at.lt.last_message_at");
       return count || 0;
     },
     refetchInterval: 20000,
@@ -129,8 +128,8 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
             >
               <item.icon className="h-[18px] w-[18px] shrink-0" />
               {!collapsed && <span className="truncate animate-fade-in flex-1">{t(labelKey)}</span>}
-              {item.id === "conversations" && unreadImages > 0 && (
-                <Badge variant="destructive" className={cn("h-5 min-w-[20px] px-1.5 text-[10px] font-bold", collapsed && "absolute top-1 right-1")}>{unreadImages}</Badge>
+              {item.id === "conversations" && unreadAlerts > 0 && (
+                <Badge variant="destructive" className={cn("h-5 min-w-[20px] px-1.5 text-[10px] font-bold", collapsed && "absolute top-1 right-1")}>{unreadAlerts}</Badge>
               )}
             </button>
           );
