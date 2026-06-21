@@ -3,6 +3,12 @@ project_id = "urtpathqupraeokaigzz"
 [functions.fb-oauth-callback]
 verify_jwt = false
 
+[functions.fb-login-start]
+verify_jwt = false
+
+[functions.fb-login-callback]
+verify_jwt = false
+
 [functions.fb-webhook]
 verify_jwt = false
 
