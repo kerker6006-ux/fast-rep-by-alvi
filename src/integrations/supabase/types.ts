@@ -1805,7 +1805,13 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
-      business_category: "ecommerce" | "dental" | "hvac" | "salon"
+      business_category:
+        | "ecommerce"
+        | "dental"
+        | "hvac"
+        | "salon"
+        | "service"
+        | "content_creator"
       order_status:
         | "pending"
         | "confirmed"
@@ -1942,7 +1948,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
-      business_category: ["ecommerce", "dental", "hvac", "salon"],
+      business_category: [
+        "ecommerce",
+        "dental",
+        "hvac",
+        "salon",
+        "service",
+        "content_creator",
+      ],
       order_status: [
         "pending",
         "confirmed",

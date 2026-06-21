@@ -1057,32 +1057,38 @@ async function generateAiReply(
   if (userId) productQuery = productQuery.eq("user_id", userId);
   const { data: products } = await productQuery;
 
-  // ----- AI Receptionist: load business category + services -----
+  // ----- AI Receptionist: load page category (ecommerce | service | content_creator) -----
   let businessCategory: string | null = null;
   let businessInfoObj: any = {};
   let servicesList: any[] = [];
   if (userId) {
     const { data: prof } = await supabase
-      .from("profiles").select("business_category, business_info").eq("id", userId).maybeSingle();
-    businessCategory = prof?.business_category || null;
+      .from("profiles").select("business_info").eq("id", userId).maybeSingle();
     businessInfoObj = prof?.business_info || {};
-    if (businessCategory && businessCategory !== "ecommerce") {
+
+    // Source of truth = fb_pages.page_category (set per page, editable in Bot Settings)
+    const { data: pageRow } = await supabase
+      .from("fb_pages").select("page_category").eq("user_id", userId).eq("is_active", true)
+      .order("created_at", { ascending: true }).limit(1).maybeSingle();
+    businessCategory = (pageRow?.page_category as string | null) || null;
+
+    if (businessCategory === "service") {
       const { data: svcs } = await supabase
         .from("services").select("name, description, price_text, duration_text, service_area")
-        .eq("user_id", userId).eq("category", businessCategory).eq("active", true);
+        .eq("user_id", userId).eq("active", true);
       servicesList = svcs || [];
     }
   }
 
   const leadFieldsByCategory: Record<string, string[]> = {
-    ecommerce: ["Customer Name", "Phone Number", "Product Interested In"],
-    dental:    ["Patient Name", "Phone Number", "Interested Service", "Preferred Appointment Date"],
-    hvac:      ["Customer Name", "Phone Number", "Address", "Service Needed", "Preferred Visit Date"],
-    salon:     ["Customer Name", "Phone Number", "Service Interested In", "Appointment Date"],
+    ecommerce:       ["Customer Name", "Phone Number", "Full Address", "Product", "Quantity"],
+    service:         ["Customer Name", "Phone Number", "Service Needed", "Preferred Date"],
+    content_creator: ["Customer Name", "Phone or Email", "Course / Product Interested In"],
   };
   const categoryLabel: Record<string, string> = {
-    ecommerce: "online store", dental: "dental clinic",
-    hvac: "HVAC / home services company", salon: "beauty salon / med spa",
+    ecommerce: "online store",
+    service: "service business",
+    content_creator: "online educator selling courses & digital products",
   };
   const receptionistPreamble = businessCategory ? `#############################
 # ROLE — AI RECEPTIONIST (HIGHEST PRIORITY)
@@ -1280,39 +1286,35 @@ ${isFirstInbound ? "→ This IS the first message: reply in English." : `→ Det
   }
   // ====== END LANGUAGE PREFERENCE ======
 
-  // Branch system prompt by business category.
-  // Service verticals (dental/hvac/salon) get a clean AI Receptionist prompt
-  // with no product catalog, no order/shopkeeper/skincare bias.
-  const isServiceVertical = !!(businessCategory && businessCategory !== "ecommerce");
+  // Branch system prompt by page category: ecommerce | service | content_creator.
+  const isServiceVertical = businessCategory === "service";
+  const isContentCreator = businessCategory === "content_creator";
 
   const personaByCat: Record<string, string> = {
-    dental: `You are the front-desk receptionist at "${settings.business_name || "the clinic"}" — a dental practice.
-- Warm, calm, professional. Sound like a real human receptionist, never a chatbot.
-- You handle: treatment questions (cleaning, whitening, braces, root canal, implants), pricing IF in the knowledge base, hours, location, insurance, and appointment booking.
-- You NEVER diagnose, NEVER recommend medication, NEVER promise outcomes. For anything clinical, say "the dentist will confirm during your visit."
-- Goal of every chat: get an appointment on the books.`,
-    hvac: `You are the dispatch coordinator at "${settings.business_name || "the company"}" — an HVAC / home-services company (AC, heating, plumbing, electrical).
-- Direct, helpful, fast. Talk like a real dispatcher — short sentences, no fluff.
-- First, figure out: is this an EMERGENCY (no AC in summer, leak, no heat in winter, sparking) or a SCHEDULED job (tune-up, install, quote)? Treat emergencies with urgency.
-- You handle: triage, service area check, rough pricing IF in the pricing policy, scheduling a visit.
-- You NEVER quote a final price without seeing the job — always say "the tech will confirm the price on-site."
-- Goal of every chat: book a service visit with name, phone, address, problem, preferred date.`,
-    salon: `You are the front-desk concierge at "${settings.business_name || "the salon"}" — a beauty salon / med spa (hair, facial, botox, fillers, laser).
-- Warm, polished, on-brand. Talk like an upscale concierge, never pushy.
-- You handle: service descriptions, package pricing IF in the menu, deposit and cancellation policy, booking.
-- You NEVER give medical advice on injectables, NEVER promise specific results, NEVER discount unless the owner set a promo.
-- Goal of every chat: book the appointment with name, phone, service, preferred date.`,
+    service: `You are the front-desk receptionist at "${settings.business_name || "our business"}" — a service business (could be a clinic, salon, repair shop, home services, consulting, anything).
+- Warm, professional, fast. Talk like a real human receptionist, never a chatbot.
+- You handle: service descriptions, pricing IF it's in the knowledge base, hours, location, and booking appointments.
+- You NEVER invent prices, services, hours or policies. If you don't know, say "let me check with the team and get back to you."
+- You NEVER give expert/medical/legal/technical advice — that's for the specialist during the visit.
+- Goal of every chat: book the appointment.`,
+    content_creator: `You are the support assistant for "${settings.business_name || "this creator"}" — an online educator who sells courses, coaching and digital products on Facebook.
+- Friendly, sharp, helpful. Sound like the creator's own team member, never a chatbot.
+- You handle: course descriptions, what's included, price, payment, refund policy, how to enroll, login/access issues, and answering the creator's expertise area at a high level (do not impersonate the creator).
+- You NEVER promise specific results, NEVER invent course content, NEVER discount unless the owner set a promo.
+- For existing students with access issues, collect their order email and tell them the team will check.
+- Goal of every chat: get the prospect enrolled, or capture the lead (name + phone/email + which course).`,
   };
 
-  const kbForVertical = isServiceVertical ? [
+  const kbForVertical = (isServiceVertical || isContentCreator) ? [
     settings.business_address || businessInfoObj.business_address ? `ADDRESS: ${settings.business_address || businessInfoObj.business_address}` : "",
     settings.operating_hours || businessInfoObj.hours ? `HOURS: ${settings.operating_hours || businessInfoObj.hours}` : "",
-    businessCategory === "dental" && settings.insurance_accepted ? `INSURANCE ACCEPTED: ${settings.insurance_accepted}` : "",
-    businessCategory === "hvac" && settings.service_area_zips ? `SERVICE AREA: ${settings.service_area_zips}` : "",
+    settings.service_area_zips ? `SERVICE AREA: ${settings.service_area_zips}` : "",
     settings.emergency_policy ? `EMERGENCY POLICY: ${settings.emergency_policy}` : "",
     settings.cancellation_policy ? `CANCELLATION POLICY: ${settings.cancellation_policy}` : "",
-    businessCategory === "salon" && settings.deposit_policy ? `DEPOSIT POLICY: ${settings.deposit_policy}` : "",
-    businessCategory === "hvac" && settings.pricing_policy ? `PRICING POLICY: ${settings.pricing_policy}` : "",
+    settings.deposit_policy ? `DEPOSIT POLICY: ${settings.deposit_policy}` : "",
+    settings.pricing_policy ? `PRICING POLICY: ${settings.pricing_policy}` : "",
+    settings.refund_policy ? `REFUND POLICY: ${settings.refund_policy}` : "",
+    settings.pricing_policy ? `PRICING POLICY: ${settings.pricing_policy}` : "",
   ].filter(Boolean).join("\n") : "";
 
   const servicesBlock = servicesList.length
@@ -1321,7 +1323,7 @@ ${isFirstInbound ? "→ This IS the first message: reply in English." : `→ Det
 
   let systemPrompt: string;
 
-  if (isServiceVertical) {
+  if (isServiceVertical || isContentCreator) {
     const leadFields = (leadFieldsByCategory[businessCategory!] || []).join(", ");
     systemPrompt = `${receptionistPreamble}#############################
 # IDENTITY
@@ -1839,9 +1841,10 @@ async function detectAndCreateComplaint(
 async function extractAndSaveLead(supabase: any, apiKey: string, conversationId: string, userId: string | null) {
   if (!userId || !apiKey) return;
   try {
-    const { data: prof } = await supabase
-      .from("profiles").select("business_category").eq("id", userId).maybeSingle();
-    const category = prof?.business_category;
+    const { data: pageRow } = await supabase
+      .from("fb_pages").select("page_category").eq("user_id", userId).eq("is_active", true)
+      .order("created_at", { ascending: true }).limit(1).maybeSingle();
+    const category = pageRow?.page_category as string | null;
     if (!category) return;
 
     const { data: msgs } = await supabase
@@ -1852,9 +1855,9 @@ async function extractAndSaveLead(supabase: any, apiKey: string, conversationId:
     const transcript = msgs.map((m: any) => `${m.direction === "incoming" ? "Customer" : "Bot"}: ${m.content || ""}`).join("\n");
 
     const fields = category === "ecommerce"
+      ? ["name", "phone", "address", "service_or_product"]
+      : category === "content_creator"
       ? ["name", "phone", "service_or_product"]
-      : category === "hvac"
-      ? ["name", "phone", "address", "service_or_product", "preferred_date"]
       : ["name", "phone", "service_or_product", "preferred_date"];
 
     const sysPrompt = `Extract lead information from this Facebook Messenger conversation. Return ONLY a JSON object with these fields (null if not stated): ${fields.join(", ")}. Use null for missing values. Do not invent data.`;
