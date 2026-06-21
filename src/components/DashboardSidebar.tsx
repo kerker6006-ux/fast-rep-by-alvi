@@ -91,8 +91,8 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border shrink-0">
-        <div className="h-9 w-9 rounded-xl bg-gradient-primary flex items-center justify-center shrink-0 shadow-glow">
-          <Bot className="h-5 w-5 text-white" />
+        <div className="h-9 w-9 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-soft overflow-hidden">
+          <img src={logoAsset.url} alt="LeadPilot logo" className="h-6 w-6 object-contain" width={36} height={36} />
         </div>
         {!collapsed && (
           <div className="animate-fade-in overflow-hidden">
