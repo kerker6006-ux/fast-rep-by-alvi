@@ -109,7 +109,7 @@ serve(async (req) => {
         const lookupColumn = isInstagram ? "ig_business_account_id" : "fb_page_id";
         const { data: fbPage } = await supabase
           .from("fb_pages")
-          .select("user_id, page_access_token, is_active, fb_page_id, ig_business_account_id")
+          .select("id, user_id, page_access_token, is_active, fb_page_id, ig_business_account_id")
           .eq(lookupColumn, entryId)
           .eq("is_active", true)
           .maybeSingle();
