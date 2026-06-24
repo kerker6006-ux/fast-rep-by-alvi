@@ -22,6 +22,7 @@ const ReviewerGuide = lazy(() => import("./pages/ReviewerGuide.tsx"));
 
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const Index = lazy(() => import("./pages/Index.tsx"));
+const AcceptInvite = lazy(() => import("./pages/AcceptInvite.tsx"));
 
 // Admin chunks load only when the admin area is visited.
 const AdminLayout = lazy(() => import("@/components/admin/AdminLayout"));
@@ -86,6 +87,7 @@ const App = () => (
                 <Route path="/data-deletion" element={<DataDeletion />} />
                 <Route path="/data-deletion-status" element={<DataDeletionStatus />} />
                 <Route path="/reviewer-guide" element={<ReviewerGuide />} />
+                <Route path="/accept-invite" element={<AcceptInvite />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

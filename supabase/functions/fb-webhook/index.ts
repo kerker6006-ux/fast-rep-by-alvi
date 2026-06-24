@@ -109,7 +109,7 @@ serve(async (req) => {
         const lookupColumn = isInstagram ? "ig_business_account_id" : "fb_page_id";
         const { data: fbPage } = await supabase
           .from("fb_pages")
-          .select("user_id, page_access_token, is_active, fb_page_id, ig_business_account_id")
+          .select("id, user_id, page_access_token, is_active, fb_page_id, ig_business_account_id")
           .eq(lookupColumn, entryId)
           .eq("is_active", true)
           .maybeSingle();
@@ -153,7 +153,7 @@ serve(async (req) => {
 
         // Handle messaging events (DMs) — same shape on FB and IG
         for (const event of entry.messaging || []) {
-          await handleMessagingEvent(supabase, event, selfId, PAGE_ACCESS_TOKEN, LOVABLE_API_KEY, settings, userId, platform);
+          await handleMessagingEvent(supabase, event, selfId, PAGE_ACCESS_TOKEN, LOVABLE_API_KEY, settings, userId, platform, fbPage.id);
         }
 
         // Handle changes (FB feed + IG comments)
@@ -438,7 +438,8 @@ async function handleMessagingEvent(
   supabase: any, event: any, pageId: string,
   pageAccessToken: string, lovableApiKey: string | undefined,
   settings: Record<string, string>, userId: string | null,
-  platform: "facebook" | "instagram" = "facebook"
+  platform: "facebook" | "instagram" = "facebook",
+  fbPageRowId: string | null = null,
 ) {
   const senderId = event.sender?.id;
   if (!senderId) return;
@@ -468,7 +469,7 @@ async function handleMessagingEvent(
   const fbMessageId = event.message?.mid || null;
 
   // Get or create conversation (with user_id)
-  const conversationId = await getOrCreateConversation(supabase, senderId, pageAccessToken, userId, platform);
+  const conversationId = await getOrCreateConversation(supabase, senderId, pageAccessToken, userId, platform, fbPageRowId);
   if (!conversationId) return;
 
   let imageUrl: string | null = null;
@@ -485,6 +486,7 @@ async function handleMessagingEvent(
     content: messageText || (imageUrl ? "[Image]" : null),
     image_url: imageUrl,
     user_id: userId,
+    fb_page_id: fbPageRowId,
   });
 
   if (incomingInsertError) {
@@ -665,9 +667,10 @@ async function handleMessagingEvent(
 
 async function getOrCreateConversation(
   supabase: any, senderId: string, pageAccessToken: string, userId: string | null,
-  channel: "facebook" | "instagram" = "facebook"
+  channel: "facebook" | "instagram" = "facebook",
+  fbPageRowId: string | null = null,
 ): Promise<string | null> {
-  let query = supabase.from("conversations").select("id").eq("fb_sender_id", senderId);
+  let query = supabase.from("conversations").select("id, fb_page_id").eq("fb_sender_id", senderId);
   if (userId) query = query.eq("user_id", userId);
   const { data: existingConvo } = await query.maybeSingle();
 
@@ -691,14 +694,18 @@ async function getOrCreateConversation(
   }
 
   if (existingConvo) {
-    if (senderName) {
-      await supabase.from("conversations").update({ sender_name: senderName, channel }).eq("id", existingConvo.id);
+    const updates: any = {};
+    if (senderName) { updates.sender_name = senderName; updates.channel = channel; }
+    if (fbPageRowId && !existingConvo.fb_page_id) updates.fb_page_id = fbPageRowId;
+    if (Object.keys(updates).length) {
+      await supabase.from("conversations").update(updates).eq("id", existingConvo.id);
     }
     return existingConvo.id;
   }
 
   const insertData: any = { fb_sender_id: senderId, sender_name: senderName, channel };
   if (userId) insertData.user_id = userId;
+  if (fbPageRowId) insertData.fb_page_id = fbPageRowId;
 
   const { data: newConvo, error } = await supabase
     .from("conversations").insert(insertData).select("id").single();
@@ -985,6 +992,10 @@ async function saveOutgoingMessage(
   supabase: any, conversationId: string, content: string,
   imageUrl: string | null = null, userId: string | null = null
 ) {
+  // pull fb_page_id from the conversation so the message inherits the page tag
+  const { data: convoRow } = await supabase
+    .from("conversations").select("fb_page_id").eq("id", conversationId).maybeSingle();
+
   const insertData: any = {
     conversation_id: conversationId,
     direction: "outgoing",
@@ -992,6 +1003,7 @@ async function saveOutgoingMessage(
     image_url: imageUrl,
   };
   if (userId) insertData.user_id = userId;
+  if (convoRow?.fb_page_id) insertData.fb_page_id = convoRow.fb_page_id;
 
   await supabase.from("messages").insert(insertData);
   await supabase.from("conversations").update({
@@ -1682,6 +1694,10 @@ RULES FOR "no_action":
       }
     }
 
+    // page tag (uuid) — copy from conversation so RLS lets members see it
+    const { data: convoForPage } = await supabase
+      .from("conversations").select("fb_page_id").eq("id", conversationId).maybeSingle();
+
     const upsertData: any = {
       conversation_id: conversationId,
       customer_name: customerName,
@@ -1693,6 +1709,7 @@ RULES FOR "no_action":
       updated_at: new Date().toISOString(),
     };
     if (userId) upsertData.user_id = userId;
+    if (convoForPage?.fb_page_id) upsertData.fb_page_id = convoForPage.fb_page_id;
 
     if (existingOrder) {
       // UPDATE existing order (modification or re-confirmation)
@@ -1850,7 +1867,9 @@ async function detectAndCreateComplaint(
       await saveOutgoingMessage(supabase, conversationId, confirmMsg, null, userId);
     }
 
-    // Save complaint
+    // Save complaint (tagged with page for member access)
+    const { data: convoForPage } = await supabase
+      .from("conversations").select("fb_page_id").eq("id", conversationId).maybeSingle();
     const insertData: any = {
       conversation_id: conversationId,
       customer_name: data.customer_name || null,
@@ -1859,6 +1878,7 @@ async function detectAndCreateComplaint(
       status: "pending",
     };
     if (userId) insertData.user_id = userId;
+    if (convoForPage?.fb_page_id) insertData.fb_page_id = convoForPage.fb_page_id;
 
     await supabase.from("complaints").insert(insertData);
     console.log("Complaint created for conversation:", conversationId);

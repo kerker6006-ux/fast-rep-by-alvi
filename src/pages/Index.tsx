@@ -1,10 +1,12 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import CategoryOnboarding from "@/components/CategoryOnboarding";
 import NotificationBell from "@/components/NotificationBell";
 import PaywallCard from "@/components/PaywallCard";
 import PageSwitcher from "@/components/PageSwitcher";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { useActivePage } from "@/contexts/ActivePageContext";
+import { isTabAllowedForRole, MODERATOR_ALLOWED_TABS } from "@/lib/pageAccess";
 
 // Lazy-load every dashboard tab — only the active one downloads.
 const AnalyticsDashboard = lazy(() => import("@/components/AnalyticsDashboard"));
@@ -68,7 +70,17 @@ const Index = () => {
   })();
   const [activeTab, setActiveTab] = useState(initialTab);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const ActiveComponent = tabs[activeTab] || AnalyticsDashboard;
+  const { accessRole } = useActivePage();
+
+  // Force moderator to an allowed tab if they land on a restricted one (e.g. after switching pages)
+  useEffect(() => {
+    if (accessRole === "moderator" && !isTabAllowedForRole(activeTab, accessRole)) {
+      setActiveTab("conversations");
+    }
+  }, [accessRole, activeTab]);
+
+  const safeTab = accessRole === "moderator" && !MODERATOR_ALLOWED_TABS.has(activeTab) ? "conversations" : activeTab;
+  const ActiveComponent = tabs[safeTab] || AnalyticsDashboard;
   const { isLocked } = useSubscriptionStatus();
 
   // Tabs that remain usable when the free month has ended with no active subscription.
