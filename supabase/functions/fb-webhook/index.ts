@@ -1694,6 +1694,10 @@ RULES FOR "no_action":
       }
     }
 
+    // page tag (uuid) — copy from conversation so RLS lets members see it
+    const { data: convoForPage } = await supabase
+      .from("conversations").select("fb_page_id").eq("id", conversationId).maybeSingle();
+
     const upsertData: any = {
       conversation_id: conversationId,
       customer_name: customerName,
@@ -1705,6 +1709,7 @@ RULES FOR "no_action":
       updated_at: new Date().toISOString(),
     };
     if (userId) upsertData.user_id = userId;
+    if (convoForPage?.fb_page_id) upsertData.fb_page_id = convoForPage.fb_page_id;
 
     if (existingOrder) {
       // UPDATE existing order (modification or re-confirmation)
