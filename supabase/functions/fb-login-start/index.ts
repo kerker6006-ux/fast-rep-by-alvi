@@ -30,7 +30,7 @@ function callbackUrl(): string {
 const ALLOWED_REDIRECT_ORIGINS = new Set([
   "https://leadpilot.life",
   "https://www.leadpilot.life",
-  "https://fast-rep-by-alvi.lovable.app",
+  
   "http://localhost:8080",
   "http://localhost:5173",
 ]);
