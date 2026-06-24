@@ -35,15 +35,26 @@ serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey);
 
-    // Load conversation with ownership check
+    // Load conversation
     const { data: convo, error: cErr } = await admin
       .from("conversations")
       .select("id, user_id, fb_sender_id, fb_page_id")
       .eq("id", conversation_id)
-      .eq("user_id", userId)
       .single();
     if (cErr || !convo) {
       return new Response(JSON.stringify({ error: "Conversation not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Access check: caller must be owner of the page OR a page member
+    let hasAccess = convo.user_id === userId;
+    if (!hasAccess && convo.fb_page_id) {
+      const { data: mem } = await admin
+        .from("page_members").select("id")
+        .eq("page_id", convo.fb_page_id).eq("user_id", userId).maybeSingle();
+      hasAccess = !!mem;
+    }
+    if (!hasAccess) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Check 24h messaging window
@@ -63,12 +74,11 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: `Outside 24-hour messaging window (${Math.floor(hoursSince)}h since last customer message). Meta policy blocks this send.` }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Load page access token
+    // Load page access token using the page this conversation belongs to
     const { data: page } = await admin
       .from("fb_pages")
-      .select("page_access_token, page_id")
-      .eq("user_id", userId)
-      .eq("page_id", convo.fb_page_id)
+      .select("page_access_token")
+      .eq("id", convo.fb_page_id)
       .maybeSingle();
     const pat = page?.page_access_token || Deno.env.get("FB_PAGE_ACCESS_TOKEN");
     if (!pat) {
