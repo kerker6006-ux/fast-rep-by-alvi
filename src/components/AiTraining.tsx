@@ -156,16 +156,14 @@ const AiTraining = () => {
   const [editingSuggestion, setEditingSuggestion] = useState<{q: string; a: string}>({q: "", a: ""});
 
   const { data: dbSettings, isLoading } = useQuery({
-    queryKey: ["bot-settings", user?.id],
-    enabled: !!user?.id,
+    queryKey: ["bot-settings", activePage?.id],
+    enabled: !!activePage?.id,
     queryFn: async () => {
-      if (!user?.id) return [];
-
+      if (!activePage?.id) return [];
       const { data, error } = await supabase
         .from("bot_settings")
         .select("*")
-        .eq("user_id", user.id);
-
+        .eq("fb_page_id", activePage.id);
       if (error) throw error;
       return data ?? [];
     },
@@ -195,11 +193,11 @@ const AiTraining = () => {
 
   // Persist chat history to bot_settings (best-effort, non-blocking)
   const persistChatHistory = async (msgs: ChatMessage[]) => {
-    if (!user?.id) return;
+    if (!user?.id || !activePage?.id) return;
     try {
       await supabase.from("bot_settings").upsert(
-        [{ user_id: user.id, setting_key: "ai_training_chat_history", setting_value: JSON.stringify(msgs) }] as any,
-        { onConflict: "user_id,setting_key" } as any,
+        [{ user_id: user.id, fb_page_id: activePage.id, setting_key: "ai_training_chat_history", setting_value: JSON.stringify(msgs) }] as any,
+        { onConflict: "fb_page_id,setting_key" } as any,
       );
     } catch { /* ignore */ }
   };
@@ -207,18 +205,20 @@ const AiTraining = () => {
 
   const upsertSettings = async (nextSettings: SettingsMap) => {
     if (!user?.id) throw new Error("Please log in again.");
+    if (!activePage?.id) throw new Error("Select a page first.");
 
     const payload = Object.entries(nextSettings).map(([setting_key, setting_value]) => ({
       setting_key,
       setting_value,
       user_id: user.id,
+      fb_page_id: activePage.id,
     }));
 
     if (payload.length === 0) return;
 
     const { error } = await supabase
       .from("bot_settings")
-      .upsert(payload as any, { onConflict: "user_id,setting_key" } as any);
+      .upsert(payload as any, { onConflict: "fb_page_id,setting_key" } as any);
 
     if (error) throw error;
   };
@@ -383,12 +383,12 @@ const AiTraining = () => {
   const resetChat = async () => {
     setChatMessages([]);
     setChatStarted(false);
-    if (user?.id) {
+    if (activePage?.id) {
       try {
         await supabase
           .from("bot_settings")
           .delete()
-          .eq("user_id", user.id)
+          .eq("fb_page_id", activePage.id)
           .eq("setting_key", "ai_training_chat_history");
       } catch { /* ignore */ }
     }
@@ -401,12 +401,12 @@ const AiTraining = () => {
     const next = { ...settings };
     delete next.training_chat_language;
     setSettings(next);
-    if (user?.id) {
+    if (activePage?.id) {
       try {
         await supabase
           .from("bot_settings")
           .delete()
-          .eq("user_id", user.id)
+          .eq("fb_page_id", activePage.id)
           .in("setting_key", ["training_chat_language", "ai_training_chat_history"]);
       } catch { /* ignore */ }
     }
