@@ -1867,7 +1867,9 @@ async function detectAndCreateComplaint(
       await saveOutgoingMessage(supabase, conversationId, confirmMsg, null, userId);
     }
 
-    // Save complaint
+    // Save complaint (tagged with page for member access)
+    const { data: convoForPage } = await supabase
+      .from("conversations").select("fb_page_id").eq("id", conversationId).maybeSingle();
     const insertData: any = {
       conversation_id: conversationId,
       customer_name: data.customer_name || null,
@@ -1876,6 +1878,7 @@ async function detectAndCreateComplaint(
       status: "pending",
     };
     if (userId) insertData.user_id = userId;
+    if (convoForPage?.fb_page_id) insertData.fb_page_id = convoForPage.fb_page_id;
 
     await supabase.from("complaints").insert(insertData);
     console.log("Complaint created for conversation:", conversationId);
