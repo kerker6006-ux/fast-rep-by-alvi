@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
+import { useActivePage } from "@/contexts/ActivePageContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,13 +23,16 @@ type Suggestion = {
 const ProductSuggestions = () => {
   const { t } = useTranslation();
   const qc = useQueryClient();
+  const { activePage } = useActivePage();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["product-suggestions"],
+    queryKey: ["product-suggestions", activePage?.id],
+    enabled: !!activePage?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("product_suggestions" as any)
         .select("*")
+        .eq("fb_page_id", activePage!.id)
         .order("request_count", { ascending: false })
         .order("updated_at", { ascending: false });
       if (error) throw error;

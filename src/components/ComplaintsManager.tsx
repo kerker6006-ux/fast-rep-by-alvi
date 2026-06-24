@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActivePage } from "@/contexts/ActivePageContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,17 +24,18 @@ const ComplaintsManager = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { activePage } = useActivePage();
   const [selected, setSelected] = useState<any>(null);
   const [adminNote, setAdminNote] = useState("");
 
   const { data: complaints, isLoading } = useQuery({
-    queryKey: ["complaints", user?.id],
-    enabled: !!user?.id,
+    queryKey: ["complaints", activePage?.id],
+    enabled: !!user?.id && !!activePage?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("complaints")
         .select("*, conversations(sender_name, fb_sender_id)")
-        .eq("user_id", user!.id)
+        .eq("fb_page_id", activePage!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;

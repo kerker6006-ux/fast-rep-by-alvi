@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActivePage } from "@/contexts/ActivePageContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,6 +19,7 @@ const AutoReplyRules = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { activePage } = useActivePage();
   const [open, setOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<any>(null);
   const [form, setForm] = useState({ keywords: "", response: "", responseBn: "", priority: 0 });
@@ -30,11 +32,13 @@ const AutoReplyRules = () => {
   ];
 
   const { data: rules, isLoading } = useQuery({
-    queryKey: ["auto-reply-rules"],
+    queryKey: ["auto-reply-rules", activePage?.id],
+    enabled: !!activePage?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("auto_reply_rules")
         .select("*")
+        .eq("fb_page_id", activePage!.id)
         .order("priority", { ascending: false });
       if (error) throw error;
       return data;
@@ -51,6 +55,7 @@ const AutoReplyRules = () => {
         response_text_bn: form.responseBn || null,
         priority: form.priority,
         user_id: user?.id,
+        fb_page_id: activePage?.id,
       });
       if (error) throw error;
     },

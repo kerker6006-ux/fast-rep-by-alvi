@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useActivePage } from "@/contexts/ActivePageContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,16 +15,19 @@ import { Globe, Trash2, Loader2, ExternalLink } from "lucide-react";
 const WebsiteImport = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const { activePage } = useActivePage();
   const [url, setUrl] = useState("");
   const [maxPages, setMaxPages] = useState(50);
   const [importProducts, setImportProducts] = useState(true);
 
   const { data: knowledge, isLoading } = useQuery({
-    queryKey: ["website-knowledge"],
+    queryKey: ["website-knowledge", activePage?.id],
+    enabled: !!activePage?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("website_knowledge" as any)
         .select("*")
+        .eq("fb_page_id", activePage!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as any[];

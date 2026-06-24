@@ -38,9 +38,10 @@ const BotSettings = () => {
   const [settings, setSettings] = useState<Record<string, string>>({});
 
   const { data: dbSettings, isLoading } = useQuery({
-    queryKey: ["bot-settings"],
+    queryKey: ["bot-settings", activePage?.id],
+    enabled: !!activePage?.id,
     queryFn: async () => {
-      const { data, error } = await supabase.from("bot_settings").select("*");
+      const { data, error } = await supabase.from("bot_settings").select("*").eq("fb_page_id", activePage!.id);
       if (error) throw error;
       return data;
     },
@@ -70,8 +71,9 @@ const BotSettings = () => {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      if (!activePage?.id) throw new Error("Select a page first");
       for (const [key, value] of Object.entries(settings)) {
-        const { error } = await supabase.from("bot_settings").upsert({ setting_key: key, setting_value: value, user_id: user?.id } as any, { onConflict: "user_id,setting_key" } as any);
+        const { error } = await supabase.from("bot_settings").upsert({ setting_key: key, setting_value: value, user_id: user?.id, fb_page_id: activePage.id } as any, { onConflict: "fb_page_id,setting_key" } as any);
         if (error) throw error;
       }
     },

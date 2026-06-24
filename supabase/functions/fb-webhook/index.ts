@@ -143,7 +143,7 @@ serve(async (req) => {
         const selfId = isInstagram ? fbPage.ig_business_account_id : fbPage.fb_page_id;
 
         // Load user-specific settings
-        const settings = await loadSettings(supabase, userId);
+        const settings = await loadSettings(supabase, userId, fbPage.id);
 
         // Check if bot is disabled
         if (settings.bot_enabled === "false") {
@@ -188,9 +188,11 @@ serve(async (req) => {
 
 // ---- Settings ----
 
-async function loadSettings(supabase: any, userId: string | null): Promise<Record<string, string>> {
+async function loadSettings(supabase: any, userId: string | null, pageId?: string | null): Promise<Record<string, string>> {
   let query = supabase.from("bot_settings").select("setting_key, setting_value");
-  if (userId) {
+  if (pageId) {
+    query = query.eq("fb_page_id", pageId);
+  } else if (userId) {
     query = query.eq("user_id", userId);
   }
   const { data: settingsRows } = await query;

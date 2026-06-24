@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActivePage } from "@/contexts/ActivePageContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,15 +19,18 @@ const PendingProducts = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { activePage } = useActivePage();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Record<string, any>>({});
 
   const { data: pending, isLoading } = useQuery({
-    queryKey: ["pending-products"],
+    queryKey: ["pending-products", activePage?.id],
+    enabled: !!activePage?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("pending_products")
         .select("*")
+        .eq("fb_page_id", activePage!.id)
         .eq("status", "pending")
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -39,6 +43,7 @@ const PendingProducts = () => {
       // Create the actual product
       const { error: productError } = await supabase.from("products").insert({
         user_id: user?.id,
+        fb_page_id: activePage?.id,
         name: item.ai_name || "Unnamed",
         name_bn: item.ai_name_bn,
         description: item.ai_description,
