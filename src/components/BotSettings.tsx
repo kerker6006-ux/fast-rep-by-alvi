@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { Save, Globe, MessageCircle, Info, Briefcase, AlertTriangle, ShoppingBag, Stethoscope, Wrench, Sparkles, Bell } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import TeamAccessCard from "@/components/TeamAccessCard";
 
 const BotSettings = () => {
   const { t } = useTranslation();
