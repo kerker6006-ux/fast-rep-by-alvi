@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActivePage } from "@/contexts/ActivePageContext";
 import { useBusinessCategory, BusinessCategory } from "@/hooks/useBusinessCategory";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ const emptyForm = { name: "", description: "", price_text: "", duration_text: ""
 const ServicesManager = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { activePage } = useActivePage();
   const { category } = useBusinessCategory();
   const qc = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -44,13 +46,13 @@ const ServicesManager = () => {
   const cat = (category && category !== "ecommerce" ? category : "dental") as Exclude<BusinessCategory, "ecommerce">;
 
   const { data: services = [], isLoading } = useQuery({
-    queryKey: ["services", user?.id, cat],
-    enabled: !!user?.id && category !== "ecommerce",
+    queryKey: ["services", activePage?.id, cat],
+    enabled: !!user?.id && !!activePage?.id && category !== "ecommerce",
     queryFn: async () => {
       const { data, error } = await supabase
         .from("services")
         .select("*")
-        .eq("user_id", user!.id)
+        .eq("fb_page_id", activePage!.id)
         .eq("category", cat)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -63,6 +65,7 @@ const ServicesManager = () => {
       if (!form.name.trim()) throw new Error(t("services.nameRequired"));
       const payload = {
         user_id: user!.id,
+        fb_page_id: activePage?.id,
         category: cat,
         name: form.name.trim(),
         description: form.description || null,
@@ -102,7 +105,7 @@ const ServicesManager = () => {
 
   const seedPresets = useMutation({
     mutationFn: async () => {
-      const rows = PRESETS[cat].map((name) => ({ user_id: user!.id, category: cat, name, active: true }));
+      const rows = PRESETS[cat].map((name) => ({ user_id: user!.id, fb_page_id: activePage?.id, category: cat, name, active: true }));
       const { error } = await supabase.from("services").insert(rows);
       if (error) throw error;
     },

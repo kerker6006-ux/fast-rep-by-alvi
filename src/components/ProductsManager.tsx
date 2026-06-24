@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActivePage } from "@/contexts/ActivePageContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,7 @@ const ProductsManager = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { activePage } = useActivePage();
   const { hasActiveSub } = useSubscription();
   const [isOpen, setIsOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -65,12 +67,12 @@ const ProductsManager = () => {
   });
 
   const { data: products, isLoading } = useQuery({
-    queryKey: ["products", user?.id],
-    enabled: !!user?.id,
+    queryKey: ["products", activePage?.id],
+    enabled: !!user?.id && !!activePage?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products").select("*")
-        .eq("user_id", user!.id)
+        .eq("fb_page_id", activePage!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as unknown as Product[];
@@ -200,6 +202,7 @@ const ProductsManager = () => {
         size: form.size || null,
         material: form.material || null,
         user_id: user?.id,
+        fb_page_id: activePage?.id,
         variants: finalVariants,
         size_variants: sizeVariants.filter(s => s.size.trim()).map(s => ({ size: s.size.trim(), price: Number(s.price) || 0 })),
       } as any;

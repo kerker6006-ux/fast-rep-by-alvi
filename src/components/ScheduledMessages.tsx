@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActivePage } from "@/contexts/ActivePageContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -33,6 +34,7 @@ const ScheduledMessages = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { activePage } = useActivePage();
   const [open, setOpen] = useState(false);
   const [selectedDays, setSelectedDays] = useState<number | null>(1);
   const [customDays, setCustomDays] = useState("");
@@ -41,10 +43,12 @@ const ScheduledMessages = () => {
   const [form, setForm] = useState({ content: "", messageType: "follow_up" });
 
   const { data: conversations } = useQuery({
-    queryKey: ["conversations-list"],
+    queryKey: ["conversations-list", activePage?.id],
+    enabled: !!activePage?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("conversations").select("id, sender_name, fb_sender_id")
+        .eq("fb_page_id", activePage!.id)
         .order("last_message_at", { ascending: false }).limit(50);
       if (error) throw error;
       return data;
@@ -52,11 +56,13 @@ const ScheduledMessages = () => {
   });
 
   const { data: scheduled, isLoading } = useQuery({
-    queryKey: ["scheduled-messages"],
+    queryKey: ["scheduled-messages", activePage?.id],
+    enabled: !!activePage?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("scheduled_messages")
         .select("*, conversations(sender_name)")
+        .eq("fb_page_id", activePage!.id)
         .order("scheduled_at", { ascending: false })
         .limit(100);
       if (error) throw error;
@@ -80,6 +86,7 @@ const ScheduledMessages = () => {
         scheduled_at: scheduledAt.toISOString(),
         message_type: form.messageType,
         user_id: user?.id,
+        fb_page_id: activePage?.id,
       }));
 
       const { error } = await supabase.from("scheduled_messages").insert(inserts);

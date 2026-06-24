@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActivePage } from "@/contexts/ActivePageContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,26 +35,27 @@ const empty = { name: "", keywords: "", match_type: "contains", dm_message: "", 
 
 const CommentTriggers = () => {
   const { user } = useAuth();
+  const { activePage } = useActivePage();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Trigger | null>(null);
   const [form, setForm] = useState<any>(empty);
 
   const { data: triggers = [] } = useQuery({
-    queryKey: ["comment-triggers", user?.id],
-    enabled: !!user,
+    queryKey: ["comment-triggers", activePage?.fb_page_id],
+    enabled: !!user && !!activePage?.fb_page_id,
     queryFn: async () => {
-      const { data, error } = await supabase.from("comment_triggers").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("comment_triggers").select("*").eq("fb_page_id", activePage!.fb_page_id).order("created_at", { ascending: false });
       if (error) throw error;
       return data as Trigger[];
     },
   });
 
   const { data: logs = [] } = useQuery({
-    queryKey: ["comment-trigger-logs", user?.id],
-    enabled: !!user,
+    queryKey: ["comment-trigger-logs", activePage?.fb_page_id],
+    enabled: !!user && !!activePage?.fb_page_id,
     queryFn: async () => {
-      const { data, error } = await supabase.from("comment_trigger_logs").select("*").order("created_at", { ascending: false }).limit(100);
+      const { data, error } = await supabase.from("comment_trigger_logs").select("*").eq("fb_page_id", activePage!.fb_page_id).order("created_at", { ascending: false }).limit(100);
       if (error) throw error;
       return data as any[];
     },
@@ -64,6 +66,7 @@ const CommentTriggers = () => {
     mutationFn: async () => {
       const payload = {
         user_id: user!.id,
+        fb_page_id: activePage?.fb_page_id,
         name: form.name,
         keywords: form.keywords.split(",").map((k: string) => k.trim().toLowerCase()).filter(Boolean),
         match_type: form.match_type,

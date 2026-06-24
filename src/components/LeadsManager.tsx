@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActivePage } from "@/contexts/ActivePageContext";
 import { useBusinessCategory } from "@/hooks/useBusinessCategory";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ const STATUSES = ["new", "contacted", "booked", "closed"] as const;
 const LeadsManager = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { activePage } = useActivePage();
   const { category } = useBusinessCategory();
   const isService = category && category !== "ecommerce";
   const ns = isService ? "appointments" : "leads";
@@ -44,13 +46,13 @@ const LeadsManager = () => {
   const [selected, setSelected] = useState<Lead | null>(null);
 
   const { data: leads = [], isLoading } = useQuery({
-    queryKey: ["leads", user?.id],
-    enabled: !!user?.id,
+    queryKey: ["leads", activePage?.id],
+    enabled: !!user?.id && !!activePage?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("leads")
         .select("*")
-        .eq("user_id", user!.id)
+        .eq("fb_page_id", activePage!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Lead[];

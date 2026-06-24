@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActivePage } from "@/contexts/ActivePageContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ const OrdersManager = () => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { activePage } = useActivePage();
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [editingOrder, setEditingOrder] = useState<any>(null);
   const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
@@ -45,13 +47,13 @@ const OrdersManager = () => {
   };
 
   const { data: orders, isLoading } = useQuery({
-    queryKey: ["orders", user?.id],
-    enabled: !!user?.id,
+    queryKey: ["orders", activePage?.id],
+    enabled: !!user?.id && !!activePage?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
         .select("*, conversations(sender_name, fb_sender_id)")
-        .eq("user_id", user!.id)
+        .eq("fb_page_id", activePage!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
