@@ -2059,6 +2059,22 @@ async function notifyOwnerByEmail(
 
     if (recipients.size === 0) return;
 
+    // Enrich with page name if missing
+    if (!templateData.pageName) {
+      try {
+        const { data: pg } = await supabase
+          .from("fb_pages")
+          .select("page_name")
+          .eq("user_id", userId)
+          .eq("is_active", true)
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (pg?.page_name) templateData.pageName = pg.page_name;
+      } catch {}
+    }
+
+
     for (const email of recipients) {
       try {
         await supabase.functions.invoke("send-transactional-email", {
