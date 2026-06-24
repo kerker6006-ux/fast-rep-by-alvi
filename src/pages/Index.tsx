@@ -70,7 +70,17 @@ const Index = () => {
   })();
   const [activeTab, setActiveTab] = useState(initialTab);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const ActiveComponent = tabs[activeTab] || AnalyticsDashboard;
+  const { accessRole } = useActivePage();
+
+  // Force moderator to an allowed tab if they land on a restricted one (e.g. after switching pages)
+  useEffect(() => {
+    if (accessRole === "moderator" && !isTabAllowedForRole(activeTab, accessRole)) {
+      setActiveTab("conversations");
+    }
+  }, [accessRole, activeTab]);
+
+  const safeTab = accessRole === "moderator" && !MODERATOR_ALLOWED_TABS.has(activeTab) ? "conversations" : activeTab;
+  const ActiveComponent = tabs[safeTab] || AnalyticsDashboard;
   const { isLocked } = useSubscriptionStatus();
 
   // Tabs that remain usable when the free month has ended with no active subscription.
