@@ -667,9 +667,10 @@ async function handleMessagingEvent(
 
 async function getOrCreateConversation(
   supabase: any, senderId: string, pageAccessToken: string, userId: string | null,
-  channel: "facebook" | "instagram" = "facebook"
+  channel: "facebook" | "instagram" = "facebook",
+  fbPageRowId: string | null = null,
 ): Promise<string | null> {
-  let query = supabase.from("conversations").select("id").eq("fb_sender_id", senderId);
+  let query = supabase.from("conversations").select("id, fb_page_id").eq("fb_sender_id", senderId);
   if (userId) query = query.eq("user_id", userId);
   const { data: existingConvo } = await query.maybeSingle();
 
@@ -693,14 +694,18 @@ async function getOrCreateConversation(
   }
 
   if (existingConvo) {
-    if (senderName) {
-      await supabase.from("conversations").update({ sender_name: senderName, channel }).eq("id", existingConvo.id);
+    const updates: any = {};
+    if (senderName) { updates.sender_name = senderName; updates.channel = channel; }
+    if (fbPageRowId && !existingConvo.fb_page_id) updates.fb_page_id = fbPageRowId;
+    if (Object.keys(updates).length) {
+      await supabase.from("conversations").update(updates).eq("id", existingConvo.id);
     }
     return existingConvo.id;
   }
 
   const insertData: any = { fb_sender_id: senderId, sender_name: senderName, channel };
   if (userId) insertData.user_id = userId;
+  if (fbPageRowId) insertData.fb_page_id = fbPageRowId;
 
   const { data: newConvo, error } = await supabase
     .from("conversations").insert(insertData).select("id").single();
