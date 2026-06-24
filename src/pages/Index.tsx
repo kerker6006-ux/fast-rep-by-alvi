@@ -1,10 +1,12 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import CategoryOnboarding from "@/components/CategoryOnboarding";
 import NotificationBell from "@/components/NotificationBell";
 import PaywallCard from "@/components/PaywallCard";
 import PageSwitcher from "@/components/PageSwitcher";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { useActivePage } from "@/contexts/ActivePageContext";
+import { isTabAllowedForRole, MODERATOR_ALLOWED_TABS } from "@/lib/pageAccess";
 
 // Lazy-load every dashboard tab — only the active one downloads.
 const AnalyticsDashboard = lazy(() => import("@/components/AnalyticsDashboard"));
