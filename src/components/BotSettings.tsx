@@ -107,6 +107,8 @@ const BotSettings = () => {
         </div>
       </div>
 
+      <TeamAccessCard />
+
       <div className="grid gap-6">
         <Card className="border-primary/30 shadow-soft">
           <CardHeader>
