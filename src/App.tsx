@@ -22,6 +22,7 @@ const ReviewerGuide = lazy(() => import("./pages/ReviewerGuide.tsx"));
 
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const Index = lazy(() => import("./pages/Index.tsx"));
+const AcceptInvite = lazy(() => import("./pages/AcceptInvite.tsx"));
 
 // Admin chunks load only when the admin area is visited.
 const AdminLayout = lazy(() => import("@/components/admin/AdminLayout"));
