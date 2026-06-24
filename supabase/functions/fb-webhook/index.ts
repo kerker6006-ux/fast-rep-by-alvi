@@ -153,7 +153,7 @@ serve(async (req) => {
 
         // Handle messaging events (DMs) — same shape on FB and IG
         for (const event of entry.messaging || []) {
-          await handleMessagingEvent(supabase, event, selfId, PAGE_ACCESS_TOKEN, LOVABLE_API_KEY, settings, userId, platform);
+          await handleMessagingEvent(supabase, event, selfId, PAGE_ACCESS_TOKEN, LOVABLE_API_KEY, settings, userId, platform, fbPage.id);
         }
 
         // Handle changes (FB feed + IG comments)
