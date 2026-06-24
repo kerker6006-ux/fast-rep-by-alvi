@@ -2024,3 +2024,57 @@ function matchTrigger(text: string, trigger: any): string | null {
   }
   return null;
 }
+
+// ---- Owner email notification (order / appointment) ----
+async function notifyOwnerByEmail(
+  supabase: any,
+  userId: string | null,
+  templateName: string,
+  templateData: Record<string, any>,
+  idempotencyKey: string,
+) {
+  if (!userId) return;
+  try {
+    const recipients = new Set<string>();
+    // 1) Owner's signup email
+    try {
+      const { data: u } = await supabase.auth.admin.getUserById(userId);
+      const ownerEmail = u?.user?.email;
+      if (ownerEmail) recipients.add(String(ownerEmail).toLowerCase());
+    } catch (e) { console.error("notifyOwner: getUserById failed", e); }
+
+    // 2) Optional custom notify_email from bot_settings
+    try {
+      const { data: rows } = await supabase
+        .from("bot_settings")
+        .select("setting_value")
+        .eq("user_id", userId)
+        .eq("setting_key", "notify_email")
+        .maybeSingle();
+      const extra = rows?.setting_value?.trim();
+      if (extra && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(extra)) {
+        recipients.add(extra.toLowerCase());
+      }
+    } catch (e) { console.error("notifyOwner: settings read failed", e); }
+
+    if (recipients.size === 0) return;
+
+    for (const email of recipients) {
+      try {
+        await supabase.functions.invoke("send-transactional-email", {
+          body: {
+            templateName,
+            recipientEmail: email,
+            idempotencyKey: `${idempotencyKey}-${email}`,
+            templateData,
+          },
+        });
+      } catch (e) {
+        console.error("notifyOwner: invoke failed for", email, e);
+      }
+    }
+  } catch (e) {
+    console.error("notifyOwner failed:", e);
+  }
+}
+
