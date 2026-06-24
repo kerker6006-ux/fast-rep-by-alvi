@@ -52,10 +52,10 @@ const CommentTriggers = () => {
   });
 
   const { data: logs = [] } = useQuery({
-    queryKey: ["comment-trigger-logs", activePage?.fb_page_id],
-    enabled: !!user && !!activePage?.fb_page_id,
+    queryKey: ["comment-trigger-logs", activePage?.id],
+    enabled: !!user && !!activePage?.id,
     queryFn: async () => {
-      const { data, error } = await supabase.from("comment_trigger_logs").select("*").eq("fb_page_id", activePage!.fb_page_id).order("created_at", { ascending: false }).limit(100);
+      const { data, error } = await supabase.from("comment_trigger_logs").select("*").eq("fb_page_id_uuid", activePage!.id).order("created_at", { ascending: false }).limit(100);
       if (error) throw error;
       return data as any[];
     },
