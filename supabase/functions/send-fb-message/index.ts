@@ -103,14 +103,15 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: fbJson.error?.message || "Facebook send failed", fb: fbJson }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Record outgoing message
+    // Record outgoing message (tagged with the page so members can see it)
     await admin.from("messages").insert({
-      user_id: userId,
+      user_id: convo.user_id,
       conversation_id,
       direction: "outgoing",
       content: text || null,
       image_url: image_url || null,
       fb_message_id: fbJson.message_id || null,
+      fb_page_id: convo.fb_page_id || null,
     });
 
     await admin.from("conversations").update({
