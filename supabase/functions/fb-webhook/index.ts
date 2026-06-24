@@ -992,6 +992,10 @@ async function saveOutgoingMessage(
   supabase: any, conversationId: string, content: string,
   imageUrl: string | null = null, userId: string | null = null
 ) {
+  // pull fb_page_id from the conversation so the message inherits the page tag
+  const { data: convoRow } = await supabase
+    .from("conversations").select("fb_page_id").eq("id", conversationId).maybeSingle();
+
   const insertData: any = {
     conversation_id: conversationId,
     direction: "outgoing",
@@ -999,6 +1003,7 @@ async function saveOutgoingMessage(
     image_url: imageUrl,
   };
   if (userId) insertData.user_id = userId;
+  if (convoRow?.fb_page_id) insertData.fb_page_id = convoRow.fb_page_id;
 
   await supabase.from("messages").insert(insertData);
   await supabase.from("conversations").update({
