@@ -1693,7 +1693,16 @@ RULES FOR "no_action":
         return;
       }
       console.log("New order created. Items:", JSON.stringify(orderData.items), "Total:", total);
+      // Notify owner by email (fire-and-forget)
+      notifyOwnerByEmail(supabase, userId, "new-order", {
+        customerName: customerName || "Customer",
+        customerPhone: customerPhone || "—",
+        customerAddress: customerAddress || "—",
+        items: orderData.items,
+        total,
+      }, `order-${conversationId}-${Date.now()}`).catch(() => {});
     }
+
   } catch (e) {
     console.error("Order processing error:", e);
   }
@@ -1832,6 +1841,13 @@ async function detectAndCreateComplaint(
 
     await supabase.from("complaints").insert(insertData);
     console.log("Complaint created for conversation:", conversationId);
+    // Notify owner by email (fire-and-forget)
+    notifyOwnerByEmail(supabase, userId, "new-appointment", {
+      customerName: data.customer_name || "Customer",
+      customerPhone: data.customer_phone || "—",
+      details: data.complaint_text || customerMessage || "",
+    }, `complaint-${conversationId}-${Date.now()}`).catch(() => {});
+
   } catch (e) {
     console.error("Complaint detection error:", e);
   }
