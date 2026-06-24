@@ -34,7 +34,7 @@ project_id = "urtpathqupraeokaigzz"
   [functions.handle-email-suppression]
     verify_jwt = false
   [functions.accept-page-invite]
-    verify_jwt = true
+    verify_jwt = false
   [functions.invite-page-member]
     verify_jwt = true
   [functions.revoke-page-invite]
