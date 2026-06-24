@@ -469,7 +469,7 @@ async function handleMessagingEvent(
   const fbMessageId = event.message?.mid || null;
 
   // Get or create conversation (with user_id)
-  const conversationId = await getOrCreateConversation(supabase, senderId, pageAccessToken, userId, platform);
+  const conversationId = await getOrCreateConversation(supabase, senderId, pageAccessToken, userId, platform, fbPageRowId);
   if (!conversationId) return;
 
   let imageUrl: string | null = null;
@@ -486,6 +486,7 @@ async function handleMessagingEvent(
     content: messageText || (imageUrl ? "[Image]" : null),
     image_url: imageUrl,
     user_id: userId,
+    fb_page_id: fbPageRowId,
   });
 
   if (incomingInsertError) {
