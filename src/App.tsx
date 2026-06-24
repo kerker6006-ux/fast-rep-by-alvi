@@ -87,6 +87,7 @@ const App = () => (
                 <Route path="/data-deletion" element={<DataDeletion />} />
                 <Route path="/data-deletion-status" element={<DataDeletionStatus />} />
                 <Route path="/reviewer-guide" element={<ReviewerGuide />} />
+                <Route path="/accept-invite" element={<AcceptInvite />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
