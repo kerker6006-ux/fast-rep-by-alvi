@@ -98,7 +98,8 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
   };
 
   const renderGroup = (items: NavItem[], items_filter = true) => {
-    const visible = items_filter ? items.filter(filterByCat) : items;
+    let visible = items_filter ? items.filter(filterByCat) : items;
+    if (isModerator) visible = visible.filter((i) => moderatorAllowed.has(i.id));
     return visible.map((item) => {
       const isActive = activeTab === item.id;
       const button = (
