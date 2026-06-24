@@ -68,8 +68,12 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
   const { t } = useTranslation();
   const { signOut, user } = useAuth();
   const { isAdmin } = useIsAdmin();
-  const { activePage } = useActivePage();
+  const { activePage, accessRole } = useActivePage();
   const category = activePage?.page_category;
+  const isModerator = accessRole === "moderator";
+
+  // Moderator can only see these tabs
+  const moderatorAllowed = new Set(["conversations", "orders", "leads", "complaints"]);
 
   const { data: unreadAlerts = 0 } = useQuery({
     queryKey: ["sidebar-unread-alerts", user?.id],
@@ -87,6 +91,7 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
   });
 
   const filterByCat = (item: NavItem) => {
+    if (isModerator && !moderatorAllowed.has(item.id)) return false;
     if (!item.categories) return true;
     if (!category) return false;
     return item.categories.includes(category as any);
