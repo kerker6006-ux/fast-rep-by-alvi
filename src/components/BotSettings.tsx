@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
-import { Save, Globe, MessageCircle, Info, Briefcase, AlertTriangle, ShoppingBag, Stethoscope, Wrench, Sparkles } from "lucide-react";
+import { Save, Globe, MessageCircle, Info, Briefcase, AlertTriangle, ShoppingBag, Stethoscope, Wrench, Sparkles, Bell } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const BotSettings = () => {
@@ -165,6 +165,27 @@ const BotSettings = () => {
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Bell className="h-5 w-5" /> Order &amp; Appointment Alerts</CardTitle>
+            <CardDescription>
+              Every new order or callback request is emailed to your account email automatically. Add an extra email below (staff, manager, partner) and they'll get the same alert.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Label>Extra notification email <span className="text-muted-foreground">(optional)</span></Label>
+            <Input
+              type="email"
+              value={settings.notify_email || ""}
+              onChange={(e) => update("notify_email", e.target.value)}
+              placeholder="manager@yourbusiness.com"
+            />
+            <p className="text-xs text-muted-foreground">Leave blank to alert only your account email. Alerts are isolated per account — other users never see your data.</p>
+          </CardContent>
+        </Card>
+
+
 
         <Card>
           <CardHeader>

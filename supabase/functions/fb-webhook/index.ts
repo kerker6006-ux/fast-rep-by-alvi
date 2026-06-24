@@ -1399,6 +1399,26 @@ ${settings.reply_tone ? `\nTone: ${settings.reply_tone}` : ""}
 - Plain text only. No markdown/bullets. No flattery.
 - NEVER offer to send a picture. Only send one if the customer explicitly asks.
 
+#############################
+# UNDERSTAND-FIRST RULE — NO HALLUCINATION
+#############################
+- Read the customer's full message carefully BEFORE composing a reply. Do not guess.
+- NEVER invent prices, stock, colors, sizes, delivery times, policies, or products that are not in the catalog / settings below.
+- If a fact is not in the catalog or settings, say you'll check and ask the customer to wait — do NOT fabricate.
+- If the message is unclear or ambiguous, ask ONE short clarifying question instead of guessing.
+- If you cannot help confidently, output exactly: NEEDS_HUMAN
+- If the customer asks for a SPECIFIC product NOT in the catalog, output exactly: SUGGEST_PRODUCT: <name>
+
+#############################
+# IMAGE / PHOTO HANDLING — CONCEPT MATCH
+#############################
+- When the customer sends a photo, FIRST silently analyze the concept: object type, category, color, brand, style.
+- Then match that concept against the PRODUCT CATALOG below. Match by category and shape first, color second.
+- Example: customer sends a "blue BMW car" photo but the catalog only has a "red BMW" — reply that you have the same model in RED only, do NOT pretend you have blue.
+- Example: customer sends a "long red dress" photo and you only have short red dresses — say you have red but only short length.
+- If nothing in the catalog matches the concept at all, output: SUGGEST_PRODUCT: <short concept description>
+- Never claim to have a product that isn't listed. Never invent variants.
+
 ${settings.emoji_style ? `Emoji: ${settings.emoji_style}` : "Use max 1 emoji per reply."}
 
 PRODUCT CATALOG (organized by category):
@@ -1424,6 +1444,7 @@ ${settings.custom_instructions || ""}
 ${examplesSection}
 ${faqSection}`;
   }
+
 
 
 
@@ -1693,7 +1714,16 @@ RULES FOR "no_action":
         return;
       }
       console.log("New order created. Items:", JSON.stringify(orderData.items), "Total:", total);
+      // Notify owner by email (fire-and-forget)
+      notifyOwnerByEmail(supabase, userId, "new-order", {
+        customerName: customerName || "Customer",
+        customerPhone: customerPhone || "—",
+        customerAddress: customerAddress || "—",
+        items: orderData.items,
+        total,
+      }, `order-${conversationId}-${Date.now()}`).catch(() => {});
     }
+
   } catch (e) {
     console.error("Order processing error:", e);
   }
@@ -1832,6 +1862,13 @@ async function detectAndCreateComplaint(
 
     await supabase.from("complaints").insert(insertData);
     console.log("Complaint created for conversation:", conversationId);
+    // Notify owner by email (fire-and-forget)
+    notifyOwnerByEmail(supabase, userId, "new-appointment", {
+      customerName: data.customer_name || "Customer",
+      customerPhone: data.customer_phone || "—",
+      details: data.complaint_text || customerMessage || "",
+    }, `complaint-${conversationId}-${Date.now()}`).catch(() => {});
+
   } catch (e) {
     console.error("Complaint detection error:", e);
   }
@@ -2024,3 +2061,73 @@ function matchTrigger(text: string, trigger: any): string | null {
   }
   return null;
 }
+
+// ---- Owner email notification (order / appointment) ----
+async function notifyOwnerByEmail(
+  supabase: any,
+  userId: string | null,
+  templateName: string,
+  templateData: Record<string, any>,
+  idempotencyKey: string,
+) {
+  if (!userId) return;
+  try {
+    const recipients = new Set<string>();
+    // 1) Owner's signup email
+    try {
+      const { data: u } = await supabase.auth.admin.getUserById(userId);
+      const ownerEmail = u?.user?.email;
+      if (ownerEmail) recipients.add(String(ownerEmail).toLowerCase());
+    } catch (e) { console.error("notifyOwner: getUserById failed", e); }
+
+    // 2) Optional custom notify_email from bot_settings
+    try {
+      const { data: rows } = await supabase
+        .from("bot_settings")
+        .select("setting_value")
+        .eq("user_id", userId)
+        .eq("setting_key", "notify_email")
+        .maybeSingle();
+      const extra = rows?.setting_value?.trim();
+      if (extra && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(extra)) {
+        recipients.add(extra.toLowerCase());
+      }
+    } catch (e) { console.error("notifyOwner: settings read failed", e); }
+
+    if (recipients.size === 0) return;
+
+    // Enrich with page name if missing
+    if (!templateData.pageName) {
+      try {
+        const { data: pg } = await supabase
+          .from("fb_pages")
+          .select("page_name")
+          .eq("user_id", userId)
+          .eq("is_active", true)
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (pg?.page_name) templateData.pageName = pg.page_name;
+      } catch {}
+    }
+
+
+    for (const email of recipients) {
+      try {
+        await supabase.functions.invoke("send-transactional-email", {
+          body: {
+            templateName,
+            recipientEmail: email,
+            idempotencyKey: `${idempotencyKey}-${email}`,
+            templateData,
+          },
+        });
+      } catch (e) {
+        console.error("notifyOwner: invoke failed for", email, e);
+      }
+    }
+  } catch (e) {
+    console.error("notifyOwner failed:", e);
+  }
+}
+
