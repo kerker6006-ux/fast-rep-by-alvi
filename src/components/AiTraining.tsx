@@ -144,6 +144,7 @@ const AiTraining = () => {
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [chatStarted, setChatStarted] = useState(false);
+  const [setupComplete, setSetupComplete] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-analysis state
