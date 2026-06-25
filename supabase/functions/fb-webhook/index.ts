@@ -1776,6 +1776,18 @@ async function detectAndProcessOrder(
 
   if (!hasOrderIntent) return;
 
+  // Hard guard: never write an order on a non-ecommerce page (defence in depth)
+  if (userId) {
+    const { data: pg } = await supabase
+      .from("fb_pages").select("page_category").eq("user_id", userId).eq("is_active", true)
+      .order("created_at", { ascending: true }).limit(1).maybeSingle();
+    const cat = (pg?.page_category as string | null) || null;
+    if (cat && cat !== "ecommerce") {
+      console.log(`[orders-guard] Blocked: page category is "${cat}", refusing to write to orders table`);
+      return;
+    }
+  }
+
   try {
     // Fetch conversation history
     const { data: recentMessages } = await supabase
