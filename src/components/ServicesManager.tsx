@@ -47,9 +47,11 @@ const ServicesManager = () => {
 
   const cat = (category && category !== "ecommerce" ? category : "dental") as Exclude<BusinessCategory, "ecommerce">;
 
+  const isServicePage = (activePage as any)?.page_category === "service";
+
   const { data: services = [], isLoading } = useQuery({
     queryKey: ["services", activePage?.id],
-    enabled: !!user?.id && !!activePage?.id && category !== "ecommerce",
+    enabled: !!user?.id && !!activePage?.id && (isServicePage || category !== "ecommerce"),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("services")
@@ -163,8 +165,8 @@ const ServicesManager = () => {
     setDialogOpen(true);
   };
 
-  if (!category) return null;
-  if (category === "ecommerce") {
+  if (!isServicePage && !category) return null;
+  if (!isServicePage && category === "ecommerce") {
     return <Card><CardContent className="p-6 text-sm text-muted-foreground">{t("services.notForEcommerce")}</CardContent></Card>;
   }
 
