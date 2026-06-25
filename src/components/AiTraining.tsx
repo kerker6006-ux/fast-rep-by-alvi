@@ -146,6 +146,12 @@ const AiTraining = () => {
   const [chatStarted, setChatStarted] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // Auto-analysis state
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzePhase, setAnalyzePhase] = useState<string>("");
+  const [analyzeStats, setAnalyzeStats] = useState<{ messages: number; conversations: number } | null>(null);
+
   // Manual settings state
   const [faqQuestion, setFaqQuestion] = useState("");
   const [faqAnswer, setFaqAnswer] = useState("");
