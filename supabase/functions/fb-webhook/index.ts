@@ -2266,25 +2266,32 @@ async function extractAndSaveLead(
       notes: parsed.notes || null,
     };
 
-    // Mark as confirmed appointment the first time the customer locks it in
+    // Mark as confirmed appointment when the customer locks it in. Re-confirmation
+    // with a NEW time (e.g. "confirm again with 3pm") also fires so the row gets
+    // updated, status flips back to confirmed, and the customer receives a fresh ack.
+    const timeChanged = !!parsed.preferred_time
+      && !!existing?.preferred_time
+      && parsed.preferred_time !== existing.preferred_time;
     const justConfirmed = isService
       && !!parsed.is_confirmed
       && !!payload.phone
       && (!!payload.preferred_date || !!payload.preferred_time)
-      && !existing?.confirmed_at;
+      && (!existing?.confirmed_at || timeChanged);
     if (justConfirmed) {
       payload.confirmed_at = new Date().toISOString();
       payload.status = "confirmed";
     }
 
+    let leadId: string | null = existing?.id || null;
     if (existing) {
       await supabase.from("leads").update(payload).eq("id", existing.id);
     } else {
-      await supabase.from("leads").insert(payload);
+      const { data: inserted } = await supabase.from("leads").insert(payload).select("id").maybeSingle();
+      leadId = inserted?.id || null;
     }
     console.log("Lead saved for conversation:", conversationId, "confirmed:", justConfirmed);
 
-    // Send a one-time confirmation message + email notification
+    // Send a one-time confirmation message + email notification + in-app notification
     if (justConfirmed && pageAccessToken && senderId) {
       const when = [payload.preferred_date, payload.preferred_time].filter(Boolean).join(" ");
       // Detect customer's language from their recent messages
@@ -2312,6 +2319,21 @@ async function extractAndSaveLead(
         customerPhone: payload.phone || "—",
         details: `${payload.service_or_product || "Appointment"}${when ? ` — ${when}` : ""}${payload.notes ? `\n${payload.notes}` : ""}`,
       }, `appointment-${conversationId}-${Date.now()}`).catch(() => {});
+
+      // BUG 3: in-app notification for the owner (and any page members via trigger-less insert per user)
+      try {
+        const { data: convoForPage } = await supabase
+          .from("conversations").select("fb_page_id").eq("id", conversationId).maybeSingle();
+        await supabase.from("notifications").insert({
+          user_id: userId,
+          type: "appointment",
+          title: "New appointment booked",
+          body: `${payload.name || "Customer"}${when ? ` — ${when}` : ""}`,
+          link: "#leads",
+          metadata: { lead_id: leadId, conversation_id: conversationId },
+          fb_page_id: convoForPage?.fb_page_id || null,
+        });
+      } catch (e) { console.error("Appointment notification insert failed:", e); }
     }
   } catch (e) {
     console.error("Lead extraction error:", e);
