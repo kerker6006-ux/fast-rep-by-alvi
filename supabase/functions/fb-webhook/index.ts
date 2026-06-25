@@ -233,7 +233,7 @@ async function handleCommentEvent(
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${lovableApiKey}` },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash-lite",
+          model: "gemini-2.5-flash-lite",
           messages: [{
             role: "system",
             content: `You are a Facebook page comment reply bot. Reply in ${lang}. Be short (1 sentence max). If they ask about a product, mention the price. Always encourage them to inbox for details. Products: ${productList}. ${settings.manual_instructions || ""}`
@@ -305,7 +305,7 @@ async function handleIgCommentEvent(
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${lovableApiKey}` },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash-lite",
+          model: "gemini-2.5-flash-lite",
           messages: [
             { role: "system", content: `Reply to an Instagram comment in ${lang}. Max 6 words, friendly, tell them to check DMs. ${settings.manual_instructions || ""}` },
             { role: "user", content: commentText || "(no text)" },
@@ -387,7 +387,7 @@ async function handlePagePostEvent(
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${lovableApiKey}` },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash-lite",
+          model: "gemini-2.5-flash-lite",
           messages: [{
             role: "system",
             content: `You are a product analyzer. Given a Facebook page post with an image and caption, extract product details. Return ONLY valid JSON with these fields: name, name_bn (Bangla name), description, description_bn, category, color, price (number, 0 if unknown), material, keywords (array of strings). If caption is in Bangla, prioritize Bangla names. Be accurate.`
@@ -1465,7 +1465,7 @@ ${faqSection}`;
   const historyWithoutLast = chatHistory.slice(0, -1);
 
   const requestBody: any = {
-    model: "google/gemini-2.5-flash",
+    model: "gemini-2.5-flash",
     messages: [{ role: "system", content: systemPrompt }, ...historyWithoutLast, currentUserMessage],
   };
 
@@ -1552,7 +1552,7 @@ async function detectAndProcessOrder(
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model: "gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: `You are an order management AI for a Facebook Messenger shop. Read the FULL conversation and determine what action to take.
 
@@ -1822,7 +1822,7 @@ async function detectAndCreateComplaint(
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model: "gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: "Extract complaint details. If customer has a genuine complaint, extract info. Return is_complaint=false if just asking a question." },
           { role: "user", content: `Customer: ${customerMessage}\nBot reply: ${aiReply}` },
@@ -1925,7 +1925,7 @@ async function extractAndSaveLead(supabase: any, apiKey: string, conversationId:
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model: "gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: sysPrompt },
           { role: "user", content: transcript.slice(-4000) },

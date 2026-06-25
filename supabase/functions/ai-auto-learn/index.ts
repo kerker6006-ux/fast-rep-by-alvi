@@ -85,7 +85,7 @@ Limit to the 8 most valuable suggestions. Skip anything already present.`;
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gemini-2.5-flash",
         messages: [
           { role: "system", content: system },
           { role: "user", content: transcript.slice(0, 30000) || "(no messages)" },
