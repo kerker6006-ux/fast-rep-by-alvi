@@ -322,10 +322,12 @@ RULES FOR YOU:
     }
 
     const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content || "Sorry, I couldn't process that. Please try again.";
+    const rawReply = data.choices?.[0]?.message?.content || "Sorry, I couldn't process that. Please try again.";
+    const setupComplete = /\[\[SETUP_COMPLETE\]\]/i.test(rawReply);
+    const reply = rawReply.replace(/\[\[SETUP_COMPLETE\]\]/gi, "").trim();
 
     await logTrainingUsage(req, "google/gemini-2.5-flash");
-    return new Response(JSON.stringify({ reply }), {
+    return new Response(JSON.stringify({ reply, setup_complete: setupComplete }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
