@@ -388,6 +388,7 @@ const AiTraining = () => {
         { role: "assistant", content: data.reply },
       ];
       setChatMessages(initial);
+      setSetupComplete(!!data.setup_complete);
       persistChatHistory(initial);
     } catch (e: any) {
       toast.error(e.message || "Failed to start training chat");
