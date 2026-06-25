@@ -629,6 +629,12 @@ async function handleMessagingEvent(
         return;
       }
 
+      // BUG 4: Detect if customer is updating/confirming a time (e.g. "3pm te confirm koren",
+      // "confirm again with 3pm", "দুপুর ৩টা"). If so, never go silent — re-run lead
+      // extraction so the appointment is updated and a confirmation reply is sent.
+      const timeUpdateRe = /(\d{1,2}\s*(?::\d{2})?\s*(?:am|pm|a\.m\.?|p\.m\.?))|(\d{1,2}\s*(?:ta|টা))|\b(dupur|bikel|sokal|sondha|raat|noon|morning|evening|night|afternoon)\b|[\u09E6-\u09EF]+\s*টা|সকাল|দুপুর|বিকেল|সন্ধ্যা|রাত/i;
+      const hasTimeUpdate = !!messageText && timeUpdateRe.test(messageText);
+
       // Human handoff sentinel — bot is unsure, mark conversation and stay silent
       if (replyText && replyText.trim().toUpperCase().includes("NEEDS_HUMAN")) {
         const reason = imageUrl
@@ -638,6 +644,9 @@ async function handleMessagingEvent(
           .update({ needs_human: true, followup_reason: reason, updated_at: new Date().toISOString() })
           .eq("id", conversationId);
         console.log("Marked conversation for human follow-up:", conversationId);
+        if (hasTimeUpdate && settings.auto_create_leads !== "false") {
+          await extractAndSaveLead(supabase, lovableApiKey, conversationId, userId, pageAccessToken, senderId);
+        }
         return;
       }
 
@@ -651,6 +660,9 @@ async function handleMessagingEvent(
           .update({ needs_human: true, followup_reason: "Bot had no reply for this message", updated_at: new Date().toISOString() })
           .eq("id", conversationId);
         console.log("Empty AI reply — skipped send, marked needs_human:", conversationId);
+        if (hasTimeUpdate && settings.auto_create_leads !== "false") {
+          await extractAndSaveLead(supabase, lovableApiKey, conversationId, userId, pageAccessToken, senderId);
+        }
         return;
       }
 
@@ -665,12 +677,18 @@ async function handleMessagingEvent(
         await deductCredits(supabase, userId, deduction, hasImage ? "image_reply" : "text_reply");
       }
 
-      // ---- Intent-based routing: BOTH order and appointment detection run on every
-      // message. Each detector classifies intent from the message content itself and
-      // only writes to its own table when the message clearly matches. This way an
-      // ecommerce page can still record service-style bookings and a service page can
-      // still record product orders when the customer asks for them. ----
-      if (settings.auto_create_orders !== "false") {
+      // ---- Intent-based routing. Order detection is gated to ecommerce pages so
+      // service / content_creator pages never produce false "order received" rows
+      // or notifications. Appointment (lead) extraction still runs for everyone;
+      // the AI prompt + is_confirmed gate prevents stray writes. ----
+      let routingPageCategory: string | null = null;
+      if (fbPageRowId) {
+        const { data: pgRow } = await supabase
+          .from("fb_pages").select("page_category").eq("id", fbPageRowId).maybeSingle();
+        routingPageCategory = (pgRow?.page_category as string | null) || null;
+      }
+      const isEcommercePage = routingPageCategory === "ecommerce";
+      if (settings.auto_create_orders !== "false" && isEcommercePage) {
         await detectAndProcessOrder(supabase, lovableApiKey, conversationId, messageText, replyText, userId);
       }
       if (settings.auto_create_complaints !== "false") {
@@ -2204,7 +2222,7 @@ async function extractAndSaveLead(
       ? `Extract appointment booking info from this Facebook Messenger conversation. Return ONLY a JSON object with these fields (use null when not stated, do not invent): ${fields.join(", ")}.
 - "preferred_date": natural text the customer said (e.g. "tomorrow", "25 Dec", "next Monday").
 - "preferred_time": natural text (e.g. "5 PM", "morning", "10:30").
-- "is_confirmed": true ONLY if the customer clearly confirmed the booking with words like "book me", "confirm", "I want to come", "okay book", "জি বুক করুন", "হ্যাঁ", "ok", "yes" AFTER the bot proposed a date/time, OR the customer themselves proposed a specific date/time as a booking ("book me tomorrow at 5pm"). Otherwise false.
+- "is_confirmed": true if the customer agrees to / locks in a booking. Treat ANY of these as confirmation when the bot has already proposed (or the customer is now proposing) a date or time: "book me", "confirm", "confirmed", "confirm koren", "confirm korun", "I want to come", "okay", "ok", "yes", "done", "thik ache", "ঠিক আছে", "ji", "জি", "ha", "hae", "হ্যাঁ", "হ্যা", "জি বুক করুন", "করুন". ALSO true when the customer re-confirms with a new specific time like "confirm again with 3pm", "3pm te confirm koren", "৩টায় কনফার্ম করুন" — in that case populate preferred_time with the new time. Otherwise false.
 - "notes": short extra context if any (e.g. branch, reason for visit).`
       : `Extract lead information from this Facebook Messenger conversation. Return ONLY a JSON object with these fields (null if not stated): ${fields.join(", ")}. Use null for missing values. Do not invent data.`;
 
@@ -2248,25 +2266,32 @@ async function extractAndSaveLead(
       notes: parsed.notes || null,
     };
 
-    // Mark as confirmed appointment the first time the customer locks it in
+    // Mark as confirmed appointment when the customer locks it in. Re-confirmation
+    // with a NEW time (e.g. "confirm again with 3pm") also fires so the row gets
+    // updated, status flips back to confirmed, and the customer receives a fresh ack.
+    const timeChanged = !!parsed.preferred_time
+      && !!existing?.preferred_time
+      && parsed.preferred_time !== existing.preferred_time;
     const justConfirmed = isService
       && !!parsed.is_confirmed
       && !!payload.phone
       && (!!payload.preferred_date || !!payload.preferred_time)
-      && !existing?.confirmed_at;
+      && (!existing?.confirmed_at || timeChanged);
     if (justConfirmed) {
       payload.confirmed_at = new Date().toISOString();
       payload.status = "confirmed";
     }
 
+    let leadId: string | null = existing?.id || null;
     if (existing) {
       await supabase.from("leads").update(payload).eq("id", existing.id);
     } else {
-      await supabase.from("leads").insert(payload);
+      const { data: inserted } = await supabase.from("leads").insert(payload).select("id").maybeSingle();
+      leadId = inserted?.id || null;
     }
     console.log("Lead saved for conversation:", conversationId, "confirmed:", justConfirmed);
 
-    // Send a one-time confirmation message + email notification
+    // Send a one-time confirmation message + email notification + in-app notification
     if (justConfirmed && pageAccessToken && senderId) {
       const when = [payload.preferred_date, payload.preferred_time].filter(Boolean).join(" ");
       // Detect customer's language from their recent messages
@@ -2294,6 +2319,21 @@ async function extractAndSaveLead(
         customerPhone: payload.phone || "—",
         details: `${payload.service_or_product || "Appointment"}${when ? ` — ${when}` : ""}${payload.notes ? `\n${payload.notes}` : ""}`,
       }, `appointment-${conversationId}-${Date.now()}`).catch(() => {});
+
+      // BUG 3: in-app notification for the owner (and any page members via trigger-less insert per user)
+      try {
+        const { data: convoForPage } = await supabase
+          .from("conversations").select("fb_page_id").eq("id", conversationId).maybeSingle();
+        await supabase.from("notifications").insert({
+          user_id: userId,
+          type: "appointment",
+          title: "New appointment booked",
+          body: `${payload.name || "Customer"}${when ? ` — ${when}` : ""}`,
+          link: "#leads",
+          metadata: { lead_id: leadId, conversation_id: conversationId },
+          fb_page_id: convoForPage?.fb_page_id || null,
+        });
+      } catch (e) { console.error("Appointment notification insert failed:", e); }
     }
   } catch (e) {
     console.error("Lead extraction error:", e);
