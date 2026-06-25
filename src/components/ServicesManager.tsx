@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Trash2, Pencil, Sparkles } from "lucide-react";
+import { Plus, Trash2, Pencil, Sparkles, Upload, X, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
 const PRESETS: Record<Exclude<BusinessCategory, "ecommerce">, string[]> = {
@@ -28,10 +28,11 @@ type ServiceRow = {
   price_text: string | null;
   duration_text: string | null;
   service_area: string | null;
+  image_url: string | null;
   active: boolean;
 };
 
-const emptyForm = { name: "", description: "", price_text: "", duration_text: "", service_area: "", active: true };
+const emptyForm = { name: "", description: "", price_text: "", duration_text: "", service_area: "", image_url: "", active: true };
 
 const ServicesManager = () => {
   const { t } = useTranslation();
@@ -60,6 +61,31 @@ const ServicesManager = () => {
     },
   });
 
+  const [uploading, setUploading] = useState(false);
+
+  const uploadImage = async (file: File): Promise<string> => {
+    const ext = file.name.split(".").pop();
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from("product-images").upload(path, file);
+    if (error) throw error;
+    const { data } = supabase.storage.from("product-images").getPublicUrl(path);
+    return data.publicUrl;
+  };
+
+  const onPickImage = async (file: File | null) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("Image must be under 5MB"); return; }
+    try {
+      setUploading(true);
+      const url = await uploadImage(file);
+      setForm((f) => ({ ...f, image_url: url }));
+    } catch (e: any) {
+      toast.error(e.message || "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const upsert = useMutation({
     mutationFn: async () => {
       if (!form.name.trim()) throw new Error(t("services.nameRequired"));
@@ -72,6 +98,7 @@ const ServicesManager = () => {
         price_text: form.price_text || null,
         duration_text: form.duration_text || null,
         service_area: form.service_area || null,
+        image_url: form.image_url || null,
         active: form.active,
       };
       if (editingId) {
@@ -125,6 +152,7 @@ const ServicesManager = () => {
       price_text: s.price_text || "",
       duration_text: s.duration_text || "",
       service_area: s.service_area || "",
+      image_url: s.image_url || "",
       active: s.active,
     });
     setDialogOpen(true);
@@ -161,6 +189,13 @@ const ServicesManager = () => {
           {services.map((s) => (
             <Card key={s.id}>
               <CardContent className="p-4 flex items-start justify-between gap-4">
+                {s.image_url ? (
+                  <img src={s.image_url} alt={s.name} className="h-16 w-16 rounded-lg object-cover border shrink-0" />
+                ) : (
+                  <div className="h-16 w-16 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                    <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                )}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="font-semibold truncate">{s.name}</p>
@@ -190,12 +225,54 @@ const ServicesManager = () => {
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label>{t("services.fName")}</Label>
+              <Label>{t("services.fName")} *</Label>
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("services.fNamePh")} />
             </div>
             <div className="space-y-1.5">
-              <Label>{t("services.fDesc")}</Label>
-              <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={t("services.fDescPh")} />
+              <Label>{t("services.fDesc")} *</Label>
+              <Textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                placeholder={t("services.fDescPh")}
+                rows={5}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Describe what this service is for, who it helps, and common problems it solves. The AI uses this to match customer questions and suggest the right service.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-2">
+                Image <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Optional</span>
+              </Label>
+              <div className="flex items-center gap-3">
+                {form.image_url ? (
+                  <div className="relative">
+                    <img src={form.image_url} alt="" className="h-20 w-20 rounded-lg object-cover border" />
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, image_url: "" })}
+                      className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow"
+                      aria-label="Remove image"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="h-20 w-20 rounded-lg bg-muted flex items-center justify-center">
+                    <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                )}
+                <label className="inline-flex items-center gap-2 text-sm border rounded-lg px-3 py-2 cursor-pointer hover:bg-muted">
+                  <Upload className="h-4 w-4" />
+                  {uploading ? "Uploading..." : form.image_url ? "Replace" : "Upload"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => onPickImage(e.target.files?.[0] || null)}
+                  />
+                </label>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
