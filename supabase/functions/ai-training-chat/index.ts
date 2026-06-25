@@ -36,7 +36,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, action, settings, category, language } = await req.json();
+    const { messages, action, settings, category, language, analysis_context } = await req.json();
     const cat: string = (category && ["ecommerce", "service", "content_creator"].includes(category)) ? category : "ecommerce";
     const LANG_NAMES: Record<string, string> = { en: "English", bn: "Bangla (বাংলা)", es: "Spanish (Español)", ko: "Korean (한국어)" };
     const chatLang: string = (language && LANG_NAMES[language]) ? language : (settings?.training_chat_language && LANG_NAMES[settings.training_chat_language] ? settings.training_chat_language : "");
@@ -243,6 +243,21 @@ Rules:
       ? `\nLANGUAGE LOCK: ALWAYS reply ONLY in ${chatLangName}. The user explicitly chose ${chatLangName} for this training chat. Do NOT switch languages even if the user writes a single word in another language. Only switch if the user clearly and explicitly asks you to change the chat language (e.g. "switch to English", "change language to Spanish").`
       : `\nMirror the user's language (English/Spanish/Korean/Bangla).`;
 
+    // Optional auto-analysis context — gives the wizard real evidence to reference
+    let analysisBlock = "";
+    if (analysis_context && typeof analysis_context === "object") {
+      const a = analysis_context as any;
+      const trimmed = {
+        tone_summary: a.tone_summary,
+        top_questions: Array.isArray(a.top_questions) ? a.top_questions.slice(0, 6) : [],
+        wizard_openers: Array.isArray(a.wizard_openers) ? a.wizard_openers.slice(0, 6) : [],
+        draft_settings: a.draft_settings || {},
+        never_say: Array.isArray(a.never_say) ? a.never_say.slice(0, 5) : [],
+        stats: a.stats || {},
+      };
+      analysisBlock = `\n\nAUTO-ANALYSIS OF THIS PAGE'S REAL PAST CHATS (use this as ground truth — do NOT re-discover it, REFERENCE it when asking):\n${JSON.stringify(trimmed).slice(0, 4000)}\n\nWhen you ask a question, cite the evidence in plain language (e.g. "I noticed 12 customers asked about delivery and you usually reply '3-5 days, flat $5'. Want me to lock that in?"). Walk through wizard_openers one at a time in order — never ask all at once.`;
+    }
+
     const systemPrompt = `${wizardByCategory[cat]}
 ${offLimitsByCategory[cat]}
 ${languageRule}
@@ -254,6 +269,7 @@ STILL MISSING (ask about these, ONE OR TWO AT A TIME, in this priority order):
 ${missingList}
 
 ${businessName ? `The business name is "${businessName}" — address the owner naturally and never ask for the business name again.` : ""}
+${analysisBlock}
 
 RULES FOR YOU:
 - Greet briefly${businessName ? ` (use the business name "${businessName}")` : ""}, then jump straight to the FIRST missing field above.
