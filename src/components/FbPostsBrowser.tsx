@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useActivePage } from "@/contexts/ActivePageContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,15 +19,18 @@ interface FbPost {
 
 const FbPostsBrowser = () => {
   const queryClient = useQueryClient();
+  const { activePage } = useActivePage();
   const [afterCursor, setAfterCursor] = useState<string | null>(null);
   const [importingId, setImportingId] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["fb-posts", afterCursor],
+    queryKey: ["fb-posts", activePage?.fb_page_id, afterCursor],
+    enabled: !!activePage?.fb_page_id,
     queryFn: async () => {
-      const url = afterCursor
-        ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-fb-posts?after=${afterCursor}`
-        : `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-fb-posts`;
+      const params = new URLSearchParams();
+      if (activePage?.fb_page_id) params.set("fb_page_id", activePage.fb_page_id);
+      if (afterCursor) params.set("after", afterCursor);
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-fb-posts?${params.toString()}`;
 
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(url, {
@@ -37,12 +41,13 @@ const FbPostsBrowser = () => {
       });
 
       if (!res.ok) {
-        const err = await res.json();
+        const err = await res.json().catch(() => ({ error: "Failed to fetch posts" }));
         throw new Error(err.error || "Failed to fetch posts");
       }
       return res.json();
     },
   });
+
 
   const importMutation = useMutation({
     mutationFn: async (post: FbPost) => {
