@@ -298,11 +298,8 @@ const PendingProducts = () => {
   );
 
   return (
-    <Tabs defaultValue="ai" className="space-y-4">
+    <Tabs defaultValue="pending" className="space-y-4">
       <TabsList>
-        <TabsTrigger value="ai" className="gap-1.5">
-          <Sparkles className="h-4 w-4" /> AI Analyzer
-        </TabsTrigger>
         <TabsTrigger value="pending" className="gap-1.5">
           <Package className="h-4 w-4" /> Pending Review
           {pending?.length ? <Badge variant="secondary" className="ml-1 text-[10px] h-5 px-1.5">{pending.length}</Badge> : null}
@@ -318,13 +315,10 @@ const PendingProducts = () => {
         )}
       </TabsList>
 
-      <TabsContent value="ai">
-        <FbPageAiAnalyzer />
-      </TabsContent>
-
       <TabsContent value="pending">
         {pendingContent}
       </TabsContent>
+
 
       {isServicePage ? (
         <TabsContent value="fb-services">
