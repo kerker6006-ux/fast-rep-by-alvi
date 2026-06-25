@@ -2239,7 +2239,22 @@ async function extractAndSaveLead(
     // Send a one-time confirmation message + email notification
     if (justConfirmed && pageAccessToken && senderId) {
       const when = [payload.preferred_date, payload.preferred_time].filter(Boolean).join(" ");
-      const confirmMsg = `আপনার এপয়েন্টমেন্ট কনফার্ম করা হয়েছে${when ? ` — ${when}` : ""}। আমরা আপনাকে স্মরণ করিয়ে দেব। ধন্যবাদ! 🙏`;
+      // Detect customer's language from their recent messages
+      const customerText = msgs.filter((m: any) => m.direction === "incoming")
+        .map((m: any) => m.content || "").join(" ");
+      const hasBangla = /[\u0980-\u09FF]/.test(customerText);
+      const hasKorean = /[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]/.test(customerText);
+      const hasSpanish = /[áéíóúñ¿¡]/i.test(customerText);
+      const banglish = /\b(bhai|vai|apu|apa|ki|koto|kemon|ache|nai|den|dao|korbo|hobe|lagbe|chai|book|confirm|kal|kalke|aj|ajke)\b/i.test(customerText);
+      const confirmMsg = hasBangla
+        ? `আপনার এপয়েন্টমেন্ট কনফার্ম করা হয়েছে${when ? ` — ${when}` : ""}। ধন্যবাদ! 🙏`
+        : hasKorean
+        ? `예약이 확정되었습니다${when ? ` — ${when}` : ""}. 감사합니다! 🙏`
+        : hasSpanish
+        ? `Tu cita está confirmada${when ? ` — ${when}` : ""}. ¡Gracias! 🙏`
+        : banglish
+        ? `Apnar appointment confirm kora hoyeche${when ? ` — ${when}` : ""}. Dhonnobad! 🙏`
+        : `Your appointment is confirmed${when ? ` for ${when}` : ""}. Thank you! 🙏`;
       try {
         await sendFbMessage(pageAccessToken, senderId, confirmMsg);
         await saveOutgoingMessage(supabase, conversationId, confirmMsg, null, userId);
