@@ -61,6 +61,31 @@ const ServicesManager = () => {
     },
   });
 
+  const [uploading, setUploading] = useState(false);
+
+  const uploadImage = async (file: File): Promise<string> => {
+    const ext = file.name.split(".").pop();
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from("product-images").upload(path, file);
+    if (error) throw error;
+    const { data } = supabase.storage.from("product-images").getPublicUrl(path);
+    return data.publicUrl;
+  };
+
+  const onPickImage = async (file: File | null) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("Image must be under 5MB"); return; }
+    try {
+      setUploading(true);
+      const url = await uploadImage(file);
+      setForm((f) => ({ ...f, image_url: url }));
+    } catch (e: any) {
+      toast.error(e.message || "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const upsert = useMutation({
     mutationFn: async () => {
       if (!form.name.trim()) throw new Error(t("services.nameRequired"));
@@ -73,6 +98,7 @@ const ServicesManager = () => {
         price_text: form.price_text || null,
         duration_text: form.duration_text || null,
         service_area: form.service_area || null,
+        image_url: form.image_url || null,
         active: form.active,
       };
       if (editingId) {
