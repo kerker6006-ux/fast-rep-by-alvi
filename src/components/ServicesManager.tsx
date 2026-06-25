@@ -165,8 +165,8 @@ const ServicesManager = () => {
     setDialogOpen(true);
   };
 
-  if (!category) return null;
-  if (category === "ecommerce") {
+  if (!isServicePage && !category) return null;
+  if (!isServicePage && category === "ecommerce") {
     return <Card><CardContent className="p-6 text-sm text-muted-foreground">{t("services.notForEcommerce")}</CardContent></Card>;
   }
 
