@@ -1968,8 +1968,10 @@ export type Database = {
           ig_username: string | null
           is_active: boolean | null
           last_sync_at: string | null
+          page_category: Database["public"]["Enums"]["page_category"] | null
           page_name: string | null
           page_picture_url: string | null
+          pending_delete_at: string | null
           subscribed_fields: string[] | null
           subscription_error: string | null
           subscription_status: string | null
@@ -1987,8 +1989,10 @@ export type Database = {
           ig_username?: string | null
           is_active?: boolean | null
           last_sync_at?: string | null
+          page_category?: Database["public"]["Enums"]["page_category"] | null
           page_name?: string | null
           page_picture_url?: string | null
+          pending_delete_at?: string | null
           subscribed_fields?: string[] | null
           subscription_error?: string | null
           subscription_status?: string | null
@@ -2006,8 +2010,10 @@ export type Database = {
           ig_username?: string | null
           is_active?: boolean | null
           last_sync_at?: string | null
+          page_category?: Database["public"]["Enums"]["page_category"] | null
           page_name?: string | null
           page_picture_url?: string | null
+          pending_delete_at?: string | null
           subscribed_fields?: string[] | null
           subscription_error?: string | null
           subscription_status?: string | null
@@ -2024,6 +2030,14 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      get_data_deletion_status: {
+        Args: { _code: string }
+        Returns: {
+          completed_at: string
+          created_at: string
+          status: string
+        }[]
       }
       has_role: {
         Args: {
