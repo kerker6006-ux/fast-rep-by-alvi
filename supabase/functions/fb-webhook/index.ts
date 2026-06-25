@@ -1752,9 +1752,12 @@ CUSTOMER MODE
 
 
 
-  const finalReply = cleanedReply || settings.welcome_message || "ধন্যবাদ! আপনার মেসেজ পেয়েছি।";
-  // If we matched a service with an image, signal the caller to send it before the text
+  // If AI produced nothing, return empty string so the caller can mark needs_human
+  // instead of spamming the welcome message on every turn.
+  const finalReply = cleanedReply || "";
+  if (!finalReply) return "";
   return topMatchImage ? `[[SEND_IMAGE:${topMatchImage}]]\n${finalReply}` : finalReply;
+
 }
 
 async function detectAndProcessOrder(
