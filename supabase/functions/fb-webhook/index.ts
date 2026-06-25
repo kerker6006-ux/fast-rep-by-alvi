@@ -1498,31 +1498,61 @@ ${faqSection}`;
 
   const historyWithoutLast = chatHistory.slice(0, -1);
 
-  const requestBody: any = {
-    model: "gemini-2.5-flash",
-    messages: [{ role: "system", content: systemPrompt }, ...historyWithoutLast, currentUserMessage],
+  // Tiered model selection: try flash-lite first for cheap/fast replies,
+  // escalate to flash when the input is clearly complex (image attached, long
+  // message, or many candidate products) or when lite produced a weak reply.
+  const lastUserText = typeof currentUserMessage?.content === "string"
+    ? currentUserMessage.content
+    : Array.isArray(currentUserMessage?.content)
+      ? currentUserMessage.content.filter((c: any) => c?.type === "text").map((c: any) => c.text).join(" ")
+      : "";
+  const isComplex =
+    hasImage ||
+    lastUserText.length > 180 ||
+    (lastUserText.match(/\?/g) || []).length >= 2 ||
+    (products?.length || 0) > 25;
+
+  const callModel = async (modelId: string) => {
+    const body = {
+      model: modelId,
+      messages: [{ role: "system", content: systemPrompt }, ...historyWithoutLast, currentUserMessage],
+    };
+    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) {
+      const errText = await r.text();
+      console.error("AI Gateway error:", r.status, errText);
+      throw new Error("AI error");
+    }
+    const j = await r.json();
+    return j.choices?.[0]?.message?.content || "";
   };
 
-  const aiResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify(requestBody),
-  });
+  let usedModel = isComplex ? "gemini-2.5-flash" : "gemini-2.5-flash-lite";
+  let rawReply = await callModel(usedModel);
 
-  if (!aiResponse.ok) {
-    const errText = await aiResponse.text();
-    console.error("AI Gateway error:", aiResponse.status, errText);
-    throw new Error("AI error");
+  // Escalate to flash if lite returned an empty / suspiciously thin / NEEDS_HUMAN reply
+  const trimmed = (rawReply || "").trim();
+  const looksWeak =
+    !trimmed ||
+    trimmed.length < 4 ||
+    trimmed.toUpperCase().includes("NEEDS_HUMAN");
+  if (usedModel === "gemini-2.5-flash-lite" && looksWeak) {
+    console.log("[model-escalation] lite reply weak, retrying with flash");
+    usedModel = "gemini-2.5-flash";
+    rawReply = await callModel(usedModel);
   }
 
-  const aiData = await aiResponse.json();
-  const rawReply = aiData.choices?.[0]?.message?.content || "";
   const cleanedReply = sanitizeReplyText(rawReply, settings.max_reply_length);
 
   // Log AI usage
   const callType = hasImage ? "image" : "text";
-  const estimatedCost = hasImage ? 0.003 : 0.0005;
-  await logAiUsage(supabase, userId, callType, "google/gemini-2.5-flash", estimatedCost);
+  const estimatedCost = hasImage ? 0.003 : (usedModel === "gemini-2.5-flash" ? 0.0005 : 0.0002);
+  await logAiUsage(supabase, userId, callType, `google/${usedModel}`, estimatedCost);
+
 
   return cleanedReply || settings.welcome_message || "ধন্যবাদ! আপনার মেসেজ পেয়েছি।";
 }

@@ -45,11 +45,11 @@ Deno.serve(async (req) => {
 
     if (LOVABLE_API_KEY && image_url) {
       try {
-        const aiRes = await fetch("https://api.lovable.dev/v1/chat/completions", {
+        const aiRes = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${LOVABLE_API_KEY}` },
           body: JSON.stringify({
-            model: "gemini-2.5-flash",
+            model: "gemini-2.5-flash-lite",
             messages: [
               {
                 role: "user",

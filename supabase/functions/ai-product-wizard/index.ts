@@ -122,7 +122,7 @@ Keep field "name" always in English. Only include the JSON when you're confident
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.5-flash-lite",
         messages: aiMessages,
       }),
     });
