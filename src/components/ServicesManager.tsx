@@ -24,6 +24,7 @@ const PRESETS: Record<Exclude<BusinessCategory, "ecommerce">, string[]> = {
 type ServiceRow = {
   id: string;
   name: string;
+  category: string | null;
   description: string | null;
   price_text: string | null;
   duration_text: string | null;
@@ -32,7 +33,7 @@ type ServiceRow = {
   active: boolean;
 };
 
-const emptyForm = { name: "", description: "", price_text: "", duration_text: "", service_area: "", image_url: "", active: true };
+const emptyForm = { name: "", category: "", description: "", price_text: "", duration_text: "", service_area: "", image_url: "", active: true };
 
 const ServicesManager = () => {
   const { t } = useTranslation();
@@ -47,19 +48,22 @@ const ServicesManager = () => {
   const cat = (category && category !== "ecommerce" ? category : "dental") as Exclude<BusinessCategory, "ecommerce">;
 
   const { data: services = [], isLoading } = useQuery({
-    queryKey: ["services", activePage?.id, cat],
+    queryKey: ["services", activePage?.id],
     enabled: !!user?.id && !!activePage?.id && category !== "ecommerce",
     queryFn: async () => {
       const { data, error } = await supabase
         .from("services")
         .select("*")
         .eq("fb_page_id", activePage!.id)
-        .eq("category", cat)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as ServiceRow[];
     },
   });
+
+  const categorySuggestions = Array.from(
+    new Set(services.map((s) => s.category).filter((c): c is string => !!c))
+  );
 
   const [uploading, setUploading] = useState(false);
 
