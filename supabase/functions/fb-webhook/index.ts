@@ -1643,14 +1643,20 @@ CUSTOMER MODE
       ? currentUserMessage.content.filter((c: any) => c?.type === "text").map((c: any) => c.text).join(" ")
       : "";
   const pronounRef = /\b(it|that|this|those|them|same|still|the one|that one|previous)\b/i.test(lastUserText) || banglaPronouns.test(lastUserText);
-  const isComplex =
-    hasImage ||
-    lastUserText.length > 180 ||
-    (lastUserText.match(/\?/g) || []).length >= 2 ||
-    (products?.length || 0) > 25 ||
-    chronoMsgs.length >= 6 ||
-    pronounRef ||
-    isVagueFollowup;
+  // MODEL ROUTING: default gemini-2.5-flash; switch to gemini-3-flash for images,
+  // document/screenshot analysis, or advanced reasoning / problem-solving.
+  const analyzeIntent = /\b(analyz|analyse|review|improve|explain|debug|fix|why did|what went wrong|screenshot|document|pdf|file)\b/i.test(lastUserText);
+  const needsAdvancedReasoning =
+    analyzeIntent ||
+    lastUserText.length > 220 ||
+    (lastUserText.match(/\?/g) || []).length >= 3 ||
+    chronoMsgs.length >= 10 ||
+    (pronounRef && isVagueFollowup) ||
+    (products?.length || 0) > 40;
+  const useProModel = hasImage || needsAdvancedReasoning;
+
+  const PRO_MODEL = "gemini-3-flash-preview";
+  const DEFAULT_MODEL = "gemini-2.5-flash";
 
   const callModel = async (modelId: string, extraSystem?: string) => {
     const sys = extraSystem ? `${systemPrompt}\n\n${extraSystem}` : systemPrompt;
@@ -1666,30 +1672,36 @@ CUSTOMER MODE
     if (!r.ok) {
       const errText = await r.text();
       console.error("AI Gateway error:", r.status, errText);
+      // If the pro model is unavailable, fall back to default
+      if (modelId === PRO_MODEL && (r.status === 404 || r.status === 400)) {
+        console.log("[model-fallback] pro model unavailable, falling back to default");
+        return callModel(DEFAULT_MODEL, extraSystem);
+      }
       throw new Error("AI error");
     }
     const j = await r.json();
     return j.choices?.[0]?.message?.content || "";
   };
 
-  let usedModel = isComplex ? "gemini-2.5-flash" : "gemini-2.5-flash-lite";
+  let usedModel = useProModel ? PRO_MODEL : DEFAULT_MODEL;
+  console.log(`[model-routing] using ${usedModel} (image=${hasImage} advanced=${needsAdvancedReasoning})`);
   let rawReply = await callModel(usedModel);
 
-  // Escalate to flash if lite returned an empty / suspiciously thin / NEEDS_HUMAN reply
+  // Escalate to pro if default returned an empty / suspiciously thin / NEEDS_HUMAN reply
   const trimmed = (rawReply || "").trim();
   const looksWeak =
     !trimmed ||
     trimmed.length < 4 ||
     trimmed.toUpperCase().includes("NEEDS_HUMAN");
-  if (usedModel === "gemini-2.5-flash-lite" && looksWeak) {
-    console.log("[model-escalation] lite reply weak, retrying with flash");
-    usedModel = "gemini-2.5-flash";
+  if (usedModel === DEFAULT_MODEL && looksWeak) {
+    console.log("[model-escalation] default reply weak, retrying with pro");
+    usedModel = PRO_MODEL;
     rawReply = await callModel(usedModel);
   }
 
   let cleanedReply = sanitizeReplyText(rawReply, settings.max_reply_length);
 
-  // Anti-repeat guard: if reply is too similar to recent outgoing messages, retry once with explicit instruction
+  // Anti-repeat guard: if reply is too similar to recent outgoing messages, retry once with pro model
   const normalize = (s: string) => (s || "").toLowerCase().replace(/[^\p{L}\p{N}\s]+/gu, " ").split(/\s+/).filter(Boolean);
   const jaccard = (a: string, b: string) => {
     const sa = new Set(normalize(a));
@@ -1702,20 +1714,21 @@ CUSTOMER MODE
   const repeatsLast = lastBotReply && jaccard(cleanedReply, lastBotReply) >= 0.75;
   const repeatsPrev = prevBotReply && jaccard(cleanedReply, prevBotReply) >= 0.75;
   if (cleanedReply && (repeatsLast || repeatsPrev)) {
-    console.log("[anti-repeat] reply too similar to recent bot message, retrying with flash");
+    console.log("[anti-repeat] reply too similar to recent bot message, retrying with pro");
     const extra = `ANTI-REPEAT OVERRIDE: Your draft reply was "${cleanedReply}". You already said this (or nearly this) to the customer just now: "${lastBotReply}". Do NOT repeat or paraphrase it. The customer is still engaged — move the conversation forward with the NEXT concrete step: either (a) ask the next missing order/booking field, (b) recommend a fitting product/service from the catalog, or (c) ask ONE clarifying question that you have not already asked. Write a completely different reply.`;
-    const retry = await callModel("gemini-2.5-flash", extra);
+    const retry = await callModel(PRO_MODEL, extra);
     const retryClean = sanitizeReplyText(retry, settings.max_reply_length);
     if (retryClean && jaccard(retryClean, lastBotReply) < 0.75) {
       cleanedReply = retryClean;
-      usedModel = "gemini-2.5-flash";
+      usedModel = PRO_MODEL;
     }
   }
 
-  // Log AI usage
+  // Log AI usage — pro model costs more
   const callType = hasImage ? "image" : "text";
-  const estimatedCost = hasImage ? 0.003 : (usedModel === "gemini-2.5-flash" ? 0.0005 : 0.0002);
+  const estimatedCost = hasImage ? 0.003 : (usedModel === PRO_MODEL ? 0.0010 : 0.0004);
   await logAiUsage(supabase, userId, callType, `google/${usedModel}`, estimatedCost);
+
 
 
   const finalReply = cleanedReply || settings.welcome_message || "ধন্যবাদ! আপনার মেসেজ পেয়েছি।";
