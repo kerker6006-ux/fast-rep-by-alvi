@@ -2222,7 +2222,7 @@ async function extractAndSaveLead(
       ? `Extract appointment booking info from this Facebook Messenger conversation. Return ONLY a JSON object with these fields (use null when not stated, do not invent): ${fields.join(", ")}.
 - "preferred_date": natural text the customer said (e.g. "tomorrow", "25 Dec", "next Monday").
 - "preferred_time": natural text (e.g. "5 PM", "morning", "10:30").
-- "is_confirmed": true ONLY if the customer clearly confirmed the booking with words like "book me", "confirm", "I want to come", "okay book", "জি বুক করুন", "হ্যাঁ", "ok", "yes" AFTER the bot proposed a date/time, OR the customer themselves proposed a specific date/time as a booking ("book me tomorrow at 5pm"). Otherwise false.
+- "is_confirmed": true if the customer agrees to / locks in a booking. Treat ANY of these as confirmation when the bot has already proposed (or the customer is now proposing) a date or time: "book me", "confirm", "confirmed", "confirm koren", "confirm korun", "I want to come", "okay", "ok", "yes", "done", "thik ache", "ঠিক আছে", "ji", "জি", "ha", "hae", "হ্যাঁ", "হ্যা", "জি বুক করুন", "করুন". ALSO true when the customer re-confirms with a new specific time like "confirm again with 3pm", "3pm te confirm koren", "৩টায় কনফার্ম করুন" — in that case populate preferred_time with the new time. Otherwise false.
 - "notes": short extra context if any (e.g. branch, reason for visit).`
       : `Extract lead information from this Facebook Messenger conversation. Return ONLY a JSON object with these fields (null if not stated): ${fields.join(", ")}. Use null for missing values. Do not invent data.`;
 
