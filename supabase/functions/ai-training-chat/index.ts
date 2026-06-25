@@ -281,7 +281,7 @@ RULES FOR YOU:
   1. Say (in the chat language): "All the main info is in. Your bot has been set — please click the Apply Settings button above to save it."
   2. End with the EXACT sentinel on its own last line: [[SETUP_COMPLETE]]
   3. Stop asking any new questions after this.
-- Never include the [[SETUP_COMPLETE]] sentinel before the setup is genuinely complete.
+- Never include the [[SETUP_COMPLETE]] sentinel before the setup is genuinely complete.`;
 
 
 
