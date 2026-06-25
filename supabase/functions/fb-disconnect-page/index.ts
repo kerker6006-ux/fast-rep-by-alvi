@@ -35,18 +35,14 @@ Deno.serve(async (req) => {
       } catch (_) { /* ignore */ }
     }
 
-    // Soft disconnect: keep row + all related data for 7 days. Page disappears from active queries
-    // but a reconnect within 7 days restores it (history intact).
-    const purgeAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-    await admin.from("fb_pages").update({
-      is_active: false,
-      subscription_status: "disconnected",
-      disconnected_at: new Date().toISOString(),
-      pending_delete_at: purgeAt,
-      subscribed_fields: [],
-    }).eq("id", id);
+    // Hard delete: fully remove the page and all related data (ON DELETE CASCADE on fb_page_id columns).
+    // Reconnecting later will create a fresh page row.
+    const { error: delErr } = await admin.from("fb_pages").delete().eq("id", id);
+    if (delErr) {
+      return new Response(JSON.stringify({ error: delErr.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
-    return new Response(JSON.stringify({ ok: true, purge_at: purgeAt }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ ok: true, deleted: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     return new Response(JSON.stringify({ error: (e as Error).message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
