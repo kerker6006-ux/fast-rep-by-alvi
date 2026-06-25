@@ -14,7 +14,7 @@ const AdminOverview = () => {
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("orders").select("id", { count: "exact", head: true }),
         supabase.from("conversations").select("id", { count: "exact", head: true }),
-        supabase.from("fb_pages").select("id", { count: "exact", head: true }),
+        supabase.from("fb_pages_safe").select("id", { count: "exact", head: true }),
         supabase.from("products").select("id", { count: "exact", head: true }),
         supabase.from("user_credits").select("balance"),
         supabase.from("profiles").select("created_at").order("created_at", { ascending: false }).limit(30),

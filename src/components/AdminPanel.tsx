@@ -43,7 +43,7 @@ const AdminPanel = () => {
             supabase.from("products").select("id", { count: "exact", head: true }).eq("user_id", profile.id),
             supabase.from("orders").select("id", { count: "exact", head: true }).eq("user_id", profile.id),
             supabase.from("conversations").select("id", { count: "exact", head: true }).eq("user_id", profile.id),
-            supabase.from("fb_pages").select("fb_page_id, page_name, is_active").eq("user_id", profile.id),
+            supabase.from("fb_pages_safe").select("fb_page_id, page_name, is_active").eq("user_id", profile.id),
             supabase.from("user_credits").select("balance").eq("user_id", profile.id).maybeSingle(),
           ]);
           return {

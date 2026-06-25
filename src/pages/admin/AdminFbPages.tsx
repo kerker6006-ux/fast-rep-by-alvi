@@ -12,7 +12,7 @@ const AdminFbPages = () => {
     queryFn: async () => {
       const [{ data: pages }, { data: emailRes }, { data: profiles }] = await Promise.all([
         supabase
-          .from("fb_pages")
+          .from("fb_pages_safe")
           .select("id, fb_page_id, page_name, page_picture_url, is_active, subscription_status, user_id, connected_at, last_sync_at")
           .order("created_at", { ascending: false }),
         supabase.functions.invoke("admin-list-users").then((r) => ({ data: r.data })).catch(() => ({ data: { emails: {} } })),

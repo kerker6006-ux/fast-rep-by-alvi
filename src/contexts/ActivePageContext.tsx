@@ -60,7 +60,7 @@ export const ActivePageProvider = ({ children }: { children: ReactNode }) => {
       // shared pages via page_members
       const sharedReq = supabase
         .from("page_members")
-        .select("role, page:fb_pages(id, fb_page_id, page_name, page_picture_url, page_category, is_active, pending_delete_at)")
+        .select("role, page:fb_pages_safe(id, fb_page_id, page_name, page_picture_url, page_category, is_active, pending_delete_at)")
         .eq("user_id", user!.id);
 
       const [{ data: owned, error: oErr }, { data: shared, error: sErr }] = await Promise.all([ownedReq, sharedReq]);
