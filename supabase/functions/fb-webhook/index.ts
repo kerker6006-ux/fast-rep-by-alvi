@@ -1510,7 +1510,7 @@ ${faqSection}`;
     hasImage ||
     lastUserText.length > 180 ||
     (lastUserText.match(/\?/g) || []).length >= 2 ||
-    productList.length > 25;
+    (products?.length || 0) > 25;
 
   const callModel = async (modelId: string) => {
     const body = {
