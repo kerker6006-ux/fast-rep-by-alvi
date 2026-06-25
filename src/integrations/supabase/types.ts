@@ -966,6 +966,7 @@ export type Database = {
         Row: {
           address: string | null
           category: Database["public"]["Enums"]["business_category"]
+          confirmed_at: string | null
           conversation_id: string | null
           created_at: string
           fb_page_id: string | null
@@ -974,6 +975,7 @@ export type Database = {
           notes: string | null
           phone: string | null
           preferred_date: string | null
+          preferred_time: string | null
           service_or_product: string | null
           source: string
           status: string
@@ -983,6 +985,7 @@ export type Database = {
         Insert: {
           address?: string | null
           category: Database["public"]["Enums"]["business_category"]
+          confirmed_at?: string | null
           conversation_id?: string | null
           created_at?: string
           fb_page_id?: string | null
@@ -991,6 +994,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           preferred_date?: string | null
+          preferred_time?: string | null
           service_or_product?: string | null
           source?: string
           status?: string
@@ -1000,6 +1004,7 @@ export type Database = {
         Update: {
           address?: string | null
           category?: Database["public"]["Enums"]["business_category"]
+          confirmed_at?: string | null
           conversation_id?: string | null
           created_at?: string
           fb_page_id?: string | null
@@ -1008,6 +1013,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           preferred_date?: string | null
+          preferred_time?: string | null
           service_or_product?: string | null
           source?: string
           status?: string
