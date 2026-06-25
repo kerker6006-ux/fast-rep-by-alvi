@@ -200,9 +200,13 @@ const AiTraining = () => {
   // Persist chat history to bot_settings (best-effort, non-blocking)
   const persistChatHistory = async (msgs: ChatMessage[]) => {
     if (!user?.id || !activePage?.id) return;
+    const serialized = JSON.stringify(msgs);
+    // Keep React state mirror in sync so re-hydration after a refetch
+    // doesn't show a stale history.
+    setSettings((s) => ({ ...s, ai_training_chat_history: serialized }));
     try {
       await supabase.from("bot_settings").upsert(
-        [{ user_id: user.id, fb_page_id: activePage.id, setting_key: "ai_training_chat_history", setting_value: JSON.stringify(msgs) }] as any,
+        [{ user_id: user.id, fb_page_id: activePage.id, setting_key: "ai_training_chat_history", setting_value: serialized }] as any,
         { onConflict: "fb_page_id,setting_key" } as any,
       );
     } catch { /* ignore */ }
