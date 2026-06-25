@@ -24,6 +24,7 @@ const PRESETS: Record<Exclude<BusinessCategory, "ecommerce">, string[]> = {
 type ServiceRow = {
   id: string;
   name: string;
+  category: string | null;
   description: string | null;
   price_text: string | null;
   duration_text: string | null;
@@ -32,7 +33,7 @@ type ServiceRow = {
   active: boolean;
 };
 
-const emptyForm = { name: "", description: "", price_text: "", duration_text: "", service_area: "", image_url: "", active: true };
+const emptyForm = { name: "", category: "", description: "", price_text: "", duration_text: "", service_area: "", image_url: "", active: true };
 
 const ServicesManager = () => {
   const { t } = useTranslation();
@@ -47,19 +48,22 @@ const ServicesManager = () => {
   const cat = (category && category !== "ecommerce" ? category : "dental") as Exclude<BusinessCategory, "ecommerce">;
 
   const { data: services = [], isLoading } = useQuery({
-    queryKey: ["services", activePage?.id, cat],
+    queryKey: ["services", activePage?.id],
     enabled: !!user?.id && !!activePage?.id && category !== "ecommerce",
     queryFn: async () => {
       const { data, error } = await supabase
         .from("services")
         .select("*")
         .eq("fb_page_id", activePage!.id)
-        .eq("category", cat)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as ServiceRow[];
     },
   });
+
+  const categorySuggestions = Array.from(
+    new Set(services.map((s) => s.category).filter((c): c is string => !!c))
+  );
 
   const [uploading, setUploading] = useState(false);
 
@@ -92,7 +96,7 @@ const ServicesManager = () => {
       const payload = {
         user_id: user!.id,
         fb_page_id: activePage?.id,
-        category: cat,
+        category: form.category.trim() || cat,
         name: form.name.trim(),
         description: form.description || null,
         price_text: form.price_text || null,
@@ -148,6 +152,7 @@ const ServicesManager = () => {
     setEditingId(s.id);
     setForm({
       name: s.name,
+      category: s.category || "",
       description: s.description || "",
       price_text: s.price_text || "",
       duration_text: s.duration_text || "",
@@ -227,6 +232,21 @@ const ServicesManager = () => {
             <div className="space-y-1.5">
               <Label>{t("services.fName")} *</Label>
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("services.fNamePh")} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-2">
+                Category <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Optional</span>
+              </Label>
+              <Input
+                list="service-category-suggest"
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                placeholder="e.g. Consultation, Repair, Treatment"
+              />
+              <datalist id="service-category-suggest">
+                {categorySuggestions.map((c) => <option key={c} value={c} />)}
+              </datalist>
+              <p className="text-[11px] text-muted-foreground">Free-text label to group similar services.</p>
             </div>
             <div className="space-y-1.5">
               <Label>{t("services.fDesc")} *</Label>
