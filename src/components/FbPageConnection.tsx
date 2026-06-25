@@ -107,30 +107,40 @@ const FbPageConnection = () => {
     onError: (e: any) => toast.error(e.message || "Could not start Facebook login"),
   });
 
-  const connectPage = useMutation({
-    mutationFn: async (pageId: string) => {
-      const { data, error } = await supabase.functions.invoke("fb-connect-page", {
-        body: { session_token: sessionToken, page_id: pageId },
-      });
-      if (error) throw new Error(error.message);
-      if (data?.error) throw new Error(data.error);
-      return data;
-    },
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["fb-pages"] });
-      queryClient.invalidateQueries({ queryKey: ["active-pages"] });
-      setPickerOpen(false);
-      setSessionToken(null);
-      setSelectedPage(null);
-      if (data.status === "active") toast.success(data.restored ? "Page reconnected — history restored" : "Facebook Page Connected Successfully");
-      else toast.warning(`Connected, but webhook subscription failed: ${data.error ?? ""}`);
-      if (data.needs_category && data.row_id) {
-        setCategoryDialogPageId(data.row_id);
-        setCategoryDialogPageName(data.page?.name ?? null);
-      }
-    },
-    onError: (e: any) => toast.error(e.message || "Could not connect page"),
-  });
+  const connectSelected = async () => {
+    if (!sessionToken || selectedPages.length === 0) return;
+    setBulkRunning(true);
+    setBulkResults(null);
+    const pageObjs = (sessionPages ?? []).filter((p) => selectedPages.includes(p.id));
+    const results = await Promise.all(
+      pageObjs.map(async (p) => {
+        try {
+          const { data, error } = await supabase.functions.invoke("fb-connect-page", {
+            body: { session_token: sessionToken, page_id: p.id },
+          });
+          if (error) return { page: p, ok: false, message: error.message || "Edge function error" };
+          if (data?.error) return { page: p, ok: false, message: String(data.error) };
+          if (data?.status !== "active") {
+            return { page: p, ok: false, message: `Webhook subscription failed: ${data?.error ?? "unknown"}` };
+          }
+          return { page: p, ok: true, message: data.restored ? "Reconnected — history restored" : "Connected" };
+        } catch (e: any) {
+          return { page: p, ok: false, message: e?.message || "Unknown error" };
+        }
+      }),
+    );
+    setBulkResults(results);
+    setBulkRunning(false);
+    queryClient.invalidateQueries({ queryKey: ["fb-pages"] });
+    queryClient.invalidateQueries({ queryKey: ["active-pages"] });
+    const okCount = results.filter((r) => r.ok).length;
+    const failCount = results.length - okCount;
+    if (okCount && !failCount) toast.success(`${okCount} page${okCount > 1 ? "s" : ""} connected`);
+    else if (okCount && failCount) toast.warning(`${okCount} connected, ${failCount} failed`);
+    else toast.error(`All ${failCount} page${failCount > 1 ? "s" : ""} failed to connect`);
+  };
+
+
 
   const disconnect = useMutation({
     mutationFn: async (id: string) => {
