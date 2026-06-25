@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({
       posts,
-      paging: fbData.paging || null,
+      paging: fbData.paging?.cursors ? { cursors: fbData.paging.cursors } : null,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
