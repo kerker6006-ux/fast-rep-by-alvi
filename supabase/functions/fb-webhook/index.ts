@@ -1423,7 +1423,9 @@ ${settings.custom_instructions || ""}
 ${examplesSection}`;
   } else {
     // ---- Ecommerce shopkeeper prompt (preserved) ----
-    systemPrompt = `${receptionistPreamble}#############################
+    systemPrompt = `${missionBlock}
+${receptionistPreamble}#############################
+
 # LANGUAGE RULE — HIGHEST PRIORITY — MUST FOLLOW BEFORE ANYTHING ELSE
 #############################
 ${languageDirective}
