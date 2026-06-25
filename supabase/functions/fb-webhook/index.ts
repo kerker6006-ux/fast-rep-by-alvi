@@ -655,14 +655,31 @@ async function handleMessagingEvent(
         await deductCredits(supabase, userId, deduction, hasImage ? "image_reply" : "text_reply");
       }
 
-      if (settings.auto_create_orders !== "false") {
+      // ---- Strict intent routing: a page is either an ORDER business (ecommerce)
+      // or an APPOINTMENT business (service/content_creator). Never mix categories. ----
+      let pageCategoryForRouting: string | null = null;
+      if (userId) {
+        const { data: pageRowRt } = await supabase
+          .from("fb_pages").select("page_category").eq("user_id", userId).eq("is_active", true)
+          .order("created_at", { ascending: true }).limit(1).maybeSingle();
+        pageCategoryForRouting = (pageRowRt?.page_category as string | null) || null;
+      }
+      const isEcommercePage = pageCategoryForRouting === "ecommerce";
+      const isAppointmentPage = pageCategoryForRouting && pageCategoryForRouting !== "ecommerce" && pageCategoryForRouting !== "content_creator";
+
+      if (settings.auto_create_orders !== "false" && isEcommercePage) {
         await detectAndProcessOrder(supabase, lovableApiKey, conversationId, messageText, replyText, userId);
+      } else if (settings.auto_create_orders !== "false" && pageCategoryForRouting && !isEcommercePage) {
+        console.log(`[intent-router] Blocked order write — page category is "${pageCategoryForRouting}", not ecommerce`);
       }
       if (settings.auto_create_complaints !== "false") {
         await detectAndCreateComplaint(supabase, lovableApiKey, conversationId, senderId, pageAccessToken, messageText, replyText, userId);
       }
-      if (settings.auto_create_leads !== "false") {
+      // Leads/appointments only for non-ecommerce pages (service or content_creator)
+      if (settings.auto_create_leads !== "false" && !isEcommercePage) {
         await extractAndSaveLead(supabase, lovableApiKey, conversationId, userId, pageAccessToken, senderId);
+      } else if (settings.auto_create_leads !== "false" && isEcommercePage) {
+        console.log(`[intent-router] Blocked appointment/lead write — page category is ecommerce`);
       }
     } catch (aiError) {
       console.error("AI processing error:", aiError);
@@ -1759,6 +1776,18 @@ async function detectAndProcessOrder(
 
   if (!hasOrderIntent) return;
 
+  // Hard guard: never write an order on a non-ecommerce page (defence in depth)
+  if (userId) {
+    const { data: pg } = await supabase
+      .from("fb_pages").select("page_category").eq("user_id", userId).eq("is_active", true)
+      .order("created_at", { ascending: true }).limit(1).maybeSingle();
+    const cat = (pg?.page_category as string | null) || null;
+    if (cat && cat !== "ecommerce") {
+      console.log(`[orders-guard] Blocked: page category is "${cat}", refusing to write to orders table`);
+      return;
+    }
+  }
+
   try {
     // Fetch conversation history
     const { data: recentMessages } = await supabase
@@ -2155,6 +2184,11 @@ async function extractAndSaveLead(
       .order("created_at", { ascending: true }).limit(1).maybeSingle();
     const category = pageRow?.page_category as string | null;
     if (!category) return;
+    // Hard guard: never create appointment/lead records for ecommerce pages
+    if (category === "ecommerce") {
+      console.log(`[leads-guard] Blocked: page category is ecommerce, refusing to write to leads table`);
+      return;
+    }
 
     const { data: msgs } = await supabase
       .from("messages").select("direction, content")
