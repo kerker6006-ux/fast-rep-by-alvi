@@ -14,7 +14,6 @@ import { Check, X, Package, ImageIcon, Pencil, Globe, Sparkles, Wrench } from "l
 import { useState } from "react";
 import FbPostsBrowser from "./FbPostsBrowser";
 import FbServicePostsBrowser from "./FbServicePostsBrowser";
-import FbPageAiAnalyzer from "./FbPageAiAnalyzer";
 
 const PendingProducts = () => {
   const { t } = useTranslation();
