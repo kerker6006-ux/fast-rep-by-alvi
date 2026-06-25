@@ -1067,10 +1067,10 @@ async function generateAiReply(
   messageText: string | null, imageUrl: string | null,
   settings: Record<string, string>, userId: string | null
 ): Promise<string> {
-  // Fetch FULL conversation history (up to 50 messages) so AI remembers context
+  // Fetch FULL conversation history (up to 80 messages) so AI remembers context across time gaps
   const { data: recentMessages } = await supabase
-    .from("messages").select("direction, content, image_url")
-    .eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(50);
+    .from("messages").select("direction, content, image_url, created_at")
+    .eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(80);
 
   let productQuery = supabase
     .from("products").select("name, name_bn, description, description_bn, price, category, keywords, image_url, color, size, material, variants, size_variants")
@@ -1539,24 +1539,93 @@ ${faqSection}`;
 
   const historyWithoutLast = chatHistory.slice(0, -1);
 
-  // Tiered model selection: try flash-lite first for cheap/fast replies,
-  // escalate to flash when the input is clearly complex (image attached, long
-  // message, or many candidate products) or when lite produced a weak reply.
+  // ====== CONVERSATION MEMORY BLOCK (built from message rows, no AI call) ======
+  const chronoMsgs = (recentMessages || []).slice().reverse(); // oldest -> newest
+  const outgoingMsgs = chronoMsgs.filter((m: any) => m.direction === "outgoing");
+  const incomingMsgs = chronoMsgs.filter((m: any) => m.direction === "incoming");
+  const lastBotReply = outgoingMsgs[outgoingMsgs.length - 1]?.content || "";
+  const prevBotReply = outgoingMsgs[outgoingMsgs.length - 2]?.content || "";
+  const lastIncomingAt = incomingMsgs[incomingMsgs.length - 1]?.created_at;
+  const prevIncomingAt = incomingMsgs[incomingMsgs.length - 2]?.created_at;
+  let gapNote = "";
+  if (lastIncomingAt && prevIncomingAt) {
+    const gapMs = new Date(lastIncomingAt).getTime() - new Date(prevIncomingAt).getTime();
+    const gapMin = Math.round(gapMs / 60000);
+    if (gapMin >= 30) {
+      const h = Math.floor(gapMin / 60), m = gapMin % 60;
+      gapNote = `Customer returned after ${h ? `${h}h ` : ""}${m}m of silence — they are CONTINUING the previous topic, not starting fresh.`;
+    }
+  }
+
+  // Topics customer/bot already discussed (product/service names that appeared in the thread)
+  const transcriptBlob = chronoMsgs.map((m: any) => (m.content || "")).join(" ").toLowerCase();
+  const mentionedProducts = (products || [])
+    .filter((p: any) => {
+      const n = (p.name || "").toLowerCase();
+      const nb = (p.name_bn || "").toLowerCase();
+      return (n && n.length >= 3 && transcriptBlob.includes(n)) || (nb && nb.length >= 2 && transcriptBlob.includes(nb));
+    })
+    .slice(0, 6)
+    .map((p: any) => `${p.name}${p.price ? ` ($${p.price})` : ""}`);
+  const mentionedServices = (servicesList || [])
+    .filter((s: any) => {
+      const n = (s.name || "").toLowerCase();
+      return n && n.length >= 3 && transcriptBlob.includes(n);
+    })
+    .slice(0, 6)
+    .map((s: any) => `${s.name}${s.price_text ? ` (${s.price_text})` : ""}`);
+
+  // Vague follow-up detection (short / pronoun reference)
+  const vagueRegex = /\b(it|that|this|those|them|same|still|hmm+|ok|okay|yes|no|sure|why|how much|how|when|where|ready|done|alright|ji|ha|han|na)\b/i;
+  const banglaPronouns = /(ওটা|সেটা|এটা|ওইটা|সেইটা|তা|কতো|কত|আবার|আগের|আগেরটা)/;
+  const lastCustomerText = incomingMsgs[incomingMsgs.length - 1]?.content || messageText || "";
+  const isVagueFollowup =
+    chronoMsgs.length >= 3 &&
+    lastCustomerText.length < 30 &&
+    (vagueRegex.test(lastCustomerText) || banglaPronouns.test(lastCustomerText));
+  let likelyReferring = "";
+  if (isVagueFollowup) {
+    const last = mentionedProducts[mentionedProducts.length - 1] || mentionedServices[mentionedServices.length - 1] || "";
+    if (last) likelyReferring = `LIKELY REFERRING TO: ${last} (resolve the customer's short message against this — do NOT ask "what do you mean?")`;
+  }
+
+  const memoryBlock = `
+#############################
+# CONVERSATION MEMORY — READ BEFORE REPLYING
+#############################
+${gapNote ? gapNote + "\n" : ""}${mentionedProducts.length ? `Products already discussed in this thread: ${mentionedProducts.join(", ")}\n` : ""}${mentionedServices.length ? `Services already discussed in this thread: ${mentionedServices.join(", ")}\n` : ""}${likelyReferring ? likelyReferring + "\n" : ""}${prevBotReply ? `YOUR 2ND-LAST REPLY (do not paraphrase): "${prevBotReply.slice(0, 200)}"\n` : ""}${lastBotReply ? `YOUR LAST REPLY (DO NOT REPEAT, DO NOT REWORD): "${lastBotReply.slice(0, 240)}"\n` : ""}
+#############################
+# CONVERSATION CONTINUITY RULES
+#############################
+- Silently summarize the WHOLE thread above before composing your reply. The customer's new message is a continuation, not a fresh chat.
+- If the customer returns after a gap or sends a short/ambiguous message, assume they are continuing the LAST topic. Resolve pronouns ("it", "that", "ওটা", "সেটা") from the prior turns instead of asking "what do you mean".
+- NEVER send the same sentence, question, or pitch you already sent. If they only partially answered, acknowledge what they gave and ask the NEXT missing thing — never re-ask the same field.
+- Each reply must move the conversation ONE concrete step forward (answer, then next missing detail / recommendation / confirmation).
+`;
+  systemPrompt = systemPrompt + "\n" + memoryBlock;
+  // ====== END CONVERSATION MEMORY BLOCK ======
+
+  // Smarter model selection: prefer flash for any real conversation
   const lastUserText = typeof currentUserMessage?.content === "string"
     ? currentUserMessage.content
     : Array.isArray(currentUserMessage?.content)
       ? currentUserMessage.content.filter((c: any) => c?.type === "text").map((c: any) => c.text).join(" ")
       : "";
+  const pronounRef = /\b(it|that|this|those|them|same|still|the one|that one|previous)\b/i.test(lastUserText) || banglaPronouns.test(lastUserText);
   const isComplex =
     hasImage ||
     lastUserText.length > 180 ||
     (lastUserText.match(/\?/g) || []).length >= 2 ||
-    (products?.length || 0) > 25;
+    (products?.length || 0) > 25 ||
+    chronoMsgs.length >= 6 ||
+    pronounRef ||
+    isVagueFollowup;
 
-  const callModel = async (modelId: string) => {
+  const callModel = async (modelId: string, extraSystem?: string) => {
+    const sys = extraSystem ? `${systemPrompt}\n\n${extraSystem}` : systemPrompt;
     const body = {
       model: modelId,
-      messages: [{ role: "system", content: systemPrompt }, ...historyWithoutLast, currentUserMessage],
+      messages: [{ role: "system", content: sys }, ...historyWithoutLast, currentUserMessage],
     };
     const r = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
@@ -1587,7 +1656,30 @@ ${faqSection}`;
     rawReply = await callModel(usedModel);
   }
 
-  const cleanedReply = sanitizeReplyText(rawReply, settings.max_reply_length);
+  let cleanedReply = sanitizeReplyText(rawReply, settings.max_reply_length);
+
+  // Anti-repeat guard: if reply is too similar to recent outgoing messages, retry once with explicit instruction
+  const normalize = (s: string) => (s || "").toLowerCase().replace(/[^\p{L}\p{N}\s]+/gu, " ").split(/\s+/).filter(Boolean);
+  const jaccard = (a: string, b: string) => {
+    const sa = new Set(normalize(a));
+    const sb = new Set(normalize(b));
+    if (!sa.size || !sb.size) return 0;
+    let inter = 0;
+    for (const t of sa) if (sb.has(t)) inter++;
+    return inter / (sa.size + sb.size - inter);
+  };
+  const repeatsLast = lastBotReply && jaccard(cleanedReply, lastBotReply) >= 0.75;
+  const repeatsPrev = prevBotReply && jaccard(cleanedReply, prevBotReply) >= 0.75;
+  if (cleanedReply && (repeatsLast || repeatsPrev)) {
+    console.log("[anti-repeat] reply too similar to recent bot message, retrying with flash");
+    const extra = `ANTI-REPEAT OVERRIDE: Your draft reply was "${cleanedReply}". You already said this (or nearly this) to the customer just now: "${lastBotReply}". Do NOT repeat or paraphrase it. The customer is still engaged — move the conversation forward with the NEXT concrete step: either (a) ask the next missing order/booking field, (b) recommend a fitting product/service from the catalog, or (c) ask ONE clarifying question that you have not already asked. Write a completely different reply.`;
+    const retry = await callModel("gemini-2.5-flash", extra);
+    const retryClean = sanitizeReplyText(retry, settings.max_reply_length);
+    if (retryClean && jaccard(retryClean, lastBotReply) < 0.75) {
+      cleanedReply = retryClean;
+      usedModel = "gemini-2.5-flash";
+    }
+  }
 
   // Log AI usage
   const callType = hasImage ? "image" : "text";

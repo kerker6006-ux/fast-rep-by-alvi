@@ -1,66 +1,46 @@
-## Root cause
 
-`services.category` is the `business_category` enum (only `ecommerce|dental|hvac|salon`). On approve in `PendingProducts.tsx` we insert `category: (item.ai_category || "general")` — anything outside those four values fails the enum cast, so the insert silently errors and nothing happens. We'll switch services to free-text categories and split the FB import UI in two.
+## Goal
+Stop the bot from repeating itself and make it actually read + understand the full conversation (including messages from hours/days ago), so when a returning customer says "still thinking about that" the bot knows they meant Product X.
 
-## 1. Database (one migration)
+## Edits — `supabase/functions/fb-webhook/index.ts` → `generateAiReply`
 
-- `ALTER TABLE services ALTER COLUMN category DROP NOT NULL` (if NOT NULL), then `ALTER COLUMN category TYPE text USING category::text`. Free-text from now on.
-- Add `services.keywords text[] default '{}'` and `services.duration_text` is already there — keep.
-- Add `pending_products.kind text check (kind in ('product','service')) default 'product'` so the queue knows what each row will become.
-- No new tables.
+### 1. Pull more history + a real summary of older turns
+- Increase per-request history from last 50 to last 80 messages, ordered chronologically (keep token budget safe via trimming below).
+- Build a lightweight **conversation memory block** appended to the system prompt:
+  - Last assistant reply (verbatim, marked "YOUR LAST REPLY — DO NOT REPEAT THIS").
+  - Last 2 assistant replies (marked "RECENT BOT REPLIES — vary wording, do not paraphrase these").
+  - A bullet list of **topics the customer has discussed so far**: product names, services, sizes/colors, prices mentioned, order details collected (name/phone/address), time since last message ("Customer returned after 3h 12m").
+- This block is computed in code from the message rows; no extra AI call needed.
 
-## 2. Fix approve (`src/components/PendingProducts.tsx`)
+### 2. Carry-over context for returning customers
+- When the new incoming message is short / vague ("ok?", "still there?", "what about that one", "hmm"), detect it (length < 25 chars OR matches a small vague-pronoun regex) AND look back through the last 20 messages to find:
+  - Last product/service the bot mentioned.
+  - Last open question the bot asked.
+- Inject a "LIKELY REFERRING TO: <product/service/topic>" hint into the system prompt so the model resolves the reference instead of restarting.
 
-- Branch on `item.kind` (fall back to current `isServicePage` check for old rows).
-- Service insert: map `ai_name → name`, `ai_description → description`, `ai_price → price_text` (string), `ai_category → category` (now free text), `ai_keywords → keywords`, `image_url`, `active: true`. Drop the enum cast.
-- Product insert: unchanged.
-- Surface insert errors via `toast.error` (currently swallowed because `onError` only fires on throw — already throws, but enum failure returns a Postgres error we should show verbatim).
+### 3. Anti-repeat guard
+- After model returns `cleanedReply`, compare against the **last 2 outgoing messages** using normalized token overlap (lowercase, strip punct, Jaccard ≥ 0.75).
+- If it's effectively the same reply:
+  - Re-call the model **once** with an extra system line: "Your previous reply was '<X>'. The customer is still here — do NOT repeat it. Move the conversation forward with the NEXT logical step (ask the next missing detail, recommend a fitting product/service, or ask one clarifying question)."
+  - Use `gemini-2.5-flash` for the retry (not lite).
 
-## 3. Split FB import into two tabs
+### 4. Smarter default model
+- Today: lite first, escalate only if "weak". This is why answers feel shallow.
+- New rule: use `gemini-2.5-flash` whenever ANY of:
+  - History has ≥ 6 messages (real conversation, needs context understanding).
+  - Customer message references a pronoun / "that" / "it" / Bangla equivalents (ওটা, সেটা, এটা).
+  - Image attached, long message, or many products — existing triggers stay.
+- Lite stays only for first 1–2 short messages of a brand-new chat.
 
-`PendingProducts.tsx` currently has one `FB Page Posts` tab using `FbPostsBrowser`. Replace with category-aware tabs:
+### 5. Prompt additions (single new section)
+Add a `CONVERSATION CONTINUITY` section to both ecommerce and service/creator prompts:
+- "Before replying, silently summarize what the customer has been asking about across the whole thread above. If they return after a gap, assume they're continuing the same topic unless they clearly switch."
+- "Never send the same sentence or pitch twice. If your last reply already asked a question and they answered partially, acknowledge their answer and ask the NEXT missing thing — never re-ask the same thing."
+- "If the customer's new message is short/ambiguous (e.g. 'ok', 'still thinking', 'that one'), resolve it from prior turns instead of asking 'what do you mean?'."
 
-- **Ecom pages**: tab `Import Products from FB` → existing `FbPostsBrowser` (renamed internal title).
-- **Service pages**: new tab `Import Services from FB` → new `FbServicePostsBrowser.tsx`.
-- Hide the irrelevant tab based on `activePage.page_category`.
+## Out of scope
+- No DB migration. No new tables. Order/complaint/lead extraction paths untouched. UI unchanged.
+- AI Training wizard untouched (the user is asking about the live reply bot).
 
-### New `src/components/FbServicePostsBrowser.tsx`
-
-Copy structure from `FbPostsBrowser`, but:
-- On import, call a new edge function `import-fb-service-post` (below).
-- Card shows: post image (optional thumbnail), caption preview, "Import as service" button.
-- No color/material/price-number fields — services are described, not spec'd.
-
-### New edge function `supabase/functions/import-fb-service-post/index.ts`
-
-- Same auth + `user_has_page_access` check as `import-fb-post`.
-- AI prompt tailored to services: extract `name`, `description` (what the service does, who it helps, problems it solves), `category` (free-text label like "Consultation", "Repair", "Treatment" — AI's best guess), `price_text` (string, may be "Contact for quote"), `duration_text`, `keywords[]` (English + Bangla terms a customer might use).
-- Image is **optional** — if the FB post has no image we still import.
-- Insert into `pending_products` with `kind = 'service'` and the AI fields mapped to existing `ai_*` columns; `ai_price` stays 0 (price_text lives in `ai_description` prefix or we add a new column — simpler: store full text in `ai_description`, put price string in `post_caption` suffix, OR add `pending_products.ai_price_text text`). **Decision**: add `ai_price_text text` and `ai_duration_text text` to `pending_products` in the same migration.
-
-## 4. E-commerce category UX (AI free-text + suggestions)
-
-Light touch — no new table:
-
-- `import-fb-post` already returns AI `category` free text. Keep.
-- In `PendingProducts.tsx` edit form, replace the category `<Input>` with a combobox: datalist of distinct existing `products.category` values for this page (fetched via React Query), plus free text. User picks an existing one or types new.
-- Same combobox in `ProductsManager` add/edit dialog (small follow-up, optional — flag if user wants it now).
-
-## 5. Service category UX (free-text, user-defined)
-
-- In `ServicesManager.tsx` form, change category from enum select to free-text `<Input>` with datalist of distinct existing `services.category` values for this page.
-- In approve flow (above), AI's `ai_category` flows in as the default; user can edit before approving.
-
-## 6. Out of scope
-
-- No changes to bot reply logic, webhook, pricing, or other modules.
-- No migration of existing `services.category` values — they're enum strings that cast cleanly to text.
-
-## Files touched
-
-- migration: `services.category → text`, add `pending_products.kind`, `ai_price_text`, `ai_duration_text`
-- `src/components/PendingProducts.tsx` — branch on kind, fix approve, split tabs, category combobox
-- `src/components/FbPostsBrowser.tsx` — rename header, keep ecom-only
-- `src/components/FbServicePostsBrowser.tsx` — new
-- `src/components/ServicesManager.tsx` — free-text category with datalist
-- `supabase/functions/import-fb-service-post/index.ts` — new
+## Verification
+- After edit, send 3 test messages via `supabase--curl_edge_functions` simulating: (a) a product question, (b) a 4-hour-later "still there?" follow-up, (c) the same question repeated — confirm replies differ and the follow-up resolves to the original product.
