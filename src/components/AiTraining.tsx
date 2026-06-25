@@ -805,6 +805,7 @@ const AiTraining = () => {
                 </p>
               </div>
             </Card>
+            </div>
 
             {/* Live Business Profile Summary */}
             <ProfileSummaryPanel
