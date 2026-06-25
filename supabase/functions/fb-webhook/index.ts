@@ -1588,7 +1588,9 @@ ${faqSection}`;
   await logAiUsage(supabase, userId, callType, `google/${usedModel}`, estimatedCost);
 
 
-  return cleanedReply || settings.welcome_message || "ধন্যবাদ! আপনার মেসেজ পেয়েছি।";
+  const finalReply = cleanedReply || settings.welcome_message || "ধন্যবাদ! আপনার মেসেজ পেয়েছি।";
+  // If we matched a service with an image, signal the caller to send it before the text
+  return topMatchImage ? `[[SEND_IMAGE:${topMatchImage}]]\n${finalReply}` : finalReply;
 }
 
 async function detectAndProcessOrder(
