@@ -2184,6 +2184,11 @@ async function extractAndSaveLead(
       .order("created_at", { ascending: true }).limit(1).maybeSingle();
     const category = pageRow?.page_category as string | null;
     if (!category) return;
+    // Hard guard: never create appointment/lead records for ecommerce pages
+    if (category === "ecommerce") {
+      console.log(`[leads-guard] Blocked: page category is ecommerce, refusing to write to leads table`);
+      return;
+    }
 
     const { data: msgs } = await supabase
       .from("messages").select("direction, content")
