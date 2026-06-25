@@ -64,6 +64,7 @@ const FbPostsBrowser = () => {
           post_id: post.id,
           message: post.message,
           image_url: post.image_url,
+          fb_page_id: activePage?.id,
         }),
       });
 
