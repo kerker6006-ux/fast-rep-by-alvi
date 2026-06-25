@@ -38,25 +38,43 @@ const PendingProducts = () => {
     },
   });
 
+  const pageCategory = activePage?.page_category as string | undefined;
+  const isServicePage = pageCategory === "service";
+
   const approveMutation = useMutation({
     mutationFn: async (item: any) => {
-      // Create the actual product
-      const { error: productError } = await supabase.from("products").insert({
-        user_id: user?.id,
-        fb_page_id: activePage?.id,
-        name: item.ai_name || "Unnamed",
-        name_bn: item.ai_name_bn,
-        description: item.ai_description,
-        description_bn: item.ai_description_bn,
-        category: item.ai_category,
-        color: item.ai_color,
-        price: item.ai_price || 0,
-        material: item.ai_material,
-        keywords: item.ai_keywords || [],
-        image_url: item.image_url,
-        is_active: true,
-      });
-      if (productError) throw productError;
+      if (isServicePage) {
+        // Create as a service entry
+        const { error: svcError } = await supabase.from("services").insert({
+          user_id: user?.id,
+          fb_page_id: activePage?.id,
+          category: (item.ai_category || "general") as any,
+          name: item.ai_name || "Unnamed Service",
+          description: item.ai_description || item.post_caption || null,
+          price_text: item.ai_price ? String(item.ai_price) : null,
+          image_url: item.image_url,
+          active: true,
+        });
+        if (svcError) throw svcError;
+      } else {
+        // Create as a product
+        const { error: productError } = await supabase.from("products").insert({
+          user_id: user?.id,
+          fb_page_id: activePage?.id,
+          name: item.ai_name || "Unnamed",
+          name_bn: item.ai_name_bn,
+          description: item.ai_description,
+          description_bn: item.ai_description_bn,
+          category: item.ai_category,
+          color: item.ai_color,
+          price: item.ai_price || 0,
+          material: item.ai_material,
+          keywords: item.ai_keywords || [],
+          image_url: item.image_url,
+          is_active: true,
+        });
+        if (productError) throw productError;
+      }
 
       // Mark as approved
       const { error } = await supabase
@@ -68,7 +86,8 @@ const PendingProducts = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pending-products"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast.success("Product approved and added to catalog!");
+      queryClient.invalidateQueries({ queryKey: ["services"] });
+      toast.success(isServicePage ? "Service added to your catalog!" : "Product approved and added to catalog!");
     },
     onError: (e) => toast.error(e.message),
   });

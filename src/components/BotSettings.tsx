@@ -71,17 +71,27 @@ const BotSettings = () => {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (!activePage?.id) throw new Error("Select a page first");
-      for (const [key, value] of Object.entries(settings)) {
-        const { error } = await supabase.from("bot_settings").upsert({ setting_key: key, setting_value: value, user_id: user?.id, fb_page_id: activePage.id } as any, { onConflict: "fb_page_id,setting_key" } as any);
-        if (error) throw error;
+      if (!activePage?.id) throw new Error("Connect or select a Facebook page first");
+      if (!user?.id) throw new Error("Not signed in");
+      const rows = Object.entries(settings).map(([key, value]) => ({
+        setting_key: key,
+        setting_value: value == null ? "" : String(value),
+        user_id: user.id,
+        fb_page_id: activePage.id,
+      }));
+      const { error } = await supabase
+        .from("bot_settings")
+        .upsert(rows as any, { onConflict: "fb_page_id,setting_key" } as any);
+      if (error) {
+        console.error("bot_settings save error", error);
+        throw new Error(error.message || "Failed to save settings");
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bot-settings"] });
       toast.success(t("botSettings.saved"));
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => toast.error(e?.message || "Save failed"),
   });
 
   const update = (key: string, value: string) => setSettings(s => ({ ...s, [key]: value }));
