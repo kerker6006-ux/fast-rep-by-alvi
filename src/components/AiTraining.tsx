@@ -458,6 +458,7 @@ const AiTraining = () => {
   const resetChat = async () => {
     setChatMessages([]);
     setChatStarted(false);
+    setSetupComplete(false);
     if (activePage?.id) {
       try {
         await supabase
@@ -473,6 +474,7 @@ const AiTraining = () => {
     // Clear language + history, return to picker
     setChatMessages([]);
     setChatStarted(false);
+    setSetupComplete(false);
     const next = { ...settings };
     delete next.training_chat_language;
     setSettings(next);
