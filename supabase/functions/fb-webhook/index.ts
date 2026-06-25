@@ -1144,6 +1144,7 @@ You are the AI Receptionist for a ${categoryLabel[businessCategory] || "business
 2) CAPTURE a lead by collecting these fields naturally during the conversation: ${leadFieldsByCategory[businessCategory].join(", ")}. Ask one missing field at a time.
 
 ${servicesList.length ? `SERVICES WE OFFER:\n${servicesList.map((s: any) => `- ${s.name}${s.price_text ? ` — ${s.price_text}` : ""}${s.duration_text ? ` (${s.duration_text})` : ""}${s.description ? `: ${s.description}` : ""}${s.service_area ? ` | Area: ${s.service_area}` : ""}`).join("\n")}` : ""}
+${suggestedServicesBlock}
 ${businessInfoObj.delivery_info ? `\nDELIVERY: ${businessInfoObj.delivery_info}` : ""}
 ${businessInfoObj.return_policy ? `\nRETURN POLICY: ${businessInfoObj.return_policy}` : ""}
 ${businessInfoObj.hours ? `\nHOURS: ${businessInfoObj.hours}` : ""}
