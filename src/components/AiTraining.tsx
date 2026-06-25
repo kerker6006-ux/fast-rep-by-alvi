@@ -144,6 +144,7 @@ const AiTraining = () => {
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [chatStarted, setChatStarted] = useState(false);
+  const [setupComplete, setSetupComplete] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-analysis state
@@ -387,6 +388,7 @@ const AiTraining = () => {
         { role: "assistant", content: data.reply },
       ];
       setChatMessages(initial);
+      setSetupComplete(!!data.setup_complete);
       persistChatHistory(initial);
     } catch (e: any) {
       toast.error(e.message || "Failed to start training chat");
@@ -412,6 +414,7 @@ const AiTraining = () => {
       if (data.error) throw new Error(data.error);
       const finalMsgs = [...newMessages, { role: "assistant" as const, content: data.reply }];
       setChatMessages(finalMsgs);
+      setSetupComplete(!!data.setup_complete);
       persistChatHistory(finalMsgs);
     } catch (e: any) {
       toast.error(e.message || "Failed to get response");
@@ -455,6 +458,7 @@ const AiTraining = () => {
   const resetChat = async () => {
     setChatMessages([]);
     setChatStarted(false);
+    setSetupComplete(false);
     if (activePage?.id) {
       try {
         await supabase
@@ -470,6 +474,7 @@ const AiTraining = () => {
     // Clear language + history, return to picker
     setChatMessages([]);
     setChatStarted(false);
+    setSetupComplete(false);
     const next = { ...settings };
     delete next.training_chat_language;
     setSettings(next);
@@ -738,11 +743,11 @@ const AiTraining = () => {
                 </div>
                 <div className="flex gap-1.5">
                   <Button
-                    variant="outline"
+                    variant={setupComplete ? "default" : "outline"}
                     size="sm"
                     onClick={generateAndApplySettings}
                     disabled={isGenerating || saveMutation.isPending || chatMessages.length < 4}
-                    className="h-7 text-xs gap-1"
+                    className={`h-7 text-xs gap-1 ${setupComplete ? "animate-pulse ring-2 ring-primary/40" : ""}`}
                   >
                     {isGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />}
                     {isGenerating ? t("aiTraining.generating") : t("aiTraining.applySettings")}
@@ -755,6 +760,24 @@ const AiTraining = () => {
                   </Button>
                 </div>
               </CardHeader>
+
+              {setupComplete && (
+                <div className="mx-4 mt-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-xs">
+                    <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                    <span>Your bot has been set. Click <strong>Apply Settings</strong> to save.</span>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={generateAndApplySettings}
+                    disabled={isGenerating || saveMutation.isPending}
+                    className="h-7 text-xs gap-1 shrink-0"
+                  >
+                    {isGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />}
+                    {isGenerating ? t("aiTraining.generating") : t("aiTraining.applySettings")}
+                  </Button>
+                </div>
+              )}
 
               {/* Chat Messages */}
               <ScrollArea className="flex-1 px-4 py-3">

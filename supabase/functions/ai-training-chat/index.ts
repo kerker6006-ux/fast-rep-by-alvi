@@ -277,7 +277,11 @@ RULES FOR YOU:
 - After each answer, briefly acknowledge it and move to the next MISSING piece.
 - NEVER re-ask anything in the ALREADY CONFIGURED list.
 - BEFORE marking setup complete, make sure you understand HOW this business actually wins customers (price? quality? speed? expertise? results?) — if business_description or ai_personality is thin, ask 1-2 sharp questions to capture it so the live bot can influence buyers properly.
-- When the MISSING list is empty AND you've captured the business's selling edge, say "Your setup is complete — want me to save?" and stop asking new questions.`;
+- WHEN the MISSING list is empty AND you've captured the business's selling edge, your FINAL reply MUST:
+  1. Say (in the chat language): "All the main info is in. Your bot has been set — please click the Apply Settings button above to save it."
+  2. End with the EXACT sentinel on its own last line: [[SETUP_COMPLETE]]
+  3. Stop asking any new questions after this.
+- Never include the [[SETUP_COMPLETE]] sentinel before the setup is genuinely complete.`;
 
 
 
@@ -318,10 +322,12 @@ RULES FOR YOU:
     }
 
     const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content || "Sorry, I couldn't process that. Please try again.";
+    const rawReply = data.choices?.[0]?.message?.content || "Sorry, I couldn't process that. Please try again.";
+    const setupComplete = /\[\[SETUP_COMPLETE\]\]/i.test(rawReply);
+    const reply = rawReply.replace(/\[\[SETUP_COMPLETE\]\]/gi, "").trim();
 
     await logTrainingUsage(req, "google/gemini-2.5-flash");
-    return new Response(JSON.stringify({ reply }), {
+    return new Response(JSON.stringify({ reply, setup_complete: setupComplete }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
