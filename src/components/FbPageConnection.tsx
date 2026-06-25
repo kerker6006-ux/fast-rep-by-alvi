@@ -47,7 +47,9 @@ const FbPageConnection = () => {
   const [form, setForm] = useState({ pageId: "", pageName: "", accessToken: "" });
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [selectedPage, setSelectedPage] = useState<string | null>(null);
+  const [selectedPages, setSelectedPages] = useState<string[]>([]);
+  const [bulkResults, setBulkResults] = useState<{ page: SessionPage; ok: boolean; message: string }[] | null>(null);
+  const [bulkRunning, setBulkRunning] = useState(false);
   const [disconnectId, setDisconnectId] = useState<string | null>(null);
   const [categoryDialogPageId, setCategoryDialogPageId] = useState<string | null>(null);
   const [categoryDialogPageName, setCategoryDialogPageName] = useState<string | null>(null);
