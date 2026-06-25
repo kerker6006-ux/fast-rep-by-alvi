@@ -743,11 +743,11 @@ const AiTraining = () => {
                 </div>
                 <div className="flex gap-1.5">
                   <Button
-                    variant="outline"
+                    variant={setupComplete ? "default" : "outline"}
                     size="sm"
                     onClick={generateAndApplySettings}
                     disabled={isGenerating || saveMutation.isPending || chatMessages.length < 4}
-                    className="h-7 text-xs gap-1"
+                    className={`h-7 text-xs gap-1 ${setupComplete ? "animate-pulse ring-2 ring-primary/40" : ""}`}
                   >
                     {isGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />}
                     {isGenerating ? t("aiTraining.generating") : t("aiTraining.applySettings")}
