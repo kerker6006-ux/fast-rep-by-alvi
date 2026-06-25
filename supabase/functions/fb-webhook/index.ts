@@ -1088,11 +1088,43 @@ async function generateAiReply(
 
     if (businessCategory === "service") {
       const { data: svcs } = await supabase
-        .from("services").select("name, description, price_text, duration_text, service_area")
+        .from("services").select("id, name, description, price_text, duration_text, service_area, image_url")
         .eq("user_id", userId).eq("active", true);
       servicesList = svcs || [];
     }
   }
+
+  // ----- Service matching: score services against the customer's message -----
+  const STOPWORDS = new Set([
+    "the","a","an","is","are","was","were","be","been","being","of","in","on","at","to","for","with","and","or","but","if","then","so","as","by","from","up","down","out","over","under","i","you","we","they","he","she","it","my","your","our","their","me","us","them","this","that","these","those","do","does","did","have","has","had","can","could","should","would","will","just","not","no","yes","ok","okay",
+    "আমি","আমার","তুমি","তোমার","আপনি","আপনার","সে","তার","কি","কী","কেন","কোথায়","কোন","কোনো","এর","ও","এবং","কিন্তু","হবে","হয়","হলো","আছে","ছিল","করে","করো","করতে","করবে","জন্য","সাথে","থেকে","পর","আগে","এখন","একটু","একটা","হ্যাঁ","না"
+  ]);
+  const tokenize = (s: string): string[] => {
+    if (!s) return [];
+    const cleaned = s.toLowerCase().replace(/[^\p{L}\p{N}\s]+/gu, " ");
+    return cleaned.split(/\s+/).filter(w => w.length >= 2 && !STOPWORDS.has(w));
+  };
+  const indexedServices = servicesList.map((s: any) => {
+    const blob = `${s.name || ""} ${s.description || ""}`;
+    return { ...s, _keywords: new Set(tokenize(blob)), _nameLower: (s.name || "").toLowerCase() };
+  });
+  let matchedServices: any[] = [];
+  if (indexedServices.length && messageText) {
+    const msgLower = messageText.toLowerCase();
+    const msgTokens = tokenize(messageText);
+    const scored = indexedServices.map((s: any) => {
+      const nameHit = s._nameLower && msgLower.includes(s._nameLower) ? 1 : 0;
+      let overlap = 0;
+      for (const t of msgTokens) if (s._keywords.has(t)) overlap++;
+      return { svc: s, score: nameHit * 3 + overlap };
+    }).filter(x => x.score >= 2).sort((a, b) => b.score - a.score);
+    matchedServices = scored.slice(0, 2).map(x => x.svc);
+  }
+  const suggestedServicesBlock = matchedServices.length
+    ? `\nSUGGESTED SERVICES FOR THIS MESSAGE (the customer's question seems to match these — recommend the most relevant one by name, briefly explain why it fits based on its description):\n${matchedServices.map((s: any) => `- ${s.name}${s.price_text ? ` — ${s.price_text}` : ""}${s.duration_text ? ` (${s.duration_text})` : ""}${s.description ? `\n   why it fits: ${s.description}` : ""}`).join("\n")}`
+    : "";
+  // For caller to know which (if any) image to send proactively
+  const topMatchImage: string | null = matchedServices.find((s: any) => s.image_url)?.image_url || null;
 
   const leadFieldsByCategory: Record<string, string[]> = {
     ecommerce:       ["Customer Name", "Phone Number", "Full Address", "Product", "Quantity"],
