@@ -35,11 +35,12 @@ Deno.serve(async (req) => {
     let page = null as any;
 
     if (requestedPageId) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestedPageId);
       const { data: requestedPages, error: pageError } = await admin
         .from("fb_pages")
         .select("*")
         .eq("is_active", true)
-        .or(`fb_page_id.eq.${requestedPageId},id.eq.${requestedPageId}`)
+        .or(isUuid ? `fb_page_id.eq.${requestedPageId},id.eq.${requestedPageId}` : `fb_page_id.eq.${requestedPageId}`)
         .limit(1);
 
       if (pageError) throw pageError;
