@@ -234,6 +234,21 @@ const ServicesManager = () => {
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("services.fNamePh")} />
             </div>
             <div className="space-y-1.5">
+              <Label className="flex items-center gap-2">
+                Category <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Optional</span>
+              </Label>
+              <Input
+                list="service-category-suggest"
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                placeholder="e.g. Consultation, Repair, Treatment"
+              />
+              <datalist id="service-category-suggest">
+                {categorySuggestions.map((c) => <option key={c} value={c} />)}
+              </datalist>
+              <p className="text-[11px] text-muted-foreground">Free-text label to group similar services.</p>
+            </div>
+            <div className="space-y-1.5">
               <Label>{t("services.fDesc")} *</Label>
               <Textarea
                 value={form.description}
