@@ -644,6 +644,16 @@ async function handleMessagingEvent(
       // NOTE: Do NOT proactively send product images. Images are only sent when
       // the customer explicitly asks for a picture (handled by handleProductImageRequest above).
 
+      // Don't send empty replies (e.g. AI returned nothing). Mark for human instead of
+      // spamming the customer with the welcome message on every turn.
+      if (!replyText || !replyText.trim()) {
+        await supabase.from("conversations")
+          .update({ needs_human: true, followup_reason: "Bot had no reply for this message", updated_at: new Date().toISOString() })
+          .eq("id", conversationId);
+        console.log("Empty AI reply — skipped send, marked needs_human:", conversationId);
+        return;
+      }
+
       await sendFbMessage(pageAccessToken, senderId, replyText);
       await saveOutgoingMessage(supabase, conversationId, replyText, null, userId);
 
@@ -655,32 +665,21 @@ async function handleMessagingEvent(
         await deductCredits(supabase, userId, deduction, hasImage ? "image_reply" : "text_reply");
       }
 
-      // ---- Strict intent routing: a page is either an ORDER business (ecommerce)
-      // or an APPOINTMENT business (service/content_creator). Never mix categories. ----
-      let pageCategoryForRouting: string | null = null;
-      if (userId) {
-        const { data: pageRowRt } = await supabase
-          .from("fb_pages").select("page_category").eq("user_id", userId).eq("is_active", true)
-          .order("created_at", { ascending: true }).limit(1).maybeSingle();
-        pageCategoryForRouting = (pageRowRt?.page_category as string | null) || null;
-      }
-      const isEcommercePage = pageCategoryForRouting === "ecommerce";
-      const isAppointmentPage = pageCategoryForRouting && pageCategoryForRouting !== "ecommerce" && pageCategoryForRouting !== "content_creator";
-
-      if (settings.auto_create_orders !== "false" && isEcommercePage) {
+      // ---- Intent-based routing: BOTH order and appointment detection run on every
+      // message. Each detector classifies intent from the message content itself and
+      // only writes to its own table when the message clearly matches. This way an
+      // ecommerce page can still record service-style bookings and a service page can
+      // still record product orders when the customer asks for them. ----
+      if (settings.auto_create_orders !== "false") {
         await detectAndProcessOrder(supabase, lovableApiKey, conversationId, messageText, replyText, userId);
-      } else if (settings.auto_create_orders !== "false" && pageCategoryForRouting && !isEcommercePage) {
-        console.log(`[intent-router] Blocked order write — page category is "${pageCategoryForRouting}", not ecommerce`);
       }
       if (settings.auto_create_complaints !== "false") {
         await detectAndCreateComplaint(supabase, lovableApiKey, conversationId, senderId, pageAccessToken, messageText, replyText, userId);
       }
-      // Leads/appointments only for non-ecommerce pages (service or content_creator)
-      if (settings.auto_create_leads !== "false" && !isEcommercePage) {
+      if (settings.auto_create_leads !== "false") {
         await extractAndSaveLead(supabase, lovableApiKey, conversationId, userId, pageAccessToken, senderId);
-      } else if (settings.auto_create_leads !== "false" && isEcommercePage) {
-        console.log(`[intent-router] Blocked appointment/lead write — page category is ecommerce`);
       }
+
     } catch (aiError) {
       console.error("AI processing error:", aiError);
       const fallback = settings.welcome_message || "ধন্যবাদ! আমরা শীঘ্রই আপনার সাথে যোগাযোগ করব।";
