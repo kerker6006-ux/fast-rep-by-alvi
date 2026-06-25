@@ -96,7 +96,7 @@ const ServicesManager = () => {
       const payload = {
         user_id: user!.id,
         fb_page_id: activePage?.id,
-        category: cat,
+        category: form.category.trim() || cat,
         name: form.name.trim(),
         description: form.description || null,
         price_text: form.price_text || null,
