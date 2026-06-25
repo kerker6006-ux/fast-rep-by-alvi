@@ -209,16 +209,23 @@ const AiTraining = () => {
   };
 
 
+  // Keys that have their own persistence path and must NOT be touched by the
+  // generic settings save (otherwise stale React state overwrites the newer
+  // value in the database — e.g. chat history vanishing after Save).
+  const SELF_PERSISTED_KEYS = new Set(["ai_training_chat_history"]);
+
   const upsertSettings = async (nextSettings: SettingsMap) => {
     if (!user?.id) throw new Error("Please log in again.");
     if (!activePage?.id) throw new Error("Select a page first.");
 
-    const payload = Object.entries(nextSettings).map(([setting_key, setting_value]) => ({
-      setting_key,
-      setting_value,
-      user_id: user.id,
-      fb_page_id: activePage.id,
-    }));
+    const payload = Object.entries(nextSettings)
+      .filter(([setting_key]) => !SELF_PERSISTED_KEYS.has(setting_key))
+      .map(([setting_key, setting_value]) => ({
+        setting_key,
+        setting_value,
+        user_id: user.id,
+        fb_page_id: activePage.id,
+      }));
 
     if (payload.length === 0) return;
 
