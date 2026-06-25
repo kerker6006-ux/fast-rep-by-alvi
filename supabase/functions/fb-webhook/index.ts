@@ -629,6 +629,12 @@ async function handleMessagingEvent(
         return;
       }
 
+      // BUG 4: Detect if customer is updating/confirming a time (e.g. "3pm te confirm koren",
+      // "confirm again with 3pm", "দুপুর ৩টা"). If so, never go silent — re-run lead
+      // extraction so the appointment is updated and a confirmation reply is sent.
+      const timeUpdateRe = /(\d{1,2}\s*(?::\d{2})?\s*(?:am|pm|a\.m\.?|p\.m\.?))|(\d{1,2}\s*(?:ta|টা))|\b(dupur|bikel|sokal|sondha|raat|noon|morning|evening|night|afternoon)\b|[\u09E6-\u09EF]+\s*টা|সকাল|দুপুর|বিকেল|সন্ধ্যা|রাত/i;
+      const hasTimeUpdate = !!messageText && timeUpdateRe.test(messageText);
+
       // Human handoff sentinel — bot is unsure, mark conversation and stay silent
       if (replyText && replyText.trim().toUpperCase().includes("NEEDS_HUMAN")) {
         const reason = imageUrl
@@ -638,6 +644,9 @@ async function handleMessagingEvent(
           .update({ needs_human: true, followup_reason: reason, updated_at: new Date().toISOString() })
           .eq("id", conversationId);
         console.log("Marked conversation for human follow-up:", conversationId);
+        if (hasTimeUpdate && settings.auto_create_leads !== "false") {
+          await extractAndSaveLead(supabase, lovableApiKey, conversationId, userId, pageAccessToken, senderId);
+        }
         return;
       }
 
@@ -651,6 +660,9 @@ async function handleMessagingEvent(
           .update({ needs_human: true, followup_reason: "Bot had no reply for this message", updated_at: new Date().toISOString() })
           .eq("id", conversationId);
         console.log("Empty AI reply — skipped send, marked needs_human:", conversationId);
+        if (hasTimeUpdate && settings.auto_create_leads !== "false") {
+          await extractAndSaveLead(supabase, lovableApiKey, conversationId, userId, pageAccessToken, senderId);
+        }
         return;
       }
 
