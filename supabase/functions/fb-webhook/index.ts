@@ -665,12 +665,18 @@ async function handleMessagingEvent(
         await deductCredits(supabase, userId, deduction, hasImage ? "image_reply" : "text_reply");
       }
 
-      // ---- Intent-based routing: BOTH order and appointment detection run on every
-      // message. Each detector classifies intent from the message content itself and
-      // only writes to its own table when the message clearly matches. This way an
-      // ecommerce page can still record service-style bookings and a service page can
-      // still record product orders when the customer asks for them. ----
-      if (settings.auto_create_orders !== "false") {
+      // ---- Intent-based routing. Order detection is gated to ecommerce pages so
+      // service / content_creator pages never produce false "order received" rows
+      // or notifications. Appointment (lead) extraction still runs for everyone;
+      // the AI prompt + is_confirmed gate prevents stray writes. ----
+      let routingPageCategory: string | null = null;
+      if (fbPageRowId) {
+        const { data: pgRow } = await supabase
+          .from("fb_pages").select("page_category").eq("id", fbPageRowId).maybeSingle();
+        routingPageCategory = (pgRow?.page_category as string | null) || null;
+      }
+      const isEcommercePage = routingPageCategory === "ecommerce";
+      if (settings.auto_create_orders !== "false" && isEcommercePage) {
         await detectAndProcessOrder(supabase, lovableApiKey, conversationId, messageText, replyText, userId);
       }
       if (settings.auto_create_complaints !== "false") {
