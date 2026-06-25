@@ -2173,13 +2173,10 @@ async function extractAndSaveLead(
     const { data: pageRow } = await supabase
       .from("fb_pages").select("page_category").eq("user_id", userId).eq("is_active", true)
       .order("created_at", { ascending: true }).limit(1).maybeSingle();
-    const category = pageRow?.page_category as string | null;
-    if (!category) return;
-    // Hard guard: never create appointment/lead records for ecommerce pages
-    if (category === "ecommerce") {
-      console.log(`[leads-guard] Blocked: page category is ecommerce, refusing to write to leads table`);
-      return;
-    }
+    const category = (pageRow?.page_category as string | null) || "service";
+    // No page-level block: appointment detection runs for every category. The AI prompt
+    // below (with is_confirmed) ensures we only write when the customer truly books.
+
 
     const { data: msgs } = await supabase
       .from("messages").select("direction, content")
