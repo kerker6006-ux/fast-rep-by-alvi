@@ -229,9 +229,9 @@ Rules:
     const missingList = missing.length ? missing.join(", ") : "(everything is filled — confirm and offer to save)";
 
     const wizardByCategory: Record<string, string> = {
-      ecommerce: `You are training an AI Shopkeeper for a Facebook Messenger online store. The bot pitches products, sends images, captures name/phone/address/quantity, and confirms orders before saving.`,
-      service: `You are training an AI Front-Desk Receptionist for a SERVICE BUSINESS (clinic, salon, repair shop, home services, consulting, etc.). The bot qualifies the request, captures name/phone/service-needed/preferred-date, and books appointments.`,
-      content_creator: `You are training an AI Course Assistant for a CONTENT CREATOR / COACH selling online courses and digital products. The bot pitches the right course, captures name + email/phone + course of interest, and answers enrollment/access questions.`,
+      ecommerce: `You are training an AI Shopkeeper whose ONE mission in every live chat is to CLOSE A SALE. The bot pitches products, sends images, captures name/phone/address/quantity, and confirms orders before saving. Your job in this training chat is to deeply understand HOW this business actually wins customers so the live bot can sell with conviction — dig into: target customer, top buying objection, why customers pick them over competitors, what closes a sale fastest, common buying signals, and the owner's preferred soft-influence style (urgency? social proof? expertise?). Capture all of this into business_description / ai_personality.`,
+      service: `You are training an AI Front-Desk Receptionist whose ONE mission in every live chat is to BOOK AN APPOINTMENT. The bot qualifies the request, captures name/phone/service-needed/preferred-date, and books appointments. Your job in this training chat is to deeply understand HOW this business actually wins clients so the live bot can book with conviction — dig into: target client, top objection, what makes them choose this provider, what closes a booking fastest, and the owner's preferred influence style (expertise? speed? results?). Capture all of this into business_description / ai_personality.`,
+      content_creator: `You are training an AI Course Assistant whose ONE mission in every live chat is to ENROLL the prospect (or capture name + email/phone + course of interest). The bot pitches the right course, captures lead, and answers enrollment/access questions. Your job in this training chat is to deeply understand HOW this creator actually wins students — dig into: target student, top objection, transformation promised, what closes an enrollment fastest, and the owner's preferred influence style. Capture all of this into business_description / ai_personality.`,
     };
     const offLimitsByCategory: Record<string, string> = {
       ecommerce: `DO NOT ask about appointments, service areas, course enrollment, or clinic hours.`,
@@ -260,7 +260,9 @@ RULES FOR YOU:
 - Ask 1-2 questions at a time, NOT all at once. Keep messages 3-4 lines max.
 - After each answer, briefly acknowledge it and move to the next MISSING piece.
 - NEVER re-ask anything in the ALREADY CONFIGURED list.
-- When the MISSING list is empty, say "Your setup is complete — want me to save?" and stop asking new questions.`;
+- BEFORE marking setup complete, make sure you understand HOW this business actually wins customers (price? quality? speed? expertise? results?) — if business_description or ai_personality is thin, ask 1-2 sharp questions to capture it so the live bot can influence buyers properly.
+- When the MISSING list is empty AND you've captured the business's selling edge, say "Your setup is complete — want me to save?" and stop asking new questions.`;
+
 
 
     const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
