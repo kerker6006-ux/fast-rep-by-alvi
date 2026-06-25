@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Check, X, Package, ImageIcon, Pencil, Globe, Sparkles, Wrench } from "lucide-react";
+import { Check, X, Package, ImageIcon, Pencil, Globe, Wrench } from "lucide-react";
 import { useState } from "react";
 import FbPostsBrowser from "./FbPostsBrowser";
 import FbServicePostsBrowser from "./FbServicePostsBrowser";
