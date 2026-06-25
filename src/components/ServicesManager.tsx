@@ -189,6 +189,13 @@ const ServicesManager = () => {
           {services.map((s) => (
             <Card key={s.id}>
               <CardContent className="p-4 flex items-start justify-between gap-4">
+                {s.image_url ? (
+                  <img src={s.image_url} alt={s.name} className="h-16 w-16 rounded-lg object-cover border shrink-0" />
+                ) : (
+                  <div className="h-16 w-16 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                    <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                )}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="font-semibold truncate">{s.name}</p>
