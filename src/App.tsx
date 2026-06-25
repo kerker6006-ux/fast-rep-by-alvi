@@ -8,7 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ActivePageProvider } from "@/contexts/ActivePageContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminRoute from "@/components/AdminRoute";
-import Welcome from "./pages/Welcome.tsx";
+
 
 // Lazy-load every route so the initial bundle stays tiny.
 const Landing = lazy(() => import("./pages/Landing.tsx"));
@@ -65,7 +65,6 @@ const App = () => (
             <Suspense fallback={<RouteFallback />}>
               <Routes>
                 <Route path="/auth" element={<Auth />} />
-                <Route path="/welcome" element={<ProtectedRoute><Welcome /></ProtectedRoute>} />
 
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
