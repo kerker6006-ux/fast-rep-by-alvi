@@ -225,12 +225,54 @@ const ServicesManager = () => {
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label>{t("services.fName")}</Label>
+              <Label>{t("services.fName")} *</Label>
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("services.fNamePh")} />
             </div>
             <div className="space-y-1.5">
-              <Label>{t("services.fDesc")}</Label>
-              <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={t("services.fDescPh")} />
+              <Label>{t("services.fDesc")} *</Label>
+              <Textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                placeholder={t("services.fDescPh")}
+                rows={5}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Describe what this service is for, who it helps, and common problems it solves. The AI uses this to match customer questions and suggest the right service.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-2">
+                Image <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Optional</span>
+              </Label>
+              <div className="flex items-center gap-3">
+                {form.image_url ? (
+                  <div className="relative">
+                    <img src={form.image_url} alt="" className="h-20 w-20 rounded-lg object-cover border" />
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, image_url: "" })}
+                      className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow"
+                      aria-label="Remove image"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="h-20 w-20 rounded-lg bg-muted flex items-center justify-center">
+                    <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                )}
+                <label className="inline-flex items-center gap-2 text-sm border rounded-lg px-3 py-2 cursor-pointer hover:bg-muted">
+                  <Upload className="h-4 w-4" />
+                  {uploading ? "Uploading..." : form.image_url ? "Replace" : "Upload"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => onPickImage(e.target.files?.[0] || null)}
+                  />
+                </label>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
