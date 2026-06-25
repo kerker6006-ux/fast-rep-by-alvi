@@ -682,8 +682,13 @@ async function handleMessagingEvent(
 
     } catch (aiError) {
       console.error("AI processing error:", aiError);
-      const fallback = settings.welcome_message || "ধন্যবাদ! আমরা শীঘ্রই আপনার সাথে যোগাযোগ করব।";
-      await sendFbMessage(pageAccessToken, senderId, fallback);
+      // Do NOT auto-send the welcome message on every failure — it spams the customer.
+      // Mark the conversation for human follow-up and stay silent.
+      try {
+        await supabase.from("conversations")
+          .update({ needs_human: true, followup_reason: "AI error — needs human reply", updated_at: new Date().toISOString() })
+          .eq("id", conversationId);
+      } catch (_) { /* ignore */ }
     }
   }
 }
