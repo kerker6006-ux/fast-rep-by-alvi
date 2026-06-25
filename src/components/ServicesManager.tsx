@@ -47,9 +47,11 @@ const ServicesManager = () => {
 
   const cat = (category && category !== "ecommerce" ? category : "dental") as Exclude<BusinessCategory, "ecommerce">;
 
+  const isServicePage = (activePage as any)?.page_category === "service";
+
   const { data: services = [], isLoading } = useQuery({
     queryKey: ["services", activePage?.id],
-    enabled: !!user?.id && !!activePage?.id && category !== "ecommerce",
+    enabled: !!user?.id && !!activePage?.id && (isServicePage || category !== "ecommerce"),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("services")
