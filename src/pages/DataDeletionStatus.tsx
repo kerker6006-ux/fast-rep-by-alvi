@@ -17,16 +17,13 @@ const DataDeletionStatus = () => {
   useEffect(() => {
     if (!code) { setLoading(false); setNotFound(true); return; }
     (async () => {
-      const { data } = await supabase
-        .from("data_deletion_requests")
-        .select("status, created_at, completed_at")
-        .eq("confirmation_code", code)
-        .maybeSingle();
-      if (!data) setNotFound(true);
+      const { data } = await supabase.rpc("get_data_deletion_status", { _code: code });
+      const row = Array.isArray(data) ? data[0] : null;
+      if (!row) setNotFound(true);
       else {
-        setStatus(data.status as Status);
-        setCreatedAt(data.created_at);
-        setCompletedAt(data.completed_at);
+        setStatus(row.status as Status);
+        setCreatedAt(row.created_at);
+        setCompletedAt(row.completed_at);
       }
       setLoading(false);
     })();
