@@ -26,7 +26,16 @@ Deno.serve(async (req) => {
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: row, error } = await admin.from("fb_pages").select("*").eq("id", id).maybeSingle();
     if (error || !row) return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    if (row.user_id !== userId) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (row.user_id !== userId) {
+      const { data: canManage } = await admin.rpc("user_can_manage_page", { _page_id: id });
+      // Fallback: check page_members directly with service role
+      let allowed = !!canManage;
+      if (!allowed) {
+        const { data: member } = await admin.from("page_members").select("role").eq("page_id", id).eq("user_id", userId).maybeSingle();
+        allowed = member?.role === "owner" || member?.role === "full";
+      }
+      if (!allowed) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     // Best-effort unsubscribe from FB webhooks
     if (row.page_access_token) {
