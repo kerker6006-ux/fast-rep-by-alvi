@@ -614,7 +614,24 @@ const AiTraining = () => {
 
         {/* ===== AI WIZARD TAB ===== */}
         <TabsContent value="wizard" className="space-y-4">
-          {!chatStarted ? (
+          {analyzing && chatMessages.length === 0 ? (
+            <Card className="border-dashed border-primary/30">
+              <CardContent className="flex flex-col items-center justify-center py-12 space-y-4">
+                <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Loader2 className="h-7 w-7 text-primary animate-spin" />
+                </div>
+                <div className="text-center space-y-1.5 max-w-md">
+                  <h3 className="font-semibold text-lg">Analyzing your past conversations…</h3>
+                  <p className="text-sm text-muted-foreground">{analyzePhase || "Learning how customers ask and how you reply, so the bot inherits your voice."}</p>
+                  {analyzeStats && (
+                    <p className="text-xs text-muted-foreground pt-1">
+                      Scanned {analyzeStats.messages} messages across {analyzeStats.conversations} conversations.
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ) : !chatStarted ? (
             !chatLang ? (
               <Card className="border-dashed border-primary/30">
                 <CardContent className="flex flex-col items-center justify-center py-10 space-y-4">
