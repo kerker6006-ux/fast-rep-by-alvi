@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
     }
 
     // Use AI to analyze the post
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const LOVABLE_API_KEY = Deno.env.get("GEMINI_API_KEY");
     let aiData: any = {};
 
     if (LOVABLE_API_KEY && image_url) {
