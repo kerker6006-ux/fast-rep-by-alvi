@@ -198,7 +198,8 @@ const AiTraining = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
 
-  // Persist chat history to bot_settings (best-effort, non-blocking)
+  // Persist chat history to bot_settings so the wizard always reopens with the
+  // last conversation for this Facebook page.
   const persistChatHistory = async (msgs: ChatMessage[]) => {
     if (!user?.id || !activePage?.id) return;
     const serialized = JSON.stringify(msgs);
@@ -206,11 +207,15 @@ const AiTraining = () => {
     // doesn't show a stale history.
     setSettings((s) => ({ ...s, ai_training_chat_history: serialized }));
     try {
-      await supabase.from("bot_settings").upsert(
+      const { error } = await supabase.from("bot_settings").upsert(
         [{ user_id: user.id, fb_page_id: activePage.id, setting_key: "ai_training_chat_history", setting_value: serialized }] as any,
         { onConflict: "fb_page_id,setting_key" } as any,
       );
-    } catch { /* ignore */ }
+      if (error) throw error;
+      await queryClient.invalidateQueries({ queryKey: ["bot-settings"] });
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save AI training chat");
+    }
   };
 
 
@@ -246,7 +251,7 @@ const AiTraining = () => {
     successMessage?: string,
   ) => {
     await upsertSettings(nextSettings);
-    await queryClient.invalidateQueries({ queryKey: ["bot-settings", user?.id] });
+    await queryClient.invalidateQueries({ queryKey: ["bot-settings"] });
     setHasChanges(false);
     toast.success(successMessage ?? t("aiTraining.saved"));
   };
@@ -304,7 +309,7 @@ const AiTraining = () => {
     setSettings(next);
     try {
       await upsertSettings({ training_chat_language: code });
-      await queryClient.invalidateQueries({ queryKey: ["bot-settings", user?.id] });
+      await queryClient.invalidateQueries({ queryKey: ["bot-settings"] });
       const label = LANG_OPTIONS.find((l) => l.code === code)?.label || code;
       toast.success(t("aiTraining.languageLockedToast", { lang: label }));
     } catch (e: any) {
