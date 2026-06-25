@@ -689,7 +689,31 @@ const AiTraining = () => {
             )
           ) : (
             <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-            <Card className="flex flex-col" style={{ height: "calc(100vh - 260px)", minHeight: "400px" }}>
+            <div className="space-y-3 flex flex-col" style={{ height: "calc(100vh - 260px)", minHeight: "400px" }}>
+            {analysis && !analysis.insufficient_data && (analysis.tone_summary || (analysis.top_questions?.length ?? 0) > 0) && (
+              <Card className="border-primary/30 bg-primary/5 shrink-0">
+                <CardContent className="py-3 px-4 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-primary">
+                      <Sparkles className="h-3.5 w-3.5" /> Learned from {analyzeStats?.messages ?? analysis.stats?.messages_scanned ?? 0} past messages
+                    </div>
+                    <Button variant="ghost" size="sm" className="h-6 text-[10px] gap-1" onClick={() => runAnalysis({ force: true })} disabled={analyzing}>
+                      {analyzing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3" />} Re-analyze
+                    </Button>
+                  </div>
+                  {analysis.tone_summary && (
+                    <p className="text-xs text-muted-foreground"><b>Your tone:</b> {analysis.tone_summary}</p>
+                  )}
+                  {Array.isArray(analysis.top_questions) && analysis.top_questions.length > 0 && (
+                    <p className="text-[11px] text-muted-foreground">
+                      Top customer questions detected: {analysis.top_questions.slice(0, 3).map((q: any) => `"${q.customer_q}"`).join(", ")}
+                      {analysis.top_questions.length > 3 ? `, +${analysis.top_questions.length - 3} more` : ""}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            <Card className="flex flex-col flex-1 min-h-0">
               {/* Chat Header */}
               <CardHeader className="pb-2 pt-3 px-4 flex-row items-center justify-between space-y-0 border-b">
                 <div className="flex items-center gap-2">
