@@ -1331,16 +1331,19 @@ export type Database = {
           ai_color: string | null
           ai_description: string | null
           ai_description_bn: string | null
+          ai_duration_text: string | null
           ai_keywords: string[] | null
           ai_material: string | null
           ai_name: string | null
           ai_name_bn: string | null
           ai_price: number | null
+          ai_price_text: string | null
           created_at: string
           fb_page_id: string | null
           fb_post_id: string | null
           id: string
           image_url: string | null
+          kind: string
           post_caption: string | null
           status: string
           updated_at: string
@@ -1351,16 +1354,19 @@ export type Database = {
           ai_color?: string | null
           ai_description?: string | null
           ai_description_bn?: string | null
+          ai_duration_text?: string | null
           ai_keywords?: string[] | null
           ai_material?: string | null
           ai_name?: string | null
           ai_name_bn?: string | null
           ai_price?: number | null
+          ai_price_text?: string | null
           created_at?: string
           fb_page_id?: string | null
           fb_post_id?: string | null
           id?: string
           image_url?: string | null
+          kind?: string
           post_caption?: string | null
           status?: string
           updated_at?: string
@@ -1371,16 +1377,19 @@ export type Database = {
           ai_color?: string | null
           ai_description?: string | null
           ai_description_bn?: string | null
+          ai_duration_text?: string | null
           ai_keywords?: string[] | null
           ai_material?: string | null
           ai_name?: string | null
           ai_name_bn?: string | null
           ai_price?: number | null
+          ai_price_text?: string | null
           created_at?: string
           fb_page_id?: string | null
           fb_post_id?: string | null
           id?: string
           image_url?: string | null
+          kind?: string
           post_caption?: string | null
           status?: string
           updated_at?: string
@@ -1686,7 +1695,7 @@ export type Database = {
       services: {
         Row: {
           active: boolean
-          category: Database["public"]["Enums"]["business_category"]
+          category: string | null
           created_at: string
           description: string | null
           duration_text: string | null
@@ -1694,6 +1703,7 @@ export type Database = {
           fb_page_id: string | null
           id: string
           image_url: string | null
+          keywords: string[]
           name: string
           price_text: string | null
           service_area: string | null
@@ -1702,7 +1712,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
-          category: Database["public"]["Enums"]["business_category"]
+          category?: string | null
           created_at?: string
           description?: string | null
           duration_text?: string | null
@@ -1710,6 +1720,7 @@ export type Database = {
           fb_page_id?: string | null
           id?: string
           image_url?: string | null
+          keywords?: string[]
           name: string
           price_text?: string | null
           service_area?: string | null
@@ -1718,7 +1729,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
-          category?: Database["public"]["Enums"]["business_category"]
+          category?: string | null
           created_at?: string
           description?: string | null
           duration_text?: string | null
@@ -1726,6 +1737,7 @@ export type Database = {
           fb_page_id?: string | null
           id?: string
           image_url?: string | null
+          keywords?: string[]
           name?: string
           price_text?: string | null
           service_area?: string | null
