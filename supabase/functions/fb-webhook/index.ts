@@ -1431,6 +1431,7 @@ ${languageDirective}
 #############################
 ${kbForVertical || "(No business info configured yet — answer general questions and focus on capturing the lead.)"}
 ${servicesBlock}
+${suggestedServicesBlock}
 ${faqSection}
 ${websiteKnowledge ? `\nADDITIONAL WEBSITE KNOWLEDGE:\n${websiteKnowledge}\n` : ""}
 
