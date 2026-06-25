@@ -387,62 +387,154 @@ const FbPageConnection = () => {
         )}
       </div>
 
-      {/* Page picker modal */}
-      <Dialog open={pickerOpen} onOpenChange={(o) => { setPickerOpen(o); if (!o) { setSessionToken(null); setSelectedPage(null); } }}>
+      {/* Page picker modal — multi-select */}
+      <Dialog
+        open={pickerOpen}
+        onOpenChange={(o) => {
+          setPickerOpen(o);
+          if (!o) {
+            setSessionToken(null);
+            setSelectedPages([]);
+            setBulkResults(null);
+          }
+        }}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Select a Facebook Page</DialogTitle>
-            <DialogDescription>Choose the page LeadPilot should manage. You can connect more later.</DialogDescription>
+            <DialogTitle>Select Facebook Pages</DialogTitle>
+            <DialogDescription>
+              Pick one or more pages to connect. We'll subscribe webhooks for each and report any errors below.
+            </DialogDescription>
           </DialogHeader>
-          <div className="max-h-80 overflow-y-auto -mx-1 px-1 space-y-2">
-            {loadingSession ? (
-              <div className="flex items-center justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-            ) : !sessionPages?.length ? (
-              <p className="text-sm text-muted-foreground text-center py-8">No pages found on this Facebook account.</p>
-            ) : (
-              sessionPages.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => setSelectedPage(p.id)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 text-left transition-colors ${selectedPage === p.id ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"}`}
+
+          {!bulkResults ? (
+            <>
+              <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+                <span>{selectedPages.length} selected</span>
+                {sessionPages && sessionPages.length > 0 && (
+                  <button
+                    type="button"
+                    className="underline hover:text-foreground"
+                    onClick={() =>
+                      setSelectedPages(
+                        selectedPages.length === sessionPages.length ? [] : sessionPages.map((p) => p.id),
+                      )
+                    }
+                  >
+                    {selectedPages.length === sessionPages.length ? "Clear all" : "Select all"}
+                  </button>
+                )}
+              </div>
+              <div className="max-h-80 overflow-y-auto -mx-1 px-1 space-y-2">
+                {loadingSession ? (
+                  <div className="flex items-center justify-center py-10">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : !sessionPages?.length ? (
+                  <div className="text-center py-8 space-y-2">
+                    <p className="text-sm font-medium">No pages found on this Facebook account</p>
+                    <p className="text-xs text-muted-foreground">
+                      Make sure you are an <strong>Admin</strong> on the page and that you granted LeadPilot access to it
+                      during login (facebook.com/settings → Business Integrations → LeadPilot).
+                    </p>
+                  </div>
+                ) : (
+                  sessionPages.map((p) => {
+                    const checked = selectedPages.includes(p.id);
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() =>
+                          setSelectedPages((prev) =>
+                            prev.includes(p.id) ? prev.filter((x) => x !== p.id) : [...prev, p.id],
+                          )
+                        }
+                        className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 text-left transition-colors ${
+                          checked ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
+                        }`}
+                      >
+                        <div
+                          className={`h-5 w-5 rounded border-2 flex items-center justify-center shrink-0 ${
+                            checked ? "bg-primary border-primary" : "border-muted-foreground/40"
+                          }`}
+                        >
+                          {checked && <Check className="h-3.5 w-3.5 text-white" />}
+                        </div>
+                        {p.picture_url ? (
+                          <img src={p.picture_url} alt="" className="h-10 w-10 rounded-full object-cover" />
+                        ) : (
+                          <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: FB_BLUE }}>
+                            <Facebook className="h-5 w-5 text-white" />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium truncate">{p.name}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            {p.category && <span className="truncate">{p.category}</span>}
+                            {p.ig_username && (
+                              <span className="flex items-center gap-1 text-fuchsia-600">
+                                <Instagram className="h-3 w-3" /> @{p.ig_username}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="max-h-96 overflow-y-auto -mx-1 px-1 space-y-2">
+              {bulkResults.map((r) => (
+                <div
+                  key={r.page.id}
+                  className={`flex items-start gap-3 p-3 rounded-lg border ${
+                    r.ok ? "border-emerald-500/30 bg-emerald-500/5" : "border-destructive/40 bg-destructive/5"
+                  }`}
                 >
-                  {p.picture_url ? (
-                    <img src={p.picture_url} alt="" className="h-10 w-10 rounded-full object-cover" />
+                  {r.ok ? (
+                    <Check className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
                   ) : (
-                    <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: FB_BLUE }}>
-                      <Facebook className="h-5 w-5 text-white" />
-                    </div>
+                    <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium truncate">{p.name}</p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      {p.category && <span className="truncate">{p.category}</span>}
-                      {p.ig_username && (
-                        <span className="flex items-center gap-1 text-fuchsia-600">
-                          <Instagram className="h-3 w-3" /> @{p.ig_username}
-                        </span>
-                      )}
-                    </div>
+                    <p className="font-medium truncate">{r.page.name}</p>
+                    <p className={`text-xs ${r.ok ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"} break-words`}>
+                      {r.message}
+                    </p>
                   </div>
-                  {selectedPage === p.id && <Check className="h-4 w-4 text-primary" />}
-                </button>
-              ))
-            )}
-          </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPickerOpen(false)}>Cancel</Button>
-            <Button
-              disabled={!selectedPage || connectPage.isPending}
-              onClick={() => selectedPage && connectPage.mutate(selectedPage)}
-              className="text-white"
-              style={{ backgroundColor: FB_BLUE }}
-            >
-              {connectPage.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Connect Page
-            </Button>
+            {!bulkResults ? (
+              <>
+                <Button variant="outline" onClick={() => setPickerOpen(false)} disabled={bulkRunning}>
+                  Cancel
+                </Button>
+                <Button
+                  disabled={selectedPages.length === 0 || bulkRunning}
+                  onClick={connectSelected}
+                  className="text-white"
+                  style={{ backgroundColor: FB_BLUE }}
+                >
+                  {bulkRunning && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Connect {selectedPages.length > 0 ? `${selectedPages.length} ` : ""}Page{selectedPages.length === 1 ? "" : "s"}
+                </Button>
+              </>
+            ) : (
+              <Button onClick={() => setPickerOpen(false)} className="text-white" style={{ backgroundColor: FB_BLUE }}>
+                Done
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
 
       {/* Disconnect confirm — 7-day soft delete */}
       <AlertDialog open={!!disconnectId} onOpenChange={(o) => !o && setDisconnectId(null)}>
