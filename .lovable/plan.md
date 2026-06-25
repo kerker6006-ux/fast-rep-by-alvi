@@ -1,48 +1,37 @@
+# Make the bot a closer by default
 
-# Page Sharing & Team Invites
+Right now the system prompts say "Goal: close the order" / "Goal: book the appointment" but it's one line buried among many. I'll promote that mission to the TOP of the brain and reinforce it across every reply, plus carry the same conviction into the AI Training wizard so it interrogates the business model with that lens.
 
-Per-page team invites with two roles. Invites by email; on accept, a LeadPilot account is auto-created tied to that gmail. Invited people only see pages they were invited to.
+## What changes
 
-## Roles
+### 1. `supabase/functions/fb-webhook/index.ts` — main reply brain
+Add a new **MISSION** block at the very top of `systemPrompt` (before language, before persona) for all three verticals:
 
-| Role | Sees on shared page | Can do on shared page |
-|---|---|---|
-| **Owner** | Everything | Everything: bot, training, products, billing, invite/remove anyone (full or moderator), disconnect page |
-| **Full Access** | Everything | Everything **except disconnecting the page or removing the owner**. **Can invite & remove BOTH full-access members and moderators** on that page (just like an owner, minus disconnect). |
-| **Moderator** | Only: Conversations, Orders, Appointments/Complaints, Notifications bell | Reply to chats, view/update orders & appointments. No bot settings, training, products, billing, analytics, invites, or disconnect. |
+- Ecommerce → mission = close a sale (order with name + phone + address + product + qty)
+- Service → mission = book an appointment (name + phone + service + date)
+- Content creator → mission = enroll / capture lead for the right course
 
-Removal rules: Owner can remove anyone. Full-access can remove full-access and moderators (cannot remove the owner). Moderators can remove nobody.
+The block will state:
+- Every reply must move the customer one step closer to buy / book / enroll.
+- Never end a reply without either (a) asking the next qualifying question, (b) suggesting the right product/service/course, or (c) asking for the confirmation.
+- Soft-influence tactics allowed: scarcity if true ("limited stock", "today's slot"), social proof if in KB, value framing tied to the customer's stated need.
+- Never pushy, never repeat the same pitch twice, never invent discounts/offers, never beg.
+- If customer is just browsing → still steer back with one concrete next step.
 
-## Database (1 migration)
+I'll also tighten the existing "REPLY STYLE" rule so "answer ONLY what was asked" is amended to "answer what was asked, then take ONE step toward closing."
 
-- `page_members(id, page_id, user_id, role enum['full','moderator'], invited_by, created_at)` — unique `(page_id, user_id)`
-- `page_invites(id, page_id, email lower, role, token uuid, invited_by, status enum['pending','accepted','revoked','expired'], expires_at, accepted_at, accepted_by, created_at)` — unique pending `(page_id, email)` via partial index
-- Security-definer helpers:
-  - `user_page_role(_page_id)` → `'owner' | 'full' | 'moderator' | null`
-  - `user_has_page_access(_page_id)` → bool
-  - `user_can_manage_page(_page_id)` → bool (owner or full — for settings/products/training writes AND for inviting/removing)
-- RLS rewritten on every page-scoped table (`fb_pages, conversations, messages, orders, complaints, products, services, bot_settings, auto_reply_rules, pending_products, product_suggestions, leads, comment_triggers, comment_trigger_logs, scheduled_messages, notifications, website_knowledge, training_suggestions`) to use these helpers. Reads = `user_has_page_access`. Sensitive writes (bot settings, training, products, services, auto-reply, website knowledge, scheduled messages, comment triggers) = `user_can_manage_page`. Chat/orders/complaints writes = `user_has_page_access`. Disconnect (delete on `fb_pages`) = owner only.
-- `page_members` / `page_invites` RLS:
-  - SELECT: any owner or member of the page.
-  - INSERT / DELETE / UPDATE: `user_can_manage_page(page_id)` — i.e. owner OR full. (No role restriction; full can invite both roles.)
-  - Owner row cannot be deleted from `page_members` (owner isn't stored there — owner derives from `fb_pages.user_id`).
-- `notify_new_order` / `notify_new_complaint` triggers: fan out one `notifications` row to owner + every page member.
+### 2. `supabase/functions/ai-training-chat/index.ts` — training wizard
+Promote business-model understanding so the wizard digs into what actually drives sales/appointments before saving:
 
-## Edge functions
+- Add to `wizardByCategory` a line: "Your job is to deeply understand the business so the live bot can sell/book confidently. Ask about: target customer, top objection, why customers choose them over competitors, what closes a sale fastest, common buying signals."
+- Add a new RULE: "Before marking setup complete, make sure you understand HOW this business actually wins customers (price? quality? speed? expertise?) and capture it into `business_description` / `ai_personality` so the bot can use it to influence buyers."
 
-- `invite-page-member` — verifies `user_can_manage_page`. gmail-only email. Creates `page_invites`, enqueues `page-invite` email.
-- `accept-page-invite` — public, token-based. If gmail user doesn't exist, creates auth user via service role with random password and triggers password-reset email. Inserts `page_members`, marks invite accepted.
-- `revoke-page-invite`, `remove-page-member` — verify `user_can_manage_page`; cannot target the owner.
+### 3. `bot_settings` — no schema change
+Reuses existing fields (`business_description`, `ai_personality`, `custom_instructions`). The new conviction lives entirely in prompts, so no DB migration needed.
 
-## Email
+## Files edited
+- `supabase/functions/fb-webhook/index.ts` (insert MISSION block into both `systemPrompt` branches around lines 1340 and 1394; tweak reply-style line)
+- `supabase/functions/ai-training-chat/index.ts` (extend `wizardByCategory` strings and add rule around line 258)
 
-- `page-invite.tsx` (transactional, registered in `registry.ts`). "X invited you to manage <Page> on LeadPilot as <Full Access | Moderator>" + Accept button.
-
-## Frontend
-
-- **Bot Settings → "Team & Access" card**: visible when `accessRole` is `owner` or `full`. Lists members + pending invites for active page. Invite dialog (gmail + role radio: Full Access / Moderator). Revoke & remove buttons. Owner row shown but not removable.
-- **`ActivePageContext`**: pages = owned ∪ shared (via `page_members`), each tagged with `accessRole`.
-- **`useAccessRole(pageId)`** hook.
-- **Sidebar/routes**: when active page role = `moderator`, only Conversations, Orders, Appointments, Notifications. Other routes redirect to Conversations.
-- **Write-gating in components**: hide destructive/edit UI when role !== required. RLS is the real enforcement.
-- **`/accept-invite` page**: calls edge function, shows result, redirects to login. New users told to check email for password setup.
+## Out of scope
+- No UI changes, no new settings field, no DB migration. If you later want a per-page toggle ("aggressive vs soft selling") I can add that as a follow-up.

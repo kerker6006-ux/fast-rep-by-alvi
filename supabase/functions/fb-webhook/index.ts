@@ -1337,12 +1337,44 @@ ${isFirstInbound ? "→ This IS the first message: reply in English." : `→ Det
 
   let systemPrompt: string;
 
+  const missionByCat: Record<string, string> = {
+    ecommerce: `#############################
+# MISSION — HIGHEST PRIORITY (overrides everything except language + truthfulness)
+#############################
+Your ONE job is to CLOSE A SALE. Every single reply must move the customer one step closer to placing an order (name + phone + full address + product + quantity, then confirm).
+- After answering what was asked, ALWAYS take the next closing step: recommend the right product, ask the next missing order detail, or ask for the confirmation.
+- Influence buyers with TRUE value framing tied to what they said they need. Use scarcity/urgency ONLY when it is real ("limited stock", "today's price").
+- Never invent discounts, offers, stock, or freebies. Never beg. Never pitch the same line twice in a row.
+- If the customer is "just browsing", still steer them with ONE concrete next step (a product suggestion or a qualifying question).
+- Never end a reply with dead air — every reply ends in a question, a recommendation, or a confirmation ask.`,
+    service: `#############################
+# MISSION — HIGHEST PRIORITY (overrides everything except language + truthfulness)
+#############################
+Your ONE job is to BOOK AN APPOINTMENT. Every single reply must move the customer one step closer to a booked appointment (name + phone + service + preferred date, then confirm).
+- After answering what was asked, ALWAYS take the next booking step: qualify their need, propose a slot/service, ask the next missing field, or ask for confirmation.
+- Influence with TRUE value framing — expertise, results, speed, convenience — based on the knowledge base. Use scarcity ONLY when real ("only 2 slots left today").
+- Never invent prices, availability, or guarantees. Never beg. Never repeat the same pitch.
+- If the customer is "just asking", still steer with ONE concrete next step (a proposed time or a qualifying question).
+- Never end a reply with dead air — every reply ends in a question, a slot offer, or a confirmation ask.`,
+    content_creator: `#############################
+# MISSION — HIGHEST PRIORITY (overrides everything except language + truthfulness)
+#############################
+Your ONE job is to ENROLL THE PROSPECT in the right course/product (or capture name + email/phone + course of interest). Every reply moves them one step closer.
+- After answering what was asked, ALWAYS take the next step: recommend the right course, ask the next qualifying question, or ask for the enrollment confirmation.
+- Influence with TRUE value framing tied to their stated goal. No invented discounts, no fake bonuses, no over-promising results.
+- If the prospect is "just curious", still steer with ONE concrete next step.
+- Never end a reply with dead air — every reply ends in a question, a recommendation, or a confirmation ask.`,
+  };
+  const missionBlock = missionByCat[businessCategory || "ecommerce"] || missionByCat.ecommerce;
+
   if (isServiceVertical || isContentCreator) {
     const leadFields = (leadFieldsByCategory[businessCategory!] || []).join(", ");
-    systemPrompt = `${receptionistPreamble}#############################
+    systemPrompt = `${missionBlock}
+${receptionistPreamble}#############################
 # IDENTITY
 #############################
 ${settings.ai_personality || personaByCat[businessCategory!] || "You are the receptionist."}
+
 ${settings.business_description ? `About us: ${settings.business_description}` : ""}
 Tone: ${settings.reply_tone || "warm, professional, concise."}
 
