@@ -21,23 +21,37 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error("Unauthorized");
 
-    // Get user's connected FB page
-    const { data: pages, error: pageError } = await supabase
+    const { searchParams } = new URL(req.url);
+    const requestedPageId = searchParams.get("fb_page_id");
+
+    // Find a page the user can access (owner or member). Prefer the requested one.
+    let query = supabase
       .from("fb_pages")
       .select("*")
-      .eq("user_id", user.id)
-      .eq("is_active", true)
-      .limit(1);
+      .eq("is_active", true);
+    if (requestedPageId) query = query.eq("fb_page_id", requestedPageId);
 
-    if (pageError || !pages?.length) {
-      return new Response(JSON.stringify({ error: "No connected Facebook page found" }), {
+    const { data: pages, error: pageError } = await query.limit(5);
+
+    let page = null as any;
+    if (pages?.length) {
+      for (const p of pages) {
+        const { data: ok } = await supabase.rpc("user_has_fb_page_access", { _fb_page_id: p.fb_page_id });
+        if (ok) { page = p; break; }
+      }
+    }
+
+    if (pageError || !page) {
+      return new Response(JSON.stringify({
+        error: requestedPageId
+          ? "You don't have access to this Facebook page, or it's not connected."
+          : "No connected Facebook page found. Connect a page in Settings first.",
+      }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const page = pages[0];
-    const { searchParams } = new URL(req.url);
     const after = searchParams.get("after") || "";
 
     // Fetch posts from Facebook Graph API
