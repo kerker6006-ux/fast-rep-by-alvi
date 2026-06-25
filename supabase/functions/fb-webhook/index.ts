@@ -588,9 +588,16 @@ async function handleMessagingEvent(
   if (lovableApiKey) {
     try {
       const hasImage = !!imageUrl;
-      const replyText = await generateAiReply(
+      let replyText = await generateAiReply(
         supabase, lovableApiKey, conversationId, messageText, imageUrl, settings, userId
       );
+
+      // Proactive service image: bot prepends [[SEND_IMAGE:<url>]] when a matched service has a photo
+      const sendImageMatch = replyText && replyText.match(/^\[\[SEND_IMAGE:(https?:\/\/[^\]]+)\]\]\s*/);
+      if (sendImageMatch) {
+        try { await sendFbImage(pageAccessToken, senderId, sendImageMatch[1]); } catch (e) { console.error("sendFbImage failed", e); }
+        replyText = replyText.replace(sendImageMatch[0], "");
+      }
 
       // Product suggestion handoff — bot detected an unknown product request
       const suggestMatch = replyText && replyText.match(/SUGGEST_PRODUCT:\s*(.+?)(?:\n|$)/i);
