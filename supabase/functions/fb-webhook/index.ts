@@ -662,7 +662,7 @@ async function handleMessagingEvent(
         await detectAndCreateComplaint(supabase, lovableApiKey, conversationId, senderId, pageAccessToken, messageText, replyText, userId);
       }
       if (settings.auto_create_leads !== "false") {
-        await extractAndSaveLead(supabase, lovableApiKey, conversationId, userId);
+        await extractAndSaveLead(supabase, lovableApiKey, conversationId, userId, pageAccessToken, senderId);
       }
     } catch (aiError) {
       console.error("AI processing error:", aiError);
@@ -2139,8 +2139,15 @@ async function detectAndCreateComplaint(
   }
 }
 
-// ---- AI Receptionist: lead extraction ----
-async function extractAndSaveLead(supabase: any, apiKey: string, conversationId: string, userId: string | null) {
+// ---- AI Receptionist: lead / appointment extraction ----
+async function extractAndSaveLead(
+  supabase: any,
+  apiKey: string,
+  conversationId: string,
+  userId: string | null,
+  pageAccessToken?: string,
+  senderId?: string,
+) {
   if (!userId || !apiKey) return;
   try {
     const { data: pageRow } = await supabase
@@ -2156,13 +2163,20 @@ async function extractAndSaveLead(supabase: any, apiKey: string, conversationId:
 
     const transcript = msgs.map((m: any) => `${m.direction === "incoming" ? "Customer" : "Bot"}: ${m.content || ""}`).join("\n");
 
+    const isService = category !== "ecommerce" && category !== "content_creator";
     const fields = category === "ecommerce"
       ? ["name", "phone", "address", "service_or_product"]
       : category === "content_creator"
       ? ["name", "phone", "service_or_product"]
-      : ["name", "phone", "service_or_product", "preferred_date"];
+      : ["name", "phone", "service_or_product", "preferred_date", "preferred_time", "notes", "is_confirmed"];
 
-    const sysPrompt = `Extract lead information from this Facebook Messenger conversation. Return ONLY a JSON object with these fields (null if not stated): ${fields.join(", ")}. Use null for missing values. Do not invent data.`;
+    const sysPrompt = isService
+      ? `Extract appointment booking info from this Facebook Messenger conversation. Return ONLY a JSON object with these fields (use null when not stated, do not invent): ${fields.join(", ")}.
+- "preferred_date": natural text the customer said (e.g. "tomorrow", "25 Dec", "next Monday").
+- "preferred_time": natural text (e.g. "5 PM", "morning", "10:30").
+- "is_confirmed": true ONLY if the customer clearly confirmed the booking with words like "book me", "confirm", "I want to come", "okay book", "জি বুক করুন", "হ্যাঁ", "ok", "yes" AFTER the bot proposed a date/time, OR the customer themselves proposed a specific date/time as a booking ("book me tomorrow at 5pm"). Otherwise false.
+- "notes": short extra context if any (e.g. branch, reason for visit).`
+      : `Extract lead information from this Facebook Messenger conversation. Return ONLY a JSON object with these fields (null if not stated): ${fields.join(", ")}. Use null for missing values. Do not invent data.`;
 
     const res = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
@@ -2187,26 +2201,55 @@ async function extractAndSaveLead(supabase: any, apiKey: string, conversationId:
 
     // Upsert: one lead per conversation
     const { data: existing } = await supabase
-      .from("leads").select("id").eq("conversation_id", conversationId).maybeSingle();
+      .from("leads").select("id, confirmed_at, name, phone, preferred_date, preferred_time")
+      .eq("conversation_id", conversationId).maybeSingle();
 
     const payload: any = {
       user_id: userId,
       category,
       conversation_id: conversationId,
       source: "facebook",
-      name: parsed.name || null,
-      phone: parsed.phone || null,
+      name: parsed.name || existing?.name || null,
+      phone: parsed.phone || existing?.phone || null,
       address: parsed.address || null,
       service_or_product: parsed.service_or_product || null,
-      preferred_date: parsed.preferred_date || null,
+      preferred_date: parsed.preferred_date || existing?.preferred_date || null,
+      preferred_time: parsed.preferred_time || existing?.preferred_time || null,
+      notes: parsed.notes || null,
     };
+
+    // Mark as confirmed appointment the first time the customer locks it in
+    const justConfirmed = isService
+      && !!parsed.is_confirmed
+      && !!payload.phone
+      && (!!payload.preferred_date || !!payload.preferred_time)
+      && !existing?.confirmed_at;
+    if (justConfirmed) {
+      payload.confirmed_at = new Date().toISOString();
+      payload.status = "confirmed";
+    }
 
     if (existing) {
       await supabase.from("leads").update(payload).eq("id", existing.id);
     } else {
       await supabase.from("leads").insert(payload);
     }
-    console.log("Lead saved for conversation:", conversationId);
+    console.log("Lead saved for conversation:", conversationId, "confirmed:", justConfirmed);
+
+    // Send a one-time confirmation message + email notification
+    if (justConfirmed && pageAccessToken && senderId) {
+      const when = [payload.preferred_date, payload.preferred_time].filter(Boolean).join(" ");
+      const confirmMsg = `আপনার এপয়েন্টমেন্ট কনফার্ম করা হয়েছে${when ? ` — ${when}` : ""}। আমরা আপনাকে স্মরণ করিয়ে দেব। ধন্যবাদ! 🙏`;
+      try {
+        await sendFbMessage(pageAccessToken, senderId, confirmMsg);
+        await saveOutgoingMessage(supabase, conversationId, confirmMsg, null, userId);
+      } catch (e) { console.error("Appointment confirm send failed:", e); }
+      notifyOwnerByEmail(supabase, userId, "new-appointment", {
+        customerName: payload.name || "Customer",
+        customerPhone: payload.phone || "—",
+        details: `${payload.service_or_product || "Appointment"}${when ? ` — ${when}` : ""}${payload.notes ? `\n${payload.notes}` : ""}`,
+      }, `appointment-${conversationId}-${Date.now()}`).catch(() => {});
+    }
   } catch (e) {
     console.error("Lead extraction error:", e);
   }
