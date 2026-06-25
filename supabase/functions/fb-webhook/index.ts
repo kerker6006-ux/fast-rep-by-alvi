@@ -98,7 +98,7 @@ serve(async (req) => {
         return new Response("Not a page/instagram event", { status: 200, headers: corsHeaders });
       }
 
-      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      const LOVABLE_API_KEY = Deno.env.get("GEMINI_API_KEY");
 
       for (const entry of body.entry || []) {
         const entryId = entry.id;
@@ -233,7 +233,7 @@ async function handleCommentEvent(
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${lovableApiKey}` },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash-lite",
+          model: "gemini-2.5-flash-lite",
           messages: [{
             role: "system",
             content: `You are a Facebook page comment reply bot. Reply in ${lang}. Be short (1 sentence max). If they ask about a product, mention the price. Always encourage them to inbox for details. Products: ${productList}. ${settings.manual_instructions || ""}`
@@ -301,11 +301,11 @@ async function handleIgCommentEvent(
     : "Thanks! Check your DMs 📩";
   if (lovableApiKey && settings.comment_ai_reply !== "false") {
     try {
-      const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const aiRes = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Lovable-API-Key": lovableApiKey },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${lovableApiKey}` },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash-lite",
+          model: "gemini-2.5-flash-lite",
           messages: [
             { role: "system", content: `Reply to an Instagram comment in ${lang}. Max 6 words, friendly, tell them to check DMs. ${settings.manual_instructions || ""}` },
             { role: "user", content: commentText || "(no text)" },
@@ -387,7 +387,7 @@ async function handlePagePostEvent(
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${lovableApiKey}` },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash-lite",
+          model: "gemini-2.5-flash-lite",
           messages: [{
             role: "system",
             content: `You are a product analyzer. Given a Facebook page post with an image and caption, extract product details. Return ONLY valid JSON with these fields: name, name_bn (Bangla name), description, description_bn, category, color, price (number, 0 if unknown), material, keywords (array of strings). If caption is in Bangla, prioritize Bangla names. Be accurate.`
@@ -1465,11 +1465,11 @@ ${faqSection}`;
   const historyWithoutLast = chatHistory.slice(0, -1);
 
   const requestBody: any = {
-    model: "google/gemini-2.5-flash",
+    model: "gemini-2.5-flash",
     messages: [{ role: "system", content: systemPrompt }, ...historyWithoutLast, currentUserMessage],
   };
 
-  const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const aiResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify(requestBody),
@@ -1548,11 +1548,11 @@ async function detectAndProcessOrder(
       ? `\n\nEXISTING ORDER (already in system):\n- Status: ${existingOrder.status}\n- Items: ${JSON.stringify(existingOrder.items)}\n- Total: $${existingOrder.total}\n- Name: ${existingOrder.customer_name || "N/A"}\n- Phone: ${existingOrder.customer_phone || "N/A"}\n- Address: ${existingOrder.customer_address || "N/A"}`
       : "\n\nNo existing order for this conversation.";
 
-    const extractResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const extractResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model: "gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: `You are an order management AI for a Facebook Messenger shop. Read the FULL conversation and determine what action to take.
 
@@ -1818,11 +1818,11 @@ async function detectAndCreateComplaint(
   if (!hasComplaintIntent) return;
 
   try {
-    const extractResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const extractResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model: "gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: "Extract complaint details. If customer has a genuine complaint, extract info. Return is_complaint=false if just asking a question." },
           { role: "user", content: `Customer: ${customerMessage}\nBot reply: ${aiReply}` },
@@ -1921,11 +1921,11 @@ async function extractAndSaveLead(supabase: any, apiKey: string, conversationId:
 
     const sysPrompt = `Extract lead information from this Facebook Messenger conversation. Return ONLY a JSON object with these fields (null if not stated): ${fields.join(", ")}. Use null for missing values. Do not invent data.`;
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model: "gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: sysPrompt },
           { role: "user", content: transcript.slice(-4000) },

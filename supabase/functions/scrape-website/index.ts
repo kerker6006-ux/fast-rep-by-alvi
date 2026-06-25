@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
   try {
     const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
     if (!FIRECRAWL_API_KEY) throw new Error("FIRECRAWL_API_KEY not configured");
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const LOVABLE_API_KEY = Deno.env.get("GEMINI_API_KEY");
 
     const authHeader = req.headers.get("authorization");
     if (!authHeader) throw new Error("No auth");
@@ -106,11 +106,11 @@ Deno.serve(async (req) => {
       // Ask AI to identify product pages
       let picks: number[] = [];
       try {
-        const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const aiRes = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${LOVABLE_API_KEY}` },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash-lite",
+            model: "gemini-2.5-flash-lite",
             messages: [{
               role: "user",
               content: `Identify which of these pages are individual product pages (not category, home, blog, contact). Return JSON: {"picks":[idx,...]}. Max 30.\n\n${JSON.stringify(candidates)}`,
@@ -128,11 +128,11 @@ Deno.serve(async (req) => {
         if (!p) continue;
         try {
           const md = (p.markdown || "").slice(0, 4000);
-          const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          const aiRes = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${LOVABLE_API_KEY}` },
             body: JSON.stringify({
-              model: "google/gemini-2.5-flash",
+              model: "gemini-2.5-flash",
               messages: [{
                 role: "user",
                 content: `Extract product info from this page. Return JSON: {name, name_bn, description, description_bn, category, price (number USD, 0 if unknown), image_url (best product image url), keywords (array)}.\n\nURL: ${p.metadata?.sourceURL}\nTitle: ${p.metadata?.title}\n\n${md}`,

@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
     }
 
     // Use AI to analyze the post
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const LOVABLE_API_KEY = Deno.env.get("GEMINI_API_KEY");
     let aiData: any = {};
 
     if (LOVABLE_API_KEY && image_url) {
@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${LOVABLE_API_KEY}` },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
+            model: "gemini-2.5-flash",
             messages: [
               {
                 role: "user",
