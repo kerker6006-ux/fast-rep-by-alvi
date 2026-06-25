@@ -152,6 +152,7 @@ const ServicesManager = () => {
     setEditingId(s.id);
     setForm({
       name: s.name,
+      category: s.category || "",
       description: s.description || "",
       price_text: s.price_text || "",
       duration_text: s.duration_text || "",
