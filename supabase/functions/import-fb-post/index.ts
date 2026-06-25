@@ -21,8 +21,20 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error("Unauthorized");
 
-    const { post_id, message, image_url } = await req.json();
+    const { post_id, message, image_url, fb_page_id } = await req.json();
     if (!post_id) throw new Error("post_id required");
+
+    let pageId: string | null = null;
+    if (fb_page_id) {
+      const { data: canAccess } = await supabase.rpc("user_has_page_access", { _page_id: fb_page_id });
+      if (!canAccess) {
+        return new Response(JSON.stringify({ error: "You don't have access to this Facebook page, or it's not connected." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      pageId = fb_page_id;
+    }
 
     // Check if already imported
     const { data: existing } = await supabase
@@ -76,6 +88,7 @@ Deno.serve(async (req) => {
     // Insert as pending product
     const { error: insertError } = await supabase.from("pending_products").insert({
       user_id: user.id,
+      fb_page_id: pageId,
       fb_post_id: post_id,
       image_url: image_url || null,
       post_caption: message || null,
