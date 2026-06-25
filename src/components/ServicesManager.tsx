@@ -28,10 +28,11 @@ type ServiceRow = {
   price_text: string | null;
   duration_text: string | null;
   service_area: string | null;
+  image_url: string | null;
   active: boolean;
 };
 
-const emptyForm = { name: "", description: "", price_text: "", duration_text: "", service_area: "", active: true };
+const emptyForm = { name: "", description: "", price_text: "", duration_text: "", service_area: "", image_url: "", active: true };
 
 const ServicesManager = () => {
   const { t } = useTranslation();
