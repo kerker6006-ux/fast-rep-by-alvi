@@ -300,24 +300,79 @@ const AiTraining = () => {
     }
   };
 
+  // --- Auto-analysis ---
+  const runAnalysis = async (opts: { force?: boolean; lang?: string } = {}): Promise<any | null> => {
+    if (!activePage?.id) return null;
+    setAnalyzing(true);
+    setAnalyzePhase("Reading your past Messenger chats…");
+    try {
+      const { data, error } = await supabase.functions.invoke("wizard-auto-analyze", {
+        body: {
+          fb_page_id: activePage.id,
+          language: opts.lang || chatLang || "en",
+          category: cat,
+          force: !!opts.force,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const a = data?.analysis || null;
+      setAnalysis(a);
+      setAnalyzeStats({
+        messages: data?.messages_scanned ?? a?.stats?.messages_scanned ?? 0,
+        conversations: data?.conversations_scanned ?? a?.stats?.conversations_scanned ?? 0,
+      });
+      setAnalyzePhase("Drafting your bot settings…");
+
+      if (a?.draft_settings && Object.keys(a.draft_settings).length > 0) {
+        const merged = mergeGeneratedSettings(settings, a.draft_settings as any);
+        if (JSON.stringify(merged) !== JSON.stringify(settings)) {
+          setSettings(merged);
+          setHasChanges(true);
+        }
+      }
+      if (Array.isArray(a?.draft_faqs) && a.draft_faqs.length) {
+        const existing = parseSettingsJson<{ q: string; a: string }[]>(settings.faq_list, []);
+        const filtered = a.draft_faqs.filter((s: any) => s?.q && !existing.some((f) => f.q === s.q));
+        if (filtered.length) setAiSuggestedFaqs(filtered);
+      }
+      return a;
+    } catch (e: any) {
+      toast.error(e.message || "Couldn't analyze past chats");
+      return null;
+    } finally {
+      setAnalyzing(false);
+      setAnalyzePhase("");
+    }
+  };
+
   const startChat = async (overrideLang?: string) => {
     const lang = overrideLang || chatLang;
     if (!lang) return; // picker handles this
     setChatStarted(true);
     setIsChatLoading(true);
+
+    // Run analysis FIRST (cached after first call)
+    const a = await runAnalysis({ lang });
+
     try {
+      const hasInsights = !!(a && !a.insufficient_data && (a.tone_summary || (a.top_questions?.length ?? 0) > 0));
+      const opener = hasInsights
+        ? "Hi — please use what you learned from my past chats and walk me through setup."
+        : "Hi, I want to set up my bot. Help me.";
       const { data, error } = await supabase.functions.invoke("ai-training-chat", {
         body: {
-          messages: [{ role: "user", content: "Hi, I want to set up my bot. Help me." }],
+          messages: [{ role: "user", content: opener }],
           settings,
           category: cat,
           language: lang,
+          analysis_context: a || undefined,
         },
       });
       if (error) throw error;
       if (data.error) throw new Error(data.error);
       const initial: ChatMessage[] = [
-        { role: "user", content: "Hi, I want to set up my bot." },
+        { role: "user", content: opener },
         { role: "assistant", content: data.reply },
       ];
       setChatMessages(initial);
@@ -340,7 +395,7 @@ const AiTraining = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke("ai-training-chat", {
-        body: { messages: newMessages, settings, category: cat, language: chatLang },
+        body: { messages: newMessages, settings, category: cat, language: chatLang, analysis_context: analysis || undefined },
       });
       if (error) throw error;
       if (data.error) throw new Error(data.error);
