@@ -152,6 +152,7 @@ const ServicesManager = () => {
       price_text: s.price_text || "",
       duration_text: s.duration_text || "",
       service_area: s.service_area || "",
+      image_url: s.image_url || "",
       active: s.active,
     });
     setDialogOpen(true);
