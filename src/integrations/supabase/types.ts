@@ -1953,6 +1953,39 @@ export type Database = {
           },
         ]
       }
+      wizard_analysis: {
+        Row: {
+          analysis: Json
+          conversations_scanned: number
+          created_at: string
+          fb_page_id: string
+          id: string
+          messages_scanned: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          analysis?: Json
+          conversations_scanned?: number
+          created_at?: string
+          fb_page_id: string
+          id?: string
+          messages_scanned?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          analysis?: Json
+          conversations_scanned?: number
+          created_at?: string
+          fb_page_id?: string
+          id?: string
+          messages_scanned?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       fb_pages_safe: {

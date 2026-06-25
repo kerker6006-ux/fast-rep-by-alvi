@@ -146,6 +146,12 @@ const AiTraining = () => {
   const [chatStarted, setChatStarted] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // Auto-analysis state
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzePhase, setAnalyzePhase] = useState<string>("");
+  const [analyzeStats, setAnalyzeStats] = useState<{ messages: number; conversations: number } | null>(null);
+
   // Manual settings state
   const [faqQuestion, setFaqQuestion] = useState("");
   const [faqAnswer, setFaqAnswer] = useState("");
@@ -294,24 +300,79 @@ const AiTraining = () => {
     }
   };
 
+  // --- Auto-analysis ---
+  const runAnalysis = async (opts: { force?: boolean; lang?: string } = {}): Promise<any | null> => {
+    if (!activePage?.id) return null;
+    setAnalyzing(true);
+    setAnalyzePhase("Reading your past Messenger chats…");
+    try {
+      const { data, error } = await supabase.functions.invoke("wizard-auto-analyze", {
+        body: {
+          fb_page_id: activePage.id,
+          language: opts.lang || chatLang || "en",
+          category: cat,
+          force: !!opts.force,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const a = data?.analysis || null;
+      setAnalysis(a);
+      setAnalyzeStats({
+        messages: data?.messages_scanned ?? a?.stats?.messages_scanned ?? 0,
+        conversations: data?.conversations_scanned ?? a?.stats?.conversations_scanned ?? 0,
+      });
+      setAnalyzePhase("Drafting your bot settings…");
+
+      if (a?.draft_settings && Object.keys(a.draft_settings).length > 0) {
+        const merged = mergeGeneratedSettings(settings, a.draft_settings as any);
+        if (JSON.stringify(merged) !== JSON.stringify(settings)) {
+          setSettings(merged);
+          setHasChanges(true);
+        }
+      }
+      if (Array.isArray(a?.draft_faqs) && a.draft_faqs.length) {
+        const existing = parseSettingsJson<{ q: string; a: string }[]>(settings.faq_list, []);
+        const filtered = a.draft_faqs.filter((s: any) => s?.q && !existing.some((f) => f.q === s.q));
+        if (filtered.length) setAiSuggestedFaqs(filtered);
+      }
+      return a;
+    } catch (e: any) {
+      toast.error(e.message || "Couldn't analyze past chats");
+      return null;
+    } finally {
+      setAnalyzing(false);
+      setAnalyzePhase("");
+    }
+  };
+
   const startChat = async (overrideLang?: string) => {
     const lang = overrideLang || chatLang;
     if (!lang) return; // picker handles this
     setChatStarted(true);
     setIsChatLoading(true);
+
+    // Run analysis FIRST (cached after first call)
+    const a = await runAnalysis({ lang });
+
     try {
+      const hasInsights = !!(a && !a.insufficient_data && (a.tone_summary || (a.top_questions?.length ?? 0) > 0));
+      const opener = hasInsights
+        ? "Hi — please use what you learned from my past chats and walk me through setup."
+        : "Hi, I want to set up my bot. Help me.";
       const { data, error } = await supabase.functions.invoke("ai-training-chat", {
         body: {
-          messages: [{ role: "user", content: "Hi, I want to set up my bot. Help me." }],
+          messages: [{ role: "user", content: opener }],
           settings,
           category: cat,
           language: lang,
+          analysis_context: a || undefined,
         },
       });
       if (error) throw error;
       if (data.error) throw new Error(data.error);
       const initial: ChatMessage[] = [
-        { role: "user", content: "Hi, I want to set up my bot." },
+        { role: "user", content: opener },
         { role: "assistant", content: data.reply },
       ];
       setChatMessages(initial);
@@ -334,7 +395,7 @@ const AiTraining = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke("ai-training-chat", {
-        body: { messages: newMessages, settings, category: cat, language: chatLang },
+        body: { messages: newMessages, settings, category: cat, language: chatLang, analysis_context: analysis || undefined },
       });
       if (error) throw error;
       if (data.error) throw new Error(data.error);
@@ -553,7 +614,24 @@ const AiTraining = () => {
 
         {/* ===== AI WIZARD TAB ===== */}
         <TabsContent value="wizard" className="space-y-4">
-          {!chatStarted ? (
+          {analyzing && chatMessages.length === 0 ? (
+            <Card className="border-dashed border-primary/30">
+              <CardContent className="flex flex-col items-center justify-center py-12 space-y-4">
+                <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Loader2 className="h-7 w-7 text-primary animate-spin" />
+                </div>
+                <div className="text-center space-y-1.5 max-w-md">
+                  <h3 className="font-semibold text-lg">Analyzing your past conversations…</h3>
+                  <p className="text-sm text-muted-foreground">{analyzePhase || "Learning how customers ask and how you reply, so the bot inherits your voice."}</p>
+                  {analyzeStats && (
+                    <p className="text-xs text-muted-foreground pt-1">
+                      Scanned {analyzeStats.messages} messages across {analyzeStats.conversations} conversations.
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ) : !chatStarted ? (
             !chatLang ? (
               <Card className="border-dashed border-primary/30">
                 <CardContent className="flex flex-col items-center justify-center py-10 space-y-4">
@@ -611,7 +689,31 @@ const AiTraining = () => {
             )
           ) : (
             <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-            <Card className="flex flex-col" style={{ height: "calc(100vh - 260px)", minHeight: "400px" }}>
+            <div className="space-y-3 flex flex-col" style={{ height: "calc(100vh - 260px)", minHeight: "400px" }}>
+            {analysis && !analysis.insufficient_data && (analysis.tone_summary || (analysis.top_questions?.length ?? 0) > 0) && (
+              <Card className="border-primary/30 bg-primary/5 shrink-0">
+                <CardContent className="py-3 px-4 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-primary">
+                      <Sparkles className="h-3.5 w-3.5" /> Learned from {analyzeStats?.messages ?? analysis.stats?.messages_scanned ?? 0} past messages
+                    </div>
+                    <Button variant="ghost" size="sm" className="h-6 text-[10px] gap-1" onClick={() => runAnalysis({ force: true })} disabled={analyzing}>
+                      {analyzing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3" />} Re-analyze
+                    </Button>
+                  </div>
+                  {analysis.tone_summary && (
+                    <p className="text-xs text-muted-foreground"><b>Your tone:</b> {analysis.tone_summary}</p>
+                  )}
+                  {Array.isArray(analysis.top_questions) && analysis.top_questions.length > 0 && (
+                    <p className="text-[11px] text-muted-foreground">
+                      Top customer questions detected: {analysis.top_questions.slice(0, 3).map((q: any) => `"${q.customer_q}"`).join(", ")}
+                      {analysis.top_questions.length > 3 ? `, +${analysis.top_questions.length - 3} more` : ""}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            <Card className="flex flex-col flex-1 min-h-0">
               {/* Chat Header */}
               <CardHeader className="pb-2 pt-3 px-4 flex-row items-center justify-between space-y-0 border-b">
                 <div className="flex items-center gap-2">
@@ -703,6 +805,7 @@ const AiTraining = () => {
                 </p>
               </div>
             </Card>
+            </div>
 
             {/* Live Business Profile Summary */}
             <ProfileSummaryPanel

@@ -138,6 +138,14 @@ const AutoLearnPanel = () => {
 
   return (
     <div className="space-y-4">
+      <Card className="border-primary/30 bg-primary/5">
+        <CardContent className="py-3 px-4 flex items-start gap-2">
+          <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+          <p className="text-xs text-muted-foreground">
+            <b className="text-foreground">The AI Wizard now auto-analyzes your past chats</b> on open — open the <b>AI Wizard</b> tab for guided setup. This panel is for power users who want to review and approve individual suggestions.
+          </p>
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Brain className="h-5 w-5" /> {t("autoLearn.title")}</CardTitle>
