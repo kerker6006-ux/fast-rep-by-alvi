@@ -620,19 +620,22 @@ const AiTraining = () => {
 
 
       <Tabs defaultValue="wizard" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 h-10">
-          <TabsTrigger value="wizard" className="gap-1.5 text-sm">
-            <Sparkles className="h-3.5 w-3.5" /> {t("aiTraining.wizardTab")}
+        <TabsList className="grid w-full grid-cols-4 h-12 p-1 bg-muted/50 rounded-xl">
+          <TabsTrigger value="wizard" className="gap-1.5 text-sm rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm flex-col h-full py-1">
+            <Sparkles className="h-4 w-4" />
+            <span className="text-[11px]">{t("aiTraining.wizardTab")}</span>
           </TabsTrigger>
-          <TabsTrigger value="manual" className="gap-1.5 text-sm">
-            <Settings2 className="h-3.5 w-3.5" /> {t("aiTraining.manualTab")}
+          <TabsTrigger value="manual" className="gap-1.5 text-sm rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm flex-col h-full py-1">
+            <Settings2 className="h-4 w-4" />
+            <span className="text-[11px]">{t("aiTraining.manualTab")}</span>
           </TabsTrigger>
-          <TabsTrigger value="autolearn" className="gap-1.5 text-sm">
-            <Brain className="h-3.5 w-3.5" /> {t("autoLearn.tab")}
+          <TabsTrigger value="autolearn" className="gap-1.5 text-sm rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm flex-col h-full py-1">
+            <Brain className="h-4 w-4" />
+            <span className="text-[11px]">{t("autoLearn.tab")}</span>
           </TabsTrigger>
-          {/* Bug #12 fix: Test Bot tab — simulate bot replies without real Facebook messages */}
-          <TabsTrigger value="test-bot" className="gap-1.5 text-sm">
-            <Bot className="h-3.5 w-3.5" /> Test Bot
+          <TabsTrigger value="test-bot" className="gap-1.5 text-sm rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm flex-col h-full py-1">
+            <Bot className="h-4 w-4" />
+            <span className="text-[11px]">Test Bot</span>
           </TabsTrigger>
         </TabsList>
         <TabsContent value="autolearn"><AutoLearnPanel /></TabsContent>
@@ -885,11 +888,24 @@ const AiTraining = () => {
         </TabsContent>
 
         {/* ===== MANUAL TAB ===== */}
-        <TabsContent value="manual" className="space-y-4">
+        <TabsContent value="manual" className="space-y-3">
+          {/* Quick tip banner */}
+          <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 flex items-center gap-3">
+            <Sparkles className="h-4 w-4 text-primary shrink-0" />
+            <p className="text-xs text-primary/80">
+              <strong>Tip:</strong> Use the AI Wizard tab for the fastest setup. Manual tab is for fine-tuning specific details.
+            </p>
+          </div>
           {/* Bot Identity */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">{t("aiTraining.botIdentity")}</CardTitle>
+          <Card className="overflow-hidden">
+            <div className="h-1 bg-gradient-to-r from-primary to-primary/50" />
+            <CardHeader className="pb-2 pt-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Bot className="h-3.5 w-3.5 text-primary" />
+                </div>
+                {t("aiTraining.botIdentity")}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
@@ -1172,65 +1188,87 @@ const AiTraining = () => {
 };
 
 // ===== TEST BOT PANEL (Bug #12 fix) =====
-// Lets users test bot replies without sending real Facebook messages
+const SUGGESTED_TESTS: Record<string, string[]> = {
+  ecommerce: [
+    "Hi, what products do you have?",
+    "How much is delivery?",
+    "Do you have this in blue?",
+    "I want to order 2 pieces",
+    "What's your return policy?",
+  ],
+  service: [
+    "Hi, I want to book an appointment",
+    "How much does a session cost?",
+    "What are your working hours?",
+    "I have dark circles under my eyes",
+    "Can I come tomorrow at 3pm?",
+  ],
+  content_creator: [
+    "What courses do you have?",
+    "How much is the beginner course?",
+    "How do I enroll?",
+    "Is there a refund policy?",
+    "When does the next batch start?",
+  ],
+};
+
 const TestBotPanel = ({ activePage, settings, user, supabase }: any) => {
   const [messages, setMessages] = useState<{role: "user"|"bot", text: string}[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const category = activePage?.page_category || "ecommerce";
+  const suggestions = SUGGESTED_TESTS[category] || SUGGESTED_TESTS.ecommerce;
 
-  // Bug #14 fix: warn if no page selected
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
+
   if (!activePage) {
     return (
       <div className="rounded-xl border-2 border-dashed border-muted p-10 text-center space-y-3">
         <Bot className="h-12 w-12 mx-auto text-muted-foreground/40" />
         <p className="font-medium">Connect a Facebook page first</p>
-        <p className="text-sm text-muted-foreground">The bot test uses your page's settings and knowledge. Select or connect a page to begin.</p>
+        <p className="text-sm text-muted-foreground">The bot test uses your page settings. Select or connect a page to begin.</p>
       </div>
     );
   }
 
-  const sendTest = async () => {
-    if (!input.trim() || loading) return;
-    const userMsg = input.trim();
+  const sendTest = async (messageToSend?: string) => {
+    const msg = messageToSend || input.trim();
+    if (!msg || loading) return;
     setInput("");
-    setMessages(prev => [...prev, { role: "user", text: userMsg }]);
+    setMessages(prev => [...prev, { role: "user", text: msg }]);
     setLoading(true);
     try {
-      // Use the real bot system — build actual system prompt from settings
-      // This is the SAME logic the real bot uses, so test results are accurate
-      const category = activePage.page_category || "ecommerce";
       const biz = settings.business_name || "our business";
-      const desc = settings.business_description || "";
-      const tone = settings.reply_tone || "friendly, helpful, brief";
-      const aiPersonality = settings.ai_personality || "";
+      const aiPersonality = settings.ai_personality || `You are the AI assistant for "${biz}".`;
       const replyLang = settings.reply_language || "mix";
-      const addr = settings.business_address || "";
-      const hours = settings.operating_hours || "";
-      const payment = settings.payment_methods || "";
       const custom = settings.custom_instructions || "";
+      const tone = settings.reply_tone || "friendly, helpful, brief";
 
       let faqs = [];
       let neverSay = [];
       try { faqs = JSON.parse(settings.faq_list || "[]"); } catch {}
       try { neverSay = JSON.parse(settings.never_say_list || "[]"); } catch {}
 
-      const langRule = replyLang === "bn"
-        ? "LANGUAGE RULE: ALWAYS reply in Bangla (বাংলা). No exceptions."
-        : replyLang === "ko" ? "LANGUAGE RULE: ALWAYS reply in Korean (한국어)."
-        : replyLang === "en" ? "LANGUAGE RULE: ALWAYS reply in English."
-        : "LANGUAGE RULE: Detect customer language and reply in the same language.";
+      const langRule = replyLang === "bn" ? "ALWAYS reply in Bangla (বাংলা). No exceptions."
+        : replyLang === "ko" ? "ALWAYS reply in Korean (한국어)."
+        : replyLang === "en" ? "ALWAYS reply in English."
+        : "Detect customer language and reply in the same language.";
 
       const systemPrompt = [
-        aiPersonality || `You are the AI assistant for "${biz}" — a ${category} business. ${desc}`,
-        addr && `Address: ${addr}`,
-        hours && `Hours: ${hours}`,
-        payment && `Payment: ${payment}`,
+        aiPersonality,
+        settings.business_description && `About: ${settings.business_description}`,
+        settings.business_address && `Address: ${settings.business_address}`,
+        settings.operating_hours && `Hours: ${settings.operating_hours}`,
+        settings.payment_methods && `Payment: ${settings.payment_methods}`,
         faqs.length > 0 && `FAQ:\n${faqs.map((f: any) => `Q: ${f.q}\nA: ${f.a}`).join("\n")}`,
         neverSay.length > 0 && `NEVER say: ${neverSay.join(", ")}`,
-        custom && `INSTRUCTIONS: ${custom}`,
-        `TONE: ${tone}. Keep replies SHORT — max 3-4 sentences.`,
-        langRule,
-        `\n[TEST MODE: This is a simulation. Reply exactly as you would to a real customer.]`,
+        custom && `SPECIAL INSTRUCTIONS: ${custom}`,
+        `TONE: ${tone}. Max 3-4 sentences per reply.`,
+        `LANGUAGE: ${langRule}`,
+        `[TEST MODE — Reply exactly as you would to a real customer]`,
       ].filter(Boolean).join("\n\n");
 
       const historyForApi = messages.map(m => ({
@@ -1238,110 +1276,153 @@ const TestBotPanel = ({ activePage, settings, user, supabase }: any) => {
         content: m.text,
       }));
 
-      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${Deno?.env?.get?.("GEMINI_API_KEY") || ""}`,
+      // Use Supabase function (has API key server-side)
+      const { data, error } = await supabase.functions.invoke("ai-training-chat", {
+        body: {
+          messages: [...historyForApi, { role: "user", content: msg }],
+          settings,
+          category,
+          language: settings.reply_language || "mix",
+          action: "test_bot",
         },
-        body: JSON.stringify({
-          model: "gemini-2.5-flash",
-          messages: [
-            { role: "system", content: systemPrompt },
-            ...historyForApi,
-            { role: "user", content: userMsg },
-          ],
-          temperature: 0.4,
-          max_tokens: 400,
-        }),
       });
-
-      // Fall back to ai-training-chat if direct call fails (e.g. no API key in browser)
-      if (!response.ok) throw new Error("direct_failed");
-
-      const data = await response.json();
-      const reply = data.choices?.[0]?.message?.content || "No reply";
+      if (error) throw error;
+      const reply = data?.reply || "Sorry, couldn't get a reply. Make sure your settings are saved.";
       setMessages(prev => [...prev, { role: "bot", text: reply }]);
     } catch (e: any) {
-      // Fallback: use Supabase function which has the API key
-      try {
-        const { data, error } = await supabase.functions.invoke("ai-training-chat", {
-          body: {
-            messages: messages.map(m => ({
-              role: m.role === "user" ? "user" : "assistant",
-              content: m.text,
-            })).concat([{ role: "user", content: input || "" }]),
-            settings,
-            category: activePage.page_category || "ecommerce",
-            language: settings.reply_language || "mix",
-            action: "test_bot",
-          },
-        });
-        if (error) throw error;
-        const reply = data?.reply || "No reply";
-        setMessages(prev => [...prev, { role: "bot", text: reply }]);
-      } catch (fallbackErr: any) {
-        setMessages(prev => [...prev, { role: "bot", text: `Could not get reply. Make sure your bot settings are saved first.` }]);
-      }
+      setMessages(prev => [...prev, { role: "bot", text: "⚠️ Could not get reply. Make sure you clicked Apply Settings first." }]);
     } finally { setLoading(false); }
   };
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 p-3 text-sm text-amber-800 dark:text-amber-200 flex gap-2">
-        <Bot className="h-4 w-4 shrink-0 mt-0.5" />
-        <span>This simulates how your bot replies to customers — no real Facebook message is sent. Test before going live!</span>
-      </div>
-      <div className="rounded-xl border bg-muted/30 min-h-[300px] max-h-[400px] overflow-y-auto p-4 space-y-3">
-        {messages.length === 0 && (
-          <div className="text-center text-muted-foreground text-sm py-10">
-            <MessageCircle className="h-8 w-8 mx-auto mb-2 opacity-30" />
-            <p>Send a test message to see how your bot replies</p>
-          </div>
-        )}
-        {messages.map((m, i) => (
-          <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap ${
-              m.role === "user" ? "bg-primary text-primary-foreground rounded-br-md" : "bg-background border rounded-bl-md"
-            }`}>
-              {m.role === "bot" && <span className="text-xs text-muted-foreground block mb-1">🤖 Bot</span>}
-              {m.text}
-            </div>
-          </div>
-        ))}
-        {loading && (
-          <div className="flex justify-start">
-            <div className="bg-background border rounded-2xl rounded-bl-md px-4 py-2.5">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            </div>
-          </div>
-        )}
-      </div>
-      <div className="flex gap-2">
-        <input
-          className="flex-1 rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-          placeholder="Type a customer message to test..."
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendTest(); } }}
-          disabled={loading}
-        />
-        <button
-          onClick={sendTest}
-          disabled={!input.trim() || loading}
-          className="bg-primary text-primary-foreground px-4 py-2 rounded-lg disabled:opacity-50 hover:bg-primary/90 transition-colors"
-        >
-          <Send className="h-4 w-4" />
-        </button>
+      {/* Header banner */}
+      <div className="rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 p-4 flex items-start gap-3">
+        <div className="h-9 w-9 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+          <Bot className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <p className="font-semibold text-sm">Test Your Bot</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Chat with your bot exactly like a customer would. No real Facebook messages sent.
+            {settings.reply_language && settings.reply_language !== "mix" && (
+              <span className="ml-1 text-primary font-medium">
+                Bot will reply in {settings.reply_language === "bn" ? "Bangla 🇧🇩" : settings.reply_language === "ko" ? "Korean 🇰🇷" : settings.reply_language === "en" ? "English 🇺🇸" : "detected language"}.
+              </span>
+            )}
+          </p>
+        </div>
         {messages.length > 0 && (
           <button
             onClick={() => setMessages([])}
-            className="border px-3 py-2 rounded-lg text-sm hover:bg-muted transition-colors"
-            title="Clear chat"
+            className="ml-auto text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 shrink-0"
           >
-            <RotateCcw className="h-4 w-4" />
+            <RotateCcw className="h-3 w-3" /> Reset
           </button>
         )}
+      </div>
+
+      {/* Chat window */}
+      <div className="rounded-xl border bg-muted/20 flex flex-col" style={{ height: "380px" }}>
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {messages.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center space-y-4">
+              <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+                <MessageCircle className="h-7 w-7 text-primary/60" />
+              </div>
+              <div>
+                <p className="font-medium text-sm">Try a test message</p>
+                <p className="text-xs text-muted-foreground mt-1">Click a suggestion below or type your own</p>
+              </div>
+              {/* Suggested messages */}
+              <div className="flex flex-wrap gap-2 justify-center max-w-sm">
+                {suggestions.map((s, i) => (
+                  <button
+                    key={i}
+                    onClick={() => sendTest(s)}
+                    className="text-xs bg-background border rounded-full px-3 py-1.5 hover:bg-primary/5 hover:border-primary/30 transition-colors text-left"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <>
+              {messages.map((m, i) => (
+                <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                  {m.role === "bot" && (
+                    <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mr-2 mt-0.5">
+                      <Bot className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                  )}
+                  <div className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap ${
+                    m.role === "user"
+                      ? "bg-primary text-primary-foreground rounded-br-md"
+                      : "bg-white dark:bg-muted border rounded-bl-md shadow-sm"
+                  }`}>
+                    {m.role === "bot" && <span className="text-[10px] text-muted-foreground block mb-1">🤖 Bot reply</span>}
+                    {m.text}
+                  </div>
+                  {m.role === "user" && (
+                    <div className="h-7 w-7 rounded-full bg-secondary flex items-center justify-center shrink-0 ml-2 mt-0.5">
+                      <User className="h-3.5 w-3.5" />
+                    </div>
+                  )}
+                </div>
+              ))}
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mr-2">
+                    <Bot className="h-3.5 w-3.5 text-primary" />
+                  </div>
+                  <div className="bg-white dark:bg-muted border rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
+                    <div className="flex gap-1">
+                      <div className="h-2 w-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: "0ms" }} />
+                      <div className="h-2 w-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: "150ms" }} />
+                      <div className="h-2 w-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: "300ms" }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </>
+          )}
+        </div>
+
+        {/* Input */}
+        <div className="border-t p-3 bg-background rounded-b-xl">
+          {messages.length > 0 && (
+            <div className="flex gap-1.5 mb-2 flex-wrap">
+              {suggestions.slice(0, 3).map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => sendTest(s)}
+                  className="text-[10px] bg-muted rounded-full px-2.5 py-1 hover:bg-primary/10 hover:text-primary transition-colors"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <input
+              className="flex-1 rounded-xl border bg-muted/30 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:bg-background transition-colors"
+              placeholder="Type a customer message..."
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendTest(); } }}
+              disabled={loading}
+            />
+            <button
+              onClick={() => sendTest()}
+              disabled={!input.trim() || loading}
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-xl disabled:opacity-40 hover:bg-primary/90 transition-colors flex items-center gap-1.5 text-sm font-medium"
+            >
+              <Send className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
