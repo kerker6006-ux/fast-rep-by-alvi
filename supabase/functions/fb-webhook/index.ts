@@ -269,11 +269,11 @@ async function handleCommentEvent(
       const productList = (products || []).map((p: any) => `${p.name}: $${p.price}`).join(", ");
       const lang = isBangla ? "Bangla" : "English";
 
-      const aiRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      const aiRes = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${lovableApiKey}` },
         body: JSON.stringify({
-          model: "gemini-2.5-flash-lite",
+          model: "gemini-2.0-flash-lite",
           messages: [{
             role: "system",
             content: `You are a Facebook page comment reply bot. Reply in ${lang}. Be short (1 sentence max). If they ask about a product, mention the price. Always encourage them to inbox for details. Products: ${productList}. ${settings.manual_instructions || ""}`
