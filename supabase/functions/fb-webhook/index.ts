@@ -302,7 +302,7 @@ async function handleCommentEvent(
 
   try {
     const res = await fetch(
-      `https://graph.facebook.com/v19.0/${commentId}/comments?access_token=${pageAccessToken}`,
+      `https://graph.facebook.com/v21.0/${commentId}/comments?access_token=${pageAccessToken}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -508,6 +508,31 @@ async function handleMessagingEvent(
   if (event.message.is_echo) return;
 
   const messageText = event.message.text;
+
+  // ── Facebook Policy: Opt-out handling (REQUIRED) ──────────────────────────
+  // If customer says stop/unsubscribe, we MUST honor it immediately.
+  // Failure to do so violates Facebook Messenger Platform Policy Section 4.
+  const optOutPhrases = /^(stop|unsubscribe|opt.?out|block|cancel|no more|don't message|dont message|message korben na|message korbo na|ar message deben na|বন্ধ করুন|আর মেসেজ করবেন না|বন্ধ|그만|구독취소|لا تراسلني|arrêtez|parar)[\s!.]*$/i;
+  if (messageText && optOutPhrases.test(messageText.trim())) {
+    // Save opt-out preference
+    const conversationId = await getOrCreateConversation(supabase, senderId, pageAccessToken, userId, platform, fbPageRowId);
+    if (conversationId) {
+      await supabase.from("conversations").update({
+        needs_human: false,
+        followup_reason: null,
+        opted_out: true,
+      }).eq("id", conversationId).catch(() => {});
+    }
+    // Send mandatory opt-out confirmation (Facebook requires this)
+    const optOutMsg = messageText && /[\u0980-\u09FF]/.test(messageText)
+      ? "আপনি সফলভাবে আনসাবস্ক্রাইব হয়েছেন। আর কোনো বার্তা পাবেন না। 🙏"
+      : messageText && /[\uAC00-\uD7AF]/.test(messageText)
+      ? "구독이 취소되었습니다. 더 이상 메시지를 받지 않으실 것입니다. 🙏"
+      : "You've been unsubscribed. You won't receive any more messages from us. 🙏";
+    await sendFbMessage(pageAccessToken, senderId, optOutMsg, "RESPONSE");
+    console.log("[opt-out] Sender opted out:", senderId);
+    return;
+  }
   const attachments = event.message.attachments;
   const fbMessageId = event.message?.mid || null;
 
@@ -1077,16 +1102,27 @@ function findMentionedProductWithVariant(
   return bestScore >= 2 ? { product: best, variantImage: bestVariantImage } : { product: null, variantImage: null };
 }
 
-async function sendFbMessage(pageAccessToken: string, recipientId: string, text: string) {
-  await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${pageAccessToken}`, {
+async function sendFbMessage(pageAccessToken: string, recipientId: string, text: string, messagingType: string = "RESPONSE", messageTag?: string) {
+  const payload: any = {
+    recipient: { id: recipientId },
+    message: { text },
+    messaging_type: messagingType,
+  };
+  if (messageTag) payload.tag = messageTag;
+
+  const res = await fetch(`https://graph.facebook.com/v21.0/me/messages?access_token=${pageAccessToken}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ recipient: { id: recipientId }, message: { text } }),
+    body: JSON.stringify(payload),
   });
+  if (!res.ok) {
+    const err = await res.text();
+    console.error("[sendFbMessage] failed:", res.status, err);
+  }
 }
 
 async function sendFbImage(pageAccessToken: string, recipientId: string, imageUrl: string) {
-  await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${pageAccessToken}`, {
+  await fetch(`https://graph.facebook.com/v21.0/me/messages?access_token=${pageAccessToken}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -1097,6 +1133,7 @@ async function sendFbImage(pageAccessToken: string, recipientId: string, imageUr
           payload: { url: imageUrl, is_reusable: true },
         },
       },
+      messaging_type: "RESPONSE",
     }),
   });
 }

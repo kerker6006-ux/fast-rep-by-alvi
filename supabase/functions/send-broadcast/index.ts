@@ -68,7 +68,11 @@ serve(async (req) => {
             body: JSON.stringify({
               recipient: { id: convo.fb_sender_id },
               message: { text: broadcast.message },
-              messaging_type: "RESPONSE",
+              // Use correct messaging_type based on broadcast tag
+              // RESPONSE = within 24h window (free)
+              // MESSAGE_TAG = outside 24h window with specific tag
+              messaging_type: broadcast.message_tag ? "MESSAGE_TAG" : "RESPONSE",
+              ...(broadcast.message_tag && { tag: broadcast.message_tag }),
             }),
           }
         );
