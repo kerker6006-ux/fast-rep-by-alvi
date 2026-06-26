@@ -296,7 +296,7 @@ async function handleCommentEvent(
 
   if (!replyText) {
     replyText = isBangla
-      ? (settings.comment_reply_text || "ধন্যবাদ! বিস্তারিত জানতে আমাদের পেজে ইনবক্স করুন 📩")
+      ? (settings.comment_reply_text || "Thanks! Inbox us for details 📩")
       : (settings.comment_reply_text_en || "Thanks! Please inbox us for details 📩");
   }
 
@@ -667,7 +667,7 @@ async function handleMessagingEvent(
 
     const balance = creditRow?.balance ?? 0;
     if (balance <= 0) {
-      const noCreditsMsg = settings.no_credits_message || "দুঃখিত, এই মুহূর্তে আমাদের বট সেবা বন্ধ আছে। অনুগ্রহ করে পরে আবার চেষ্টা করুন।";
+      const noCreditsMsg = settings.no_credits_message || "Sorry, our bot service is temporarily unavailable. Please try again later or contact us directly.";
       await sendFbMessage(pageAccessToken, senderId, noCreditsMsg);
       await saveOutgoingMessage(supabase, conversationId, noCreditsMsg, null, userId);
       return;
@@ -2265,11 +2265,18 @@ async function detectAndCreateComplaint(
 
     // If no phone number yet, ask for it
     if (!data.customer_phone) {
-      const askPhoneMsg = "আপনার অভিযোগ আমরা নোট করেছি। অনুগ্রহ করে আপনার ফোন নম্বর দিন, আমরা আপনাকে কল দিবো। 📞";
-      await sendFbMessage(pageAccessToken, senderId, askPhoneMsg);
+      const hasBanglaComplaint = /[\u0980-\u09FF]/.test(messageText || "");
+      const askPhoneMsg = hasBanglaComplaint
+        ? "আপনার অভিযোগ আমরা নোট করেছি। অনুগ্রহ করে আপনার ফোন নম্বর দিন, আমরা আপনাকে কল দিবো। 📞"
+        : "We've noted your concern. Please share your phone number so we can call you back. 📞";
+      const confirmMsg = hasBanglaComplaint
+        ? "আপনার অভিযোগ রেকর্ড করা হয়েছে। আমরা আপনাকে কল দিবো। ধন্যবাদ। 🙏"
+        : "Your complaint has been recorded. We'll call you shortly. Thank you. 🙏";      await sendFbMessage(pageAccessToken, senderId, askPhoneMsg);
       await saveOutgoingMessage(supabase, conversationId, askPhoneMsg, null, userId);
     } else {
-      const confirmMsg = "আপনার অভিযোগ রেকর্ড করা হয়েছে। আমরা আপনাকে কল দিবো। ধন্যবাদ। 🙏";
+      const confirmMsg = hasBanglaComplaint
+        ? "আপনার অভিযোগ রেকর্ড করা হয়েছে। আমরা আপনাকে কল দিবো। ধন্যবাদ। 🙏"
+        : "Your complaint has been recorded. We'll call you shortly. Thank you. 🙏";
       await sendFbMessage(pageAccessToken, senderId, confirmMsg);
       await saveOutgoingMessage(supabase, conversationId, confirmMsg, null, userId);
     }

@@ -257,11 +257,11 @@ const Broadcast = () => {
             value={message}
             onChange={e => setMessage(e.target.value)}
             placeholder={messageTag === "none"
-              ? "Write your message here...\ne.g. New collection is here! Order today 🎁\ne.g. নতুন কালেকশন এসেছে! আজকেই অর্ডার করুন 🎁"
+              ? "Write your broadcast message here...\ne.g. New collection is here! Order today 🎁"
               : messageTag === "CONFIRMED_EVENT_UPDATE"
               ? "Write your appointment reminder...\ne.g. Your appointment tomorrow at 3pm is confirmed ✅"
               : messageTag === "POST_PURCHASE_UPDATE"
-              ? "Write your order update...\ne.g. Your order has been shipped 🚚 Track here: ..."
+              ? "Write your order update...\ne.g. Your order has been shipped 🚚"
               : "Write your account update...\ne.g. Your subscription has been renewed ✅"
             }
             className="min-h-[120px] resize-none"

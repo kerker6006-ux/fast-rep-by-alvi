@@ -81,7 +81,7 @@ const FbPageAiAnalyzer = () => {
         <div>
           <h3 className="font-semibold text-lg">AI Page Analyzer</h3>
           <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
-            AI আপনার পুরো Facebook page-এর সব post স্ক্যান করবে, analyze করবে, প্রশ্নের উত্তর দিবে এবং নিজে থেকেই product import করতে পারবে।
+            AI will scan all posts on your Facebook page, analyze them, answer questions, and automatically import products.
           </p>
         </div>
         <Button onClick={() => analyzeMut.mutate()} disabled={analyzeMut.isPending} size="lg" className="gap-2">
@@ -136,7 +136,7 @@ const FbPageAiAnalyzer = () => {
           <div>
             <h4 className="font-semibold text-sm flex items-center gap-2"><Wand2 className="h-4 w-4 text-primary" /> Auto-Import Recommended Products</h4>
             <p className="text-xs text-muted-foreground mt-0.5">
-              AI {analysis.recommended_posts?.length || 0}টি product post detect করেছে। একসাথে import করুন।
+              AI detected {analysis.recommended_posts?.length || 0} product posts. Import them all at once.
             </p>
           </div>
           <Button onClick={() => importMut.mutate()} disabled={importMut.isPending} className="gap-1.5 shrink-0">
