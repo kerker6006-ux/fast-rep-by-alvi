@@ -620,7 +620,7 @@ const AiTraining = () => {
 
 
       <Tabs defaultValue="wizard" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3 h-10">
+        <TabsList className="grid w-full grid-cols-4 h-10">
           <TabsTrigger value="wizard" className="gap-1.5 text-sm">
             <Sparkles className="h-3.5 w-3.5" /> {t("aiTraining.wizardTab")}
           </TabsTrigger>
@@ -630,10 +630,17 @@ const AiTraining = () => {
           <TabsTrigger value="autolearn" className="gap-1.5 text-sm">
             <Brain className="h-3.5 w-3.5" /> {t("autoLearn.tab")}
           </TabsTrigger>
+          {/* Bug #12 fix: Test Bot tab — simulate bot replies without real Facebook messages */}
+          <TabsTrigger value="test-bot" className="gap-1.5 text-sm">
+            <Bot className="h-3.5 w-3.5" /> Test Bot
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="autolearn"><AutoLearnPanel /></TabsContent>
 
-        {/* ===== AI WIZARD TAB ===== */}
+        {/* ===== TEST BOT TAB ===== */}
+        <TabsContent value="test-bot" className="space-y-4">
+          <TestBotPanel activePage={activePage} settings={settings} user={user} supabase={supabase} />
+        </TabsContent>
         <TabsContent value="wizard" className="space-y-4">
           {analyzing && chatMessages.length === 0 ? (
             <Card className="border-dashed border-primary/30">
@@ -1140,6 +1147,108 @@ const AiTraining = () => {
           )}
         </TabsContent>
       </Tabs>
+    </div>
+  );
+};
+
+// ===== TEST BOT PANEL (Bug #12 fix) =====
+// Lets users test bot replies without sending real Facebook messages
+const TestBotPanel = ({ activePage, settings, user, supabase }: any) => {
+  const [messages, setMessages] = useState<{role: "user"|"bot", text: string}[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // Bug #14 fix: warn if no page selected
+  if (!activePage) {
+    return (
+      <div className="rounded-xl border-2 border-dashed border-muted p-10 text-center space-y-3">
+        <Bot className="h-12 w-12 mx-auto text-muted-foreground/40" />
+        <p className="font-medium">Connect a Facebook page first</p>
+        <p className="text-sm text-muted-foreground">The bot test uses your page's settings and knowledge. Select or connect a page to begin.</p>
+      </div>
+    );
+  }
+
+  const sendTest = async () => {
+    if (!input.trim() || loading) return;
+    const userMsg = input.trim();
+    setInput("");
+    setMessages(prev => [...prev, { role: "user", text: userMsg }]);
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-training-chat", {
+        body: {
+          message: userMsg,
+          page_id: activePage.id,
+          history: messages.map(m => ({ role: m.role === "user" ? "user" : "model", parts: [{ text: m.text }] })),
+          mode: "test",
+        },
+      });
+      if (error) throw error;
+      const reply = data?.reply || data?.message || "No reply";
+      setMessages(prev => [...prev, { role: "bot", text: reply }]);
+    } catch (e: any) {
+      setMessages(prev => [...prev, { role: "bot", text: `Error: ${e.message}` }]);
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 p-3 text-sm text-amber-800 dark:text-amber-200 flex gap-2">
+        <Bot className="h-4 w-4 shrink-0 mt-0.5" />
+        <span>This simulates how your bot replies to customers — no real Facebook message is sent. Test before going live!</span>
+      </div>
+      <div className="rounded-xl border bg-muted/30 min-h-[300px] max-h-[400px] overflow-y-auto p-4 space-y-3">
+        {messages.length === 0 && (
+          <div className="text-center text-muted-foreground text-sm py-10">
+            <MessageCircle className="h-8 w-8 mx-auto mb-2 opacity-30" />
+            <p>Send a test message to see how your bot replies</p>
+          </div>
+        )}
+        {messages.map((m, i) => (
+          <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap ${
+              m.role === "user" ? "bg-primary text-primary-foreground rounded-br-md" : "bg-background border rounded-bl-md"
+            }`}>
+              {m.role === "bot" && <span className="text-xs text-muted-foreground block mb-1">🤖 Bot</span>}
+              {m.text}
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div className="flex justify-start">
+            <div className="bg-background border rounded-2xl rounded-bl-md px-4 py-2.5">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="flex gap-2">
+        <input
+          className="flex-1 rounded-lg border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+          placeholder="Type a customer message to test..."
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendTest(); } }}
+          disabled={loading}
+        />
+        <button
+          onClick={sendTest}
+          disabled={!input.trim() || loading}
+          className="bg-primary text-primary-foreground px-4 py-2 rounded-lg disabled:opacity-50 hover:bg-primary/90 transition-colors"
+        >
+          <Send className="h-4 w-4" />
+        </button>
+        {messages.length > 0 && (
+          <button
+            onClick={() => setMessages([])}
+            className="border px-3 py-2 rounded-lg text-sm hover:bg-muted transition-colors"
+            title="Clear chat"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </button>
+        )}
+      </div>
     </div>
   );
 };

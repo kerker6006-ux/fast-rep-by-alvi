@@ -151,6 +151,46 @@ serve(async (req) => {
           continue;
         }
 
+        // Bug #31 fix: Validate token health periodically (1 in 50 requests) to detect expiry early
+        // Sends an in-app warning notification before the bot silently stops working
+        try {
+          const shouldCheck = Math.random() < 0.02; // ~2% of requests = roughly once per hour at moderate traffic
+          if (shouldCheck && PAGE_ACCESS_TOKEN) {
+            const tokenCheck = await fetch(
+              `https://graph.facebook.com/v21.0/me?fields=id&access_token=${PAGE_ACCESS_TOKEN}`
+            );
+            if (!tokenCheck.ok) {
+              const tokenErr = await tokenCheck.json();
+              const isExpired = tokenErr?.error?.code === 190;
+              if (isExpired) {
+                // Mark page as needing reconnect and notify owner
+                await supabase.from("fb_pages").update({ is_active: false }).eq("id", fbPage.id);
+                // Check if we already sent this notification recently (avoid spam)
+                const { count } = await supabase.from("notifications")
+                  .select("id", { count: "exact", head: true })
+                  .eq("user_id", userId)
+                  .eq("type", "token_expired")
+                  .gte("created_at", new Date(Date.now() - 86_400_000).toISOString());
+                if ((count ?? 0) === 0) {
+                  await supabase.from("notifications").insert({
+                    user_id: userId,
+                    type: "token_expired",
+                    title: "⚠️ Bot disconnected — reconnect your page",
+                    body: `Your Facebook page "${fbPage.fb_page_id}" access token has expired. Go to Connect Page and reconnect to restore your bot.`,
+                    link: "#connect",
+                    metadata: { fb_page_id: fbPage.id },
+                    fb_page_id: fbPage.id,
+                  });
+                }
+                console.warn("Token expired for page:", fbPage.id, "— marked inactive, owner notified");
+                continue;
+              }
+            }
+          }
+        } catch (tokenCheckErr) {
+          console.error("Token health check failed (non-fatal):", tokenCheckErr);
+        }
+
         // Handle messaging events (DMs) — same shape on FB and IG
         for (const event of entry.messaging || []) {
           await handleMessagingEvent(supabase, event, selfId, PAGE_ACCESS_TOKEN, LOVABLE_API_KEY, settings, userId, platform, fbPage.id);
@@ -285,7 +325,8 @@ async function handleIgCommentEvent(
   settings: Record<string, string>, userId: string | null,
   lovableApiKey: string | undefined, igUserId: string | null
 ) {
-  if (settings.ig_comment_auto_reply === "false") return;
+  // Bug #33 fix: use same opt-in logic as FB comment_auto_reply — must be explicitly "true" to run
+  if (settings.ig_comment_auto_reply !== "true") return;
   const commentId = value?.id;
   if (!commentId) return;
   // Skip our own page's comments
@@ -571,14 +612,22 @@ async function handleMessagingEvent(
         followup_reason: "Bot is paused — free month ended and no active subscription.",
         last_message_at: new Date().toISOString(),
       }).eq("id", conversationId);
-      await supabase.from("notifications").insert({
-        user_id: userId,
-        type: "alert_box",
-        title: "Bot paused — subscription required",
-        body: "A customer messaged you. Subscribe or top up to let the bot reply automatically.",
-        link: "#credits",
-        metadata: { conversation_id: conversationId },
-      });
+      // Bug #32 fix: deduplicate — only send 1 notification per 24 hours per user so they don't get spammed
+      const { count: existingNotif } = await supabase.from("notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("type", "bot_paused")
+        .gte("created_at", new Date(Date.now() - 86_400_000).toISOString());
+      if ((existingNotif ?? 0) === 0) {
+        await supabase.from("notifications").insert({
+          user_id: userId,
+          type: "bot_paused",
+          title: "⚠️ Bot paused — subscription required",
+          body: "A customer messaged you but the bot couldn't reply. Subscribe or top up to restore automatic replies.",
+          link: "#credits",
+          metadata: { conversation_id: conversationId },
+        });
+      }
       return;
     }
   }
@@ -1541,7 +1590,7 @@ ${receptionistPreamble}#############################
 ${languageDirective}
 #############################
 
-${settings.ai_personality || `You are "${settings.bot_name || "LeadPilot"}", the sharp shopkeeper for "${settings.business_name || "our shop"}" on Facebook Messenger.
+${settings.ai_personality || `You are "${settings.bot_name || settings.business_name || "your assistant"}", the sharp shopkeeper for "${settings.business_name || "our shop"}" on Facebook Messenger.
 - You are a real human shopkeeper — never a chatbot. Friendly but to the point.
 - You handle: product questions, price, stock, sizes/colors, delivery, payment, taking orders.
 - You proactively send a product image (via the tool) the FIRST time you mention any specific product, BEFORE the text reply.

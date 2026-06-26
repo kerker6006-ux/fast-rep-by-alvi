@@ -212,10 +212,13 @@ const BotSettings = () => {
               <Label>{t("botSettings.welcomeMessage")}</Label>
               <Textarea value={settings.welcome_message || ""} onChange={e => update("welcome_message", e.target.value)} placeholder={t("botSettings.welcomePh")} />
             </div>
-            <div className="space-y-2">
-              <Label>{t("botSettings.outOfStock")}</Label>
-              <Textarea value={settings.out_of_stock_message || ""} onChange={e => update("out_of_stock_message", e.target.value)} />
-            </div>
+            {/* Bug #18 fix: out_of_stock only makes sense for ecommerce pages */}
+            {(category === "ecommerce" || !category) && (
+              <div className="space-y-2">
+                <Label>{t("botSettings.outOfStock")}</Label>
+                <Textarea value={settings.out_of_stock_message || ""} onChange={e => update("out_of_stock_message", e.target.value)} />
+              </div>
+            )}
           </CardContent>
         </Card>
 

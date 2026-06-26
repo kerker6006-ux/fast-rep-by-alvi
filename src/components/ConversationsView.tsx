@@ -57,7 +57,7 @@ const ConversationsView = () => {
     await supabase.from("conversations")
       .update({ needs_human: false, followup_reason: null, alert_seen_at: new Date().toISOString() })
       .eq("id", convoId);
-    queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    qc.invalidateQueries({ queryKey: ["conversations"] });
   };
 
   // Load profile dismiss flags
@@ -158,6 +158,26 @@ const ConversationsView = () => {
             </Badge>
           )}
         </button>
+      </div>
+
+      {/* Bug #20 fix: Bulk resolve all alerts button */}
+      {view === "alerts" && alertConvos.length > 0 && (
+        <div className="flex justify-end">
+          <button
+            onClick={async () => {
+              const ids = alertConvos.map(c => c.id);
+              await supabase.from("conversations")
+                .update({ needs_human: false, followup_reason: null, alert_seen_at: new Date().toISOString() })
+                .in("id", ids);
+              qc.invalidateQueries({ queryKey: ["conversations"] });
+              setSelectedConvo(null);
+            }}
+            className="text-xs text-muted-foreground hover:text-foreground border rounded-md px-3 py-1.5 hover:bg-muted transition-colors flex items-center gap-1.5"
+          >
+            ✓ Resolve all ({alertConvos.length})
+          </button>
+        </div>
+      )}
       </div>
 
       {/* Alert Box first-time explainer */}
