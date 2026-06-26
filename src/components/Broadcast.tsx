@@ -257,12 +257,12 @@ const Broadcast = () => {
             value={message}
             onChange={e => setMessage(e.target.value)}
             placeholder={messageTag === "none"
-              ? "e.g. নতুন কালেকশন এসেছে! আজকেই অর্ডার করুন 🎁"
+              ? "Write your message here...\ne.g. New collection is here! Order today 🎁\ne.g. নতুন কালেকশন এসেছে! আজকেই অর্ডার করুন 🎁"
               : messageTag === "CONFIRMED_EVENT_UPDATE"
-              ? "e.g. আপনার কাল ৩টার অ্যাপয়েন্টমেন্ট নিশ্চিত ✅"
+              ? "Write your appointment reminder...\ne.g. Your appointment tomorrow at 3pm is confirmed ✅"
               : messageTag === "POST_PURCHASE_UPDATE"
-              ? "e.g. আপনার অর্ডার শিপ হয়েছে 🚚"
-              : "e.g. আপনার সাবস্ক্রিপশন রিনিউ হয়েছে ✅"
+              ? "Write your order update...\ne.g. Your order has been shipped 🚚 Track here: ..."
+              : "Write your account update...\ne.g. Your subscription has been renewed ✅"
             }
             className="min-h-[120px] resize-none"
             maxLength={1000}
