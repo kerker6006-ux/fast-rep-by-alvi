@@ -776,7 +776,8 @@
       "new": "New",
       "contacted": "Contacted",
       "booked": "Booked",
-      "closed": "Closed"
+      "closed": "Closed",
+      "confirmed": "Confirmed"
     }
   },
   "appointments": {

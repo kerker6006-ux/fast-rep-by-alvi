@@ -774,7 +774,8 @@
       "new": "নতুন",
       "contacted": "যোগাযোগ করা হয়েছে",
       "booked": "বুক করা",
-      "closed": "বন্ধ"
+      "closed": "বন্ধ",
+      "confirmed": "নিশ্চিত"
     }
   },
   "appointments": {

@@ -24,6 +24,7 @@ type Lead = {
   category: string;
   service_or_product: string | null;
   preferred_date: string | null;
+  preferred_time: string | null;
   source: string;
   notes: string | null;
   status: string;
@@ -31,7 +32,7 @@ type Lead = {
   conversation_id: string | null;
 };
 
-const STATUSES = ["new", "contacted", "booked", "closed"] as const;
+const STATUSES = ["new", "confirmed", "contacted", "booked", "closed"] as const;
 
 const LeadsManager = () => {
   const { t } = useTranslation();
@@ -137,7 +138,7 @@ const LeadsManager = () => {
                   <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mt-1">
                     {l.phone && <span>📞 {l.phone}</span>}
                     {l.service_or_product && <span>🎯 {l.service_or_product}</span>}
-                    {l.preferred_date && <span>📅 {l.preferred_date}</span>}
+                    {l.preferred_date && <span>📅 {l.preferred_date}{l.preferred_time ? ` ${l.preferred_time}` : ""}</span>}
                     <span>📡 {l.source}</span>
                     <span>{new Date(l.created_at).toLocaleDateString()}</span>
                   </div>
@@ -160,6 +161,7 @@ const LeadsManager = () => {
                 <Field label={t("leads.fAddress")} value={selected.address} />
                 <Field label={t("leads.fService")} value={selected.service_or_product} />
                 <Field label={t("leads.fDate")} value={selected.preferred_date} />
+                <Field label="Time" value={selected.preferred_time} />
                 <Field label={t("leads.fSource")} value={selected.source} />
                 <Field label={t("leads.fCategory")} value={t(`category.${selected.category}.name`)} />
                 <div className="space-y-1.5">

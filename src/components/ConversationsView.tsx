@@ -52,6 +52,14 @@ const ConversationsView = () => {
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
 
+  // Bug #10 & #15 fix: clear needs_human at component level so both header button and sendReply can use it
+  const clearNeedsHuman = async (convoId: string) => {
+    await supabase.from("conversations")
+      .update({ needs_human: false, followup_reason: null, alert_seen_at: new Date().toISOString() })
+      .eq("id", convoId);
+    queryClient.invalidateQueries({ queryKey: ["conversations"] });
+  };
+
   // Load profile dismiss flags
   const { data: profile } = useQuery({
     queryKey: ["profile-dismiss", user?.id],
@@ -246,9 +254,20 @@ const ConversationsView = () => {
                 <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                   <User className="h-4 w-4 text-primary" />
                 </div>
-                <span className="font-medium text-sm">
+                <span className="font-medium text-sm flex-1">
                   {selectedConversation?.sender_name || `${t("analytics.customer")} ${selectedConversation?.fb_sender_id.slice(-6)}`}
                 </span>
+                {/* Bug #15 fix: Mark as Resolved button clears needs_human alert */}
+                {selectedConversation?.needs_human && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-7 border-green-500 text-green-600 hover:bg-green-50"
+                    onClick={() => selectedConvo && clearNeedsHuman(selectedConvo)}
+                  >
+                    ✓ Mark Resolved
+                  </Button>
+                )}
               </div>
               <ScrollArea className="flex-1 p-4">
                 <div className="space-y-3">
@@ -306,7 +325,10 @@ const ConversationsView = () => {
                       body: { conversation_id: selectedConvo, text: replyText.trim() },
                     });
                     if (error) throw error;
-                    setReplyText(""); toast.success("Sent via Facebook");
+                    setReplyText("");
+                    toast.success("Sent via Facebook");
+                    // Bug #10 fix: clear needs_human flag after manual reply so alert badge disappears
+                    await clearNeedsHuman(selectedConvo);
                   } catch (e: any) {
                     toast.error(e.message || "Failed to send");
                   } finally { setSending(false); }

@@ -774,7 +774,8 @@
       "new": "신규",
       "contacted": "연락함",
       "booked": "예약됨",
-      "closed": "종료"
+      "closed": "종료",
+      "confirmed": "확정됨"
     }
   },
   "appointments": {

@@ -38,7 +38,7 @@ const CreditDashboard = () => {
       const [credits, transactions, settings, profile] = await Promise.all([
         supabase.from("user_credits").select("balance").eq("user_id", user!.id).maybeSingle(),
         supabase.from("credit_transactions").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(50),
-        supabase.from("bot_settings").select("setting_key, setting_value").eq("user_id", user!.id),
+        supabase.from("bot_settings").select("setting_key, setting_value").eq("user_id", user!.id).is("fb_page_id", null),
         supabase.from("profiles").select("subscription_status, subscription_plan, subscription_current_period_end, free_until").eq("id", user!.id).maybeSingle(),
       ]);
 

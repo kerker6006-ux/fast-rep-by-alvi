@@ -138,6 +138,24 @@ const FbPageConnection = () => {
     if (okCount && !failCount) toast.success(`${okCount} page${okCount > 1 ? "s" : ""} connected`);
     else if (okCount && failCount) toast.warning(`${okCount} connected, ${failCount} failed`);
     else toast.error(`All ${failCount} page${failCount > 1 ? "s" : ""} failed to connect`);
+
+    // Bug #28 fix: open category dialog for first successfully connected page
+    // so users always set their business type immediately after connecting
+    const firstOk = results.find((r) => r.ok);
+    if (firstOk) {
+      // Small delay to let the pages query re-fetch and get the new page ID
+      setTimeout(async () => {
+        const { data: newPage } = await supabase
+          .from("fb_pages")
+          .select("id, page_name")
+          .eq("fb_page_id", firstOk.page.id)
+          .maybeSingle();
+        if (newPage?.id) {
+          setCategoryDialogPageId(newPage.id);
+          setCategoryDialogPageName(newPage.page_name || firstOk.page.name);
+        }
+      }, 1500);
+    }
   };
 
 

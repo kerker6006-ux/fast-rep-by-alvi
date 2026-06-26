@@ -34,7 +34,7 @@ const perPage: NavItem[] = [
   { id: "ai-training",      label: "AI Training",       icon: Brain },
   // Ecommerce
   { id: "products",         label: "Products",          icon: Package,        categories: ["ecommerce"] },
-  { id: "pending-products", label: "Import from FB",    icon: Inbox },
+  { id: "pending-products", label: "Import from FB",    icon: Inbox,          categories: ["ecommerce"] },
   { id: "suggestions",      label: "Suggestions",       icon: Lightbulb,      categories: ["ecommerce"] },
   { id: "orders",           label: "Orders",            icon: ShoppingCart,   categories: ["ecommerce"] },
   // Service
