@@ -178,7 +178,8 @@ const ConversationsView = () => {
           </button>
         </div>
       )}
-      </div>
+
+
 
       {/* Alert Box first-time explainer */}
       {showAlertIntro && (
