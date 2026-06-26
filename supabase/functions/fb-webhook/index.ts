@@ -255,6 +255,10 @@ async function handleCommentEvent(
 
   const commentText = value.message || "";
   const isBangla = /[\u0980-\u09FF]/.test(commentText);
+  const isKorean = /[\uAC00-\uD7AF]/.test(commentText);
+  const isArabic = /[\u0600-\u06FF]/.test(commentText);
+  const isSpanish = /[áéíóúñ¿¡]/i.test(commentText);
+  const lang = isBangla ? "Bangla" : isKorean ? "Korean (한국어)" : isArabic ? "Arabic (العربية)" : isSpanish ? "Spanish" : "English";
 
   let replyText: string;
 
@@ -296,7 +300,13 @@ async function handleCommentEvent(
 
   if (!replyText) {
     replyText = isBangla
-      ? (settings.comment_reply_text || "Thanks! Inbox us for details 📩")
+      ? (settings.comment_reply_text || "ধন্যবাদ! বিস্তারিত জানতে ইনবক্স করুন 📩")
+      : isKorean
+      ? "감사합니다! 자세한 내용은 메시지를 보내주세요 📩"
+      : isArabic
+      ? "شكراً! يرجى مراسلتنا للتفاصيل 📩"
+      : isSpanish
+      ? "¡Gracias! Por favor envíanos un mensaje para más detalles 📩"
       : (settings.comment_reply_text_en || "Thanks! Please inbox us for details 📩");
   }
 
@@ -334,7 +344,9 @@ async function handleIgCommentEvent(
 
   const commentText = value?.text || "";
   const isBangla = /[\u0980-\u09FF]/.test(commentText);
-  const lang = isBangla ? "Bangla" : "English";
+  const isKorean = /[\uAC00-\uD7AF]/.test(commentText);
+  const isArabic = /[\u0600-\u06FF]/.test(commentText);
+  const lang = isBangla ? "Bangla" : isKorean ? "Korean (한국어)" : isArabic ? "Arabic (العربية)" : "English";
 
   // Build short public reply with AI (kept tiny)
   let publicReply = isBangla
