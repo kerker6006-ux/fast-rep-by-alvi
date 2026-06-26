@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import {
   BarChart3, Package, ShoppingCart, MessageSquare,
-  Zap, Clock, Settings, Brain, ChevronLeft, ChevronRight, LogOut, Globe, Activity, Coins,
+  Zap, Settings, Brain, ChevronLeft, ChevronRight, LogOut, Globe, Activity, Coins,
   AlertTriangle, Inbox, Lightbulb, Briefcase, UserPlus, Megaphone, GraduationCap, Users,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -48,7 +48,7 @@ const perPage: NavItem[] = [
   { id: "conversations",    label: "Inbox",             icon: MessageSquare },
   { id: "auto-reply",       label: "Auto-Reply",        icon: Zap },
   { id: "comment-triggers", label: "Comment Triggers",  icon: Megaphone },
-  { id: "scheduled",        label: "Scheduled",         icon: Clock },
+  { id: "broadcast",        label: "Broadcast",         icon: Megaphone },
   { id: "website-import",   label: "Website Import",    icon: Globe },
   { id: "settings",         label: "Bot Settings",      icon: Settings },
 ];
@@ -73,7 +73,7 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
   const isModerator = accessRole === "moderator";
 
   // Moderator can only see these tabs
-  const moderatorAllowed = new Set(["conversations", "orders", "leads", "complaints"]);
+  const moderatorAllowed = new Set(["conversations", "orders", "leads", "complaints", "broadcast"]);
 
   const { data: unreadAlerts = 0 } = useQuery({
     queryKey: ["sidebar-unread-alerts", activePage?.id],

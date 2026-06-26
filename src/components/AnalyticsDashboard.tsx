@@ -139,7 +139,30 @@ const AnalyticsDashboard = () => {
               </div>
             ))
           ) : (
-            <p className="text-sm text-muted-foreground text-center py-10">{t("analytics.noRecent")}</p>
+            <div className="text-center py-12 px-6 space-y-4">
+              <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground/30" />
+              <div>
+                <p className="font-semibold">No conversations yet</p>
+                <p className="text-sm text-muted-foreground mt-1">Once customers message your Facebook page, their conversations will appear here.</p>
+              </div>
+              <div className="text-left max-w-sm mx-auto bg-muted/40 rounded-xl p-4 space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Getting started checklist</p>
+                {[
+                  { step: "1", label: "Connect your Facebook page", tab: "fb-pages" },
+                  { step: "2", label: "Set your business category", tab: "settings" },
+                  { step: "3", label: "Train your AI bot", tab: "ai-training" },
+                  { step: "4", label: "Test the bot in Test Bot tab", tab: "ai-training" },
+                  { step: "5", label: "Share your page & get customers", tab: null },
+                ].map(item => (
+                  <div key={item.step} className="flex items-center gap-3 text-sm">
+                    <div className="h-6 w-6 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-bold shrink-0">
+                      {item.step}
+                    </div>
+                    <span className="text-muted-foreground">{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       </Card>

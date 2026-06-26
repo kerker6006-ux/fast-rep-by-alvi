@@ -26,7 +26,7 @@ const ComplaintsManager = lazy(() => import("@/components/ComplaintsManager"));
 const ConversationsView = lazy(() => import("@/components/ConversationsView"));
 const AutoReplyRules = lazy(() => import("@/components/AutoReplyRules"));
 const CommentTriggers = lazy(() => import("@/components/CommentTriggers"));
-const ScheduledMessages = lazy(() => import("@/components/ScheduledMessages"));
+const Broadcast = lazy(() => import("@/components/Broadcast"));
 const FbPageConnection = lazy(() => import("@/components/FbPageConnection"));
 const BotSettings = lazy(() => import("@/components/BotSettings"));
 
@@ -49,7 +49,7 @@ const tabs: Record<string, React.ComponentType> = {
   conversations: ConversationsView,
   "auto-reply": AutoReplyRules,
   "comment-triggers": CommentTriggers,
-  scheduled: ScheduledMessages,
+  broadcast: Broadcast,
   "fb-pages": FbPageConnection,
   settings: BotSettings,
   
