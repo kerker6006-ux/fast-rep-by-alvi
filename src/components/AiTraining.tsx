@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import {
   Brain, Save, Plus, X, MessageCircle, Send, Bot, User,
   Sparkles, Settings2, Loader2, CheckCircle, RotateCcw, Wand2, Pencil, Languages,
+  Briefcase, Megaphone,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -888,291 +889,298 @@ const AiTraining = () => {
         </TabsContent>
 
         {/* ===== MANUAL TAB ===== */}
-        <TabsContent value="manual" className="space-y-3">
-          {/* Quick tip banner */}
-          <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 flex items-center gap-3">
-            <Sparkles className="h-4 w-4 text-primary shrink-0" />
-            <p className="text-xs text-primary/80">
-              <strong>Tip:</strong> Use the AI Wizard tab for the fastest setup. Manual tab is for fine-tuning specific details.
-            </p>
-          </div>
-          {/* Bot Identity */}
-          <Card className="overflow-hidden">
-            <div className="h-1 bg-gradient-to-r from-primary to-primary/50" />
-            <CardHeader className="pb-2 pt-3">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Bot className="h-3.5 w-3.5 text-primary" />
-                </div>
-                {t("aiTraining.botIdentity")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">{t("aiTraining.botName")}</Label>
-                  <Input value={settings.bot_name || ""} onChange={(e) => update("bot_name", e.target.value)} placeholder={t("aiTraining.botNamePh")} className="h-8 text-sm" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">{t("botSettings.businessName")}</Label>
-                  <Input value={settings.business_name || ""} onChange={(e) => update("business_name", e.target.value)} placeholder={t("botSettings.businessNamePh")} className="h-8 text-sm" />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">{t("botSettings.businessDesc")}</Label>
-                <Textarea value={settings.business_description || ""} onChange={(e) => update("business_description", e.target.value)} placeholder={t("botSettings.businessDescPh")} className="min-h-[60px] text-sm" />
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="manual" className="space-y-4">
 
-          {/* Personality */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">{t("botSettings.customInstructions")}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-1">
-                <Label className="text-xs">{t("aiTraining.botIdentity")}</Label>
-                <Textarea value={settings.ai_personality || ""} onChange={(e) => update("ai_personality", e.target.value)} placeholder={t("botSettings.customInstructionsPh")} className="min-h-[80px] text-sm" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">{t("botSettings.customInstructionsLabel")}</Label>
-                <Textarea value={settings.custom_instructions || ""} onChange={(e) => update("custom_instructions", e.target.value)} placeholder={t("botSettings.customInstructionsPh")} className="min-h-[80px] text-sm" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">{t("aiTraining.replyTone")}</Label>
-                <Input value={settings.reply_tone || ""} onChange={(e) => update("reply_tone", e.target.value)} placeholder={t("aiTraining.replyTonePh")} className="h-8 text-sm" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Category-specific knowledge */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">{meta.kbTitle}</CardTitle>
-              <CardDescription className="text-xs">{meta.kbDesc}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {catFields.map((f) => (
-                <div key={f.key} className="space-y-1">
-                  <Label className="text-xs">{f.label}</Label>
-                  {f.type === "textarea" ? (
-                    <Textarea
-                      value={settings[f.key] || ""}
-                      onChange={(e) => update(f.key, e.target.value)}
-                      placeholder={f.placeholder}
-                      className="min-h-[60px] text-sm"
-                    />
-                  ) : (
-                    <Input
-                      value={settings[f.key] || ""}
-                      onChange={(e) => update(f.key, e.target.value)}
-                      placeholder={f.placeholder}
-                      className="h-8 text-sm"
-                    />
-                  )}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-
-
-          {/* Welcome */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-1.5">
-                <MessageCircle className="h-3.5 w-3.5" /> {t("aiTraining.welcomeMessage")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-1">
-                <Label className="text-xs">{t("aiTraining.welcomeMessage")}</Label>
-                <Input value={settings.welcome_message || ""} onChange={(e) => update("welcome_message", e.target.value)} placeholder={t("aiTraining.welcomeMessagePh")} className="h-8 text-sm" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">{t("aiTraining.outOfStock")}</Label>
-                <Input value={settings.out_of_stock_message || ""} onChange={(e) => update("out_of_stock_message", e.target.value)} placeholder={t("aiTraining.outOfStockPh")} className="h-8 text-sm" />
-              </div>
-            </CardContent>
-          </Card>
-
-
-
-          {/* FAQ */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">{t("aiTraining.faq")}</CardTitle>
-              <CardDescription className="text-xs">{t("aiTraining.faqDesc")}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {faqList.length > 0 && (
-                <div className="space-y-2">
-                  {faqList.map((f: any, i: number) => (
-                    <div key={i} className="flex items-start gap-2 bg-muted/50 rounded-md p-2 text-xs">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium">Q: {f.q}</p>
-                        <p className="text-muted-foreground">A: {f.a}</p>
-                      </div>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeFaq(i)}>
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="space-y-2 border border-dashed rounded-md p-3">
-                <Input value={faqQuestion} onChange={(e) => setFaqQuestion(e.target.value)} placeholder={t("aiTraining.questionPh")} className="h-8 text-sm" />
-                <Input value={faqAnswer} onChange={(e) => setFaqAnswer(e.target.value)} placeholder={t("aiTraining.answerPh")} className="h-8 text-sm" />
-                <Button size="sm" variant="outline" onClick={addFaq} className="h-7 text-xs gap-1">
-                  <Plus className="h-3 w-3" /> {t("common.add")}
-                </Button>
-              </div>
-
-              {/* AI-Generated Suggestions from Real Chats */}
-              <div className="space-y-2 pt-2 border-t">
+          {/* Header with progress */}
+          {(() => {
+            const allFields = ["business_name", "business_description", "ai_personality", "reply_tone", "welcome_message", "faq_list", "never_say_list", ...catFields.map((f: any) => f.key)];
+            const filled = allFields.filter(k => {
+              const v = settings[k];
+              if (!v) return false;
+              const s = String(v).trim();
+              if (!s) return false;
+              if (k === "faq_list" || k === "never_say_list") { try { const a = JSON.parse(s); return Array.isArray(a) && a.length > 0; } catch { return false; } }
+              return true;
+            }).length;
+            const pct = Math.round((filled / allFields.length) * 100);
+            return (
+              <div className="rounded-xl border bg-gradient-to-r from-primary/5 to-transparent p-4 space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                    <Wand2 className="h-3 w-3" /> {t("aiTraining.aiSuggestions")}
-                  </p>
-                  <Button size="sm" variant="outline" onClick={generateFaqFromChats} disabled={isLoadingFaqSuggestions} className="h-7 text-xs gap-1">
-                    {isLoadingFaqSuggestions ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                    {isLoadingFaqSuggestions ? t("aiTraining.analyzing") : t("aiTraining.suggestFromChats")}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-semibold">Bot Configuration</span>
+                    <span className="text-xs text-muted-foreground">{filled}/{allFields.length} fields complete</span>
+                  </div>
+                  {pct === 100 && <span className="text-xs font-semibold text-green-600 flex items-center gap-1"><CheckCircle className="h-3.5 w-3.5" /> All set!</span>}
                 </div>
-              {aiSuggestedFaqs.length > 0 && (
-                  <div className="grid gap-1.5">
-                    {aiSuggestedFaqs.map((s, i) => (
-                      editingSuggestionIdx === i ? (
-                        <div key={`ai-edit-${i}`} className="bg-primary/5 border border-primary/20 rounded-lg p-3 space-y-2">
-                          <Input value={editingSuggestion.q} onChange={e => setEditingSuggestion(p => ({...p, q: e.target.value}))} placeholder={t("aiTraining.questionPh")} className="h-8 text-sm" />
-                          <Input value={editingSuggestion.a} onChange={e => setEditingSuggestion(p => ({...p, a: e.target.value}))} placeholder={t("aiTraining.answerPh")} className="h-8 text-sm" />
-                          <div className="flex gap-2">
-                            <Button size="sm" className="h-7 text-xs gap-1" onClick={() => {
-                              const existing = parseSettingsJson<{ q: string; a: string }[]>(settings.faq_list, []);
-                              existing.push({ q: editingSuggestion.q, a: editingSuggestion.a });
-                              update("faq_list", JSON.stringify(existing));
-                              setAiSuggestedFaqs(prev => prev.filter((_, idx) => idx !== i));
-                              setEditingSuggestionIdx(null);
-                              toast.success(t("aiTraining.addedToast"));
-                            }} disabled={!editingSuggestion.q.trim() || !editingSuggestion.a.trim()}>
-                              <Plus className="h-3 w-3" /> {t("common.add")}
-                            </Button>
-                            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingSuggestionIdx(null)}>{t("common.cancel")}</Button>
-                          </div>
+                <div className="w-full bg-muted rounded-full h-1.5">
+                  <div className="bg-primary h-1.5 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                </div>
+                {pct < 50 && <p className="text-xs text-muted-foreground">💡 Use the <strong>AI Wizard tab</strong> to fill everything automatically in 2 minutes</p>}
+              </div>
+            );
+          })()}
+
+          {/* ── SECTION 1: Identity ── */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 px-1">
+              <div className="h-5 w-5 rounded-full bg-blue-500/15 flex items-center justify-center">
+                <Bot className="h-3 w-3 text-blue-600" />
+              </div>
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Identity</span>
+            </div>
+            <Card className="overflow-hidden border-blue-100 dark:border-blue-900/30">
+              <div className="h-0.5 bg-blue-500/40" />
+              <CardContent className="pt-4 space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">Bot Name</Label>
+                    <Input value={settings.bot_name || ""} onChange={e => update("bot_name", e.target.value)} placeholder="e.g. Scarlet Derma Bot" className="h-9" />
+                    <p className="text-[10px] text-muted-foreground">What customers see as the sender name</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">Business Name</Label>
+                    <Input value={settings.business_name || ""} onChange={e => update("business_name", e.target.value)} placeholder="e.g. Scarlet Derma" className="h-9" />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">Business Description</Label>
+                  <Textarea value={settings.business_description || ""} onChange={e => update("business_description", e.target.value)} placeholder="Describe your business — what you do, who you serve, what makes you special" className="min-h-[70px] resize-none text-sm" />
+                  <p className="text-[10px] text-muted-foreground">The bot uses this to understand and represent your business</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* ── SECTION 2: Personality ── */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 px-1">
+              <div className="h-5 w-5 rounded-full bg-purple-500/15 flex items-center justify-center">
+                <Brain className="h-3 w-3 text-purple-600" />
+              </div>
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Personality & Behavior</span>
+            </div>
+            <Card className="overflow-hidden border-purple-100 dark:border-purple-900/30">
+              <div className="h-0.5 bg-purple-500/40" />
+              <CardContent className="pt-4 space-y-3">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium">AI Personality</Label>
+                    <span className="text-[10px] text-muted-foreground bg-purple-50 dark:bg-purple-950/30 px-2 py-0.5 rounded-full">Most important field</span>
+                  </div>
+                  <Textarea value={settings.ai_personality || ""} onChange={e => update("ai_personality", e.target.value)} placeholder='e.g. "You are a warm, professional skin care consultant for Scarlet Derma. When a customer shares a skin concern, empathize first, then suggest the most relevant treatment. Always guide toward booking an appointment..."' className="min-h-[100px] resize-none text-sm" />
+                  <p className="text-[10px] text-muted-foreground">Direct instructions to the bot — write as "You are..." and "When a customer says X, you..."</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">Reply Tone</Label>
+                    <Input value={settings.reply_tone || ""} onChange={e => update("reply_tone", e.target.value)} placeholder="e.g. Warm, professional, brief" className="h-9" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">Welcome Message</Label>
+                    <Input value={settings.welcome_message || ""} onChange={e => update("welcome_message", e.target.value)} placeholder="Hi! How can I help you today?" className="h-9" />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">Special Instructions</Label>
+                  <Textarea value={settings.custom_instructions || ""} onChange={e => update("custom_instructions", e.target.value)} placeholder="e.g. Always reply in Bangla. Never quote a price without a consultation. If customer is upset, apologize first..." className="min-h-[70px] resize-none text-sm" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* ── SECTION 3: Business Info (category-specific) ── */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 px-1">
+              <div className="h-5 w-5 rounded-full bg-emerald-500/15 flex items-center justify-center">
+                <Briefcase className="h-3 w-3 text-emerald-600" />
+              </div>
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{meta.kbTitle}</span>
+            </div>
+            <Card className="overflow-hidden border-emerald-100 dark:border-emerald-900/30">
+              <div className="h-0.5 bg-emerald-500/40" />
+              <CardContent className="pt-4 space-y-3">
+                <p className="text-xs text-muted-foreground">{meta.kbDesc}</p>
+                {catFields.map((f: any) => (
+                  <div key={f.key} className="space-y-1.5">
+                    <Label className="text-xs font-medium">{f.label}</Label>
+                    {f.type === "textarea" ? (
+                      <Textarea value={settings[f.key] || ""} onChange={e => update(f.key, e.target.value)} placeholder={f.placeholder} className="min-h-[60px] resize-none text-sm" />
+                    ) : (
+                      <Input value={settings[f.key] || ""} onChange={e => update(f.key, e.target.value)} placeholder={f.placeholder} className="h-9" />
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* ── SECTION 4: FAQ ── */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 px-1">
+              <div className="h-5 w-5 rounded-full bg-amber-500/15 flex items-center justify-center">
+                <MessageCircle className="h-3 w-3 text-amber-600" />
+              </div>
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                FAQ — Frequently Asked Questions
+                {faqList.length > 0 && <span className="ml-2 text-primary">{faqList.length} added</span>}
+              </span>
+            </div>
+            <Card className="overflow-hidden border-amber-100 dark:border-amber-900/30">
+              <div className="h-0.5 bg-amber-500/40" />
+              <CardContent className="pt-4 space-y-3">
+                <p className="text-xs text-muted-foreground">Add common questions customers ask. The bot will use these to give accurate, consistent answers.</p>
+
+                {/* Existing FAQs */}
+                {faqList.length > 0 && (
+                  <div className="space-y-1.5">
+                    {faqList.map((f: any, i: number) => (
+                      <div key={i} className="flex items-start gap-2 bg-muted/40 hover:bg-muted/70 rounded-lg p-3 transition-colors group">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-foreground">Q: {f.q}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">A: {f.a}</p>
                         </div>
-                      ) : (
-                        <div key={`ai-${i}`} className="flex items-center gap-2 text-left bg-primary/5 hover:bg-primary/10 border border-primary/10 hover:border-primary/20 rounded-lg p-2 transition-all group">
-                          <button onClick={() => {
-                            const existing = parseSettingsJson<{ q: string; a: string }[]>(settings.faq_list, []);
-                            existing.push({ q: s.q, a: s.a });
-                            update("faq_list", JSON.stringify(existing));
-                            setAiSuggestedFaqs(prev => prev.filter((_, idx) => idx !== i));
-                            toast.success(t("aiTraining.addedToast"));
-                          }} className="h-6 w-6 rounded-full bg-primary/15 flex items-center justify-center shrink-0 group-hover:bg-primary/25 transition-colors">
-                            <Plus className="h-3 w-3 text-primary" />
-                          </button>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium">{s.q}</p>
-                            <p className="text-[10px] text-muted-foreground">{s.a}</p>
-                          </div>
-                          <button onClick={() => { setEditingSuggestionIdx(i); setEditingSuggestion({q: s.q, a: s.a}); }} className="h-6 w-6 rounded-full bg-muted flex items-center justify-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" title={t("common.edit")}>
-                            <Pencil className="h-3 w-3 text-muted-foreground" />
-                          </button>
-                        </div>
-                      )
+                        <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive" onClick={() => removeFaq(i)}>
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
                     ))}
                   </div>
                 )}
-              </div>
 
-              {/* Quick Add — Common Questions */}
-              <div className="space-y-2 pt-2 border-t">
-                <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                  <Sparkles className="h-3 w-3" /> {t("aiTraining.quickAdd")}
-                </p>
-                <div className="grid gap-1.5">
-                  {quickAdd
-                    .filter((s) => !faqList.some((f: any) => f.q === s.q))
-                    .map((s, i) => (
-                      <button
-                        key={i}
-                        onClick={() => {
-                          const existing = parseSettingsJson<{ q: string; a: string }[]>(settings.faq_list, []);
-                          existing.push({ q: s.q, a: s.a });
-                          update("faq_list", JSON.stringify(existing));
-                          toast.success(t("aiTraining.addedToast"));
-                        }}
-                        className="flex items-center gap-2 text-left bg-muted/30 hover:bg-muted/60 border border-transparent hover:border-primary/20 rounded-lg p-2 transition-all group"
-                      >
-                        <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                          <Plus className="h-3 w-3 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium truncate">{s.q}</p>
-                          <p className="text-[10px] text-muted-foreground truncate">{s.a}</p>
-                        </div>
-                      </button>
+                {/* Add new FAQ */}
+                <div className="border border-dashed rounded-xl p-3 space-y-2 bg-muted/20">
+                  <p className="text-[10px] font-semibold text-muted-foreground">ADD A QUESTION</p>
+                  <Input value={faqQuestion} onChange={e => setFaqQuestion(e.target.value)} placeholder="e.g. How long does delivery take?" className="h-9 text-sm" />
+                  <Input value={faqAnswer} onChange={e => setFaqAnswer(e.target.value)} placeholder="e.g. Delivery takes 3-5 business days nationwide." className="h-9 text-sm" onKeyDown={e => e.key === "Enter" && addFaq()} />
+                  <Button size="sm" variant="default" onClick={addFaq} disabled={!faqQuestion.trim() || !faqAnswer.trim()} className="h-8 text-xs gap-1.5">
+                    <Plus className="h-3.5 w-3.5" /> Add FAQ
+                  </Button>
+                </div>
+
+                {/* AI Suggestions */}
+                <div className="space-y-2 pt-1 border-t">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium flex items-center gap-1.5">
+                      <Wand2 className="h-3.5 w-3.5 text-primary" />
+                      AI Suggestions from your chats
+                    </p>
+                    <Button size="sm" variant="outline" onClick={generateFaqFromChats} disabled={isLoadingFaqSuggestions} className="h-7 text-xs gap-1">
+                      {isLoadingFaqSuggestions ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                      {isLoadingFaqSuggestions ? "Analyzing..." : "Generate from chats"}
+                    </Button>
+                  </div>
+                  {aiSuggestedFaqs.length > 0 && (
+                    <div className="grid gap-1.5">
+                      {aiSuggestedFaqs.map((s, i) => (
+                        editingSuggestionIdx === i ? (
+                          <div key={`edit-${i}`} className="bg-primary/5 border border-primary/20 rounded-lg p-3 space-y-2">
+                            <Input value={editingSuggestion.q} onChange={e => setEditingSuggestion(p => ({...p, q: e.target.value}))} placeholder="Question" className="h-8 text-sm" />
+                            <Input value={editingSuggestion.a} onChange={e => setEditingSuggestion(p => ({...p, a: e.target.value}))} placeholder="Answer" className="h-8 text-sm" />
+                            <div className="flex gap-2">
+                              <Button size="sm" className="h-7 text-xs" onClick={() => { const ex = parseSettingsJson<any[]>(settings.faq_list, []); ex.push(editingSuggestion); update("faq_list", JSON.stringify(ex)); setAiSuggestedFaqs(p => p.filter((_, idx) => idx !== i)); setEditingSuggestionIdx(null); toast.success("Added!"); }} disabled={!editingSuggestion.q.trim()}><Plus className="h-3 w-3 mr-1" /> Add</Button>
+                              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingSuggestionIdx(null)}>Cancel</Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div key={`sug-${i}`} className="flex items-center gap-2 bg-primary/5 hover:bg-primary/10 border border-primary/10 rounded-lg p-2.5 transition-all group cursor-pointer" onClick={() => { const ex = parseSettingsJson<any[]>(settings.faq_list, []); ex.push({q: s.q, a: s.a}); update("faq_list", JSON.stringify(ex)); setAiSuggestedFaqs(p => p.filter((_, idx) => idx !== i)); toast.success("Added!"); }}>
+                            <div className="h-6 w-6 rounded-full bg-primary/15 flex items-center justify-center shrink-0"><Plus className="h-3 w-3 text-primary" /></div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium">{s.q}</p>
+                              <p className="text-[10px] text-muted-foreground">{s.a}</p>
+                            </div>
+                            <button className="opacity-0 group-hover:opacity-100 h-6 w-6 rounded-full bg-muted flex items-center justify-center" onClick={e => { e.stopPropagation(); setEditingSuggestionIdx(i); setEditingSuggestion({q: s.q, a: s.a}); }}><Pencil className="h-3 w-3" /></button>
+                          </div>
+                        )
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Quick add */}
+                {quickAdd.filter((s: any) => !faqList.some((f: any) => f.q === s.q)).length > 0 && (
+                  <div className="space-y-1.5 pt-1 border-t">
+                    <p className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1"><Sparkles className="h-3 w-3" /> QUICK ADD</p>
+                    <div className="grid gap-1">
+                      {quickAdd.filter((s: any) => !faqList.some((f: any) => f.q === s.q)).map((s: any, i: number) => (
+                        <button key={i} onClick={() => { const ex = parseSettingsJson<any[]>(settings.faq_list, []); ex.push({q: s.q, a: s.a}); update("faq_list", JSON.stringify(ex)); toast.success("Added!"); }} className="flex items-center gap-2 text-left bg-muted/20 hover:bg-muted/50 rounded-lg p-2 transition-colors group">
+                          <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20"><Plus className="h-3 w-3 text-primary" /></div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium truncate">{s.q}</p>
+                            <p className="text-[10px] text-muted-foreground truncate">{s.a}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* ── SECTION 5: Never Say ── */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 px-1">
+              <div className="h-5 w-5 rounded-full bg-red-500/15 flex items-center justify-center">
+                <X className="h-3 w-3 text-red-600" />
+              </div>
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Never Say</span>
+            </div>
+            <Card className="overflow-hidden border-red-100 dark:border-red-900/30">
+              <div className="h-0.5 bg-red-500/40" />
+              <CardContent className="pt-4 space-y-3">
+                <p className="text-xs text-muted-foreground">Phrases the bot should NEVER use. Add specific things that sound wrong for your brand.</p>
+                {neverSayList.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {neverSayList.map((item: string, i: number) => (
+                      <Badge key={i} variant="secondary" className="text-xs gap-1 pr-1 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800">
+                        🚫 {item}
+                        <button onClick={() => removeNeverSay(i)} className="ml-0.5 hover:text-red-900"><X className="h-2.5 w-2.5" /></button>
+                      </Badge>
                     ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Never Say */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">{t("aiTraining.neverSay")}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {neverSayList.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {neverSayList.map((item: string, i: number) => (
-                    <Badge key={i} variant="secondary" className="text-xs gap-1 pr-1">
-                      {item}
-                      <button onClick={() => removeNeverSay(i)} className="ml-1 hover:text-destructive">
-                        <X className="h-2.5 w-2.5" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
-              <div className="flex gap-2">
-                <Input value={neverSayItem} onChange={(e) => setNeverSayItem(e.target.value)} placeholder={t("aiTraining.neverSayPh")} className="h-8 text-sm" onKeyDown={(e) => e.key === "Enter" && addNeverSay()} />
-                <Button size="sm" variant="outline" onClick={addNeverSay} className="h-8 text-xs shrink-0">
-                  <Plus className="h-3 w-3" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Comment Auto-Reply */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">{t("aiTraining.commentAutoReply")}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs">{t("aiTraining.enableCommentReplies")}</Label>
-                <Switch
-                  checked={settings.comment_auto_reply === "true"}
-                  onCheckedChange={(v) => update("comment_auto_reply", v ? "true" : "false")}
-                />
-              </div>
-              {settings.comment_auto_reply === "true" && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs">{t("aiTraining.replyPrimary")}</Label>
-                    <Input value={settings.comment_reply_text_en || ""} onChange={(e) => update("comment_reply_text_en", e.target.value)} placeholder={t("aiTraining.replyPrimaryPh")} className="h-8 text-sm" />
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">{t("aiTraining.replyAlt")}</Label>
-                    <Input value={settings.comment_reply_text || ""} onChange={(e) => update("comment_reply_text", e.target.value)} placeholder={t("aiTraining.replyAltPh")} className="h-8 text-sm" />
-                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Input value={neverSayItem} onChange={e => setNeverSayItem(e.target.value)} placeholder='e.g. "I don\'t know", "I am just an AI", "I cannot help"' className="h-9 text-sm" onKeyDown={e => e.key === "Enter" && addNeverSay()} />
+                  <Button size="sm" onClick={addNeverSay} disabled={!neverSayItem.trim()} className="h-9 px-4 shrink-0">Add</Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* ── SECTION 6: Comment Auto-Reply ── */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 px-1">
+              <div className="h-5 w-5 rounded-full bg-sky-500/15 flex items-center justify-center">
+                <Megaphone className="h-3 w-3 text-sky-600" />
+              </div>
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Comment Auto-Reply</span>
+            </div>
+            <Card className="overflow-hidden border-sky-100 dark:border-sky-900/30">
+              <div className="h-0.5 bg-sky-500/40" />
+              <CardContent className="pt-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Auto-reply to Facebook comments</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Bot replies publicly to comments on your page posts</p>
+                  </div>
+                  <Switch checked={settings.comment_auto_reply === "true"} onCheckedChange={v => update("comment_auto_reply", v ? "true" : "false")} />
+                </div>
+                {settings.comment_auto_reply === "true" && (
+                  <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">English reply</Label>
+                      <Input value={settings.comment_reply_text_en || ""} onChange={e => update("comment_reply_text_en", e.target.value)} placeholder="Thanks! Please inbox us for details 📩" className="h-9 text-sm" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">Bangla reply</Label>
+                      <Input value={settings.comment_reply_text || ""} onChange={e => update("comment_reply_text", e.target.value)} placeholder="ধন্যবাদ! বিস্তারিত জানতে ইনবক্স করুন 📩" className="h-9 text-sm" />
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Save */}
           {hasChanges && (
