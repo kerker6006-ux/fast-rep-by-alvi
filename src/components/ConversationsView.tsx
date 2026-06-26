@@ -302,7 +302,24 @@ const ConversationsView = () => {
                           : "bg-muted rounded-bl-md"
                       }`}>
                         {m.image_url && (
-                          <img src={m.image_url} alt="" className="rounded-lg max-w-[200px] mb-2" />
+                          <a href={m.image_url} target="_blank" rel="noopener noreferrer">
+                            <img
+                              src={m.image_url}
+                              alt="Customer image"
+                              className="rounded-lg max-w-[200px] mb-2 cursor-pointer hover:opacity-90 transition-opacity"
+                              onError={(e) => {
+                                // Facebook CDN URLs expire — show a fallback link instead
+                                const img = e.currentTarget;
+                                img.style.display = "none";
+                                const link = document.createElement("a");
+                                link.href = m.image_url!;
+                                link.target = "_blank";
+                                link.className = "text-xs underline text-primary block mb-2";
+                                link.textContent = "📷 View image (link may have expired)";
+                                img.parentNode?.insertBefore(link, img);
+                              }}
+                            />
+                          </a>
                         )}
                         {m.content && <p className="text-sm whitespace-pre-wrap">{m.content}</p>}
                         <div className="flex items-center justify-between gap-2 mt-1">

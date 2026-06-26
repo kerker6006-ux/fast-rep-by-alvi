@@ -76,13 +76,14 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
   const moderatorAllowed = new Set(["conversations", "orders", "leads", "complaints"]);
 
   const { data: unreadAlerts = 0 } = useQuery({
-    queryKey: ["sidebar-unread-alerts", user?.id],
-    enabled: !!user?.id,
+    queryKey: ["sidebar-unread-alerts", activePage?.id],
+    enabled: !!user?.id && !!activePage?.id,
     queryFn: async () => {
+      // Bug fix: filter by activePage.id not user_id so moderators only see alerts for their assigned page
       const { count } = await supabase
         .from("conversations")
         .select("*", { count: "exact", head: true })
-        .eq("user_id", user!.id)
+        .eq("fb_page_id", activePage!.id)
         .eq("needs_human", true)
         .or("alert_seen_at.is.null,alert_seen_at.lt.last_message_at");
       return count || 0;
@@ -155,7 +156,14 @@ const DashboardSidebar = ({ activeTab, onTabChange, collapsed, onCollapsedChange
       <nav className="flex-1 py-3 px-2 space-y-3 overflow-y-auto">
         <div className="space-y-0.5">
           {!collapsed && <div className="px-3 text-[10px] uppercase tracking-wider text-sidebar-foreground/40 mb-1">Account</div>}
-          {renderGroup(accountWide, false)}
+          {/* Moderators don't see account-wide billing/analytics sections */}
+          {!isModerator && renderGroup(accountWide, false)}
+          {isModerator && !collapsed && (
+            <div className="px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 mx-1">
+              <p className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">MODERATOR ACCESS</p>
+              <p className="text-[10px] text-amber-600/70 dark:text-amber-400/70 mt-0.5">Inbox, Orders & Appointments only</p>
+            </div>
+          )}
         </div>
 
         {activePage && (
