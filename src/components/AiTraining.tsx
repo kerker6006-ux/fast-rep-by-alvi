@@ -752,6 +752,26 @@ const AiTraining = () => {
                       <Languages className="h-3 w-3" /> {chatLangLabel}
                     </span>
                   )}
+                  {/* Progress indicator */}
+                  {catFields && (() => {
+                    const total = catFields.length;
+                    const filled = catFields.filter((f: any) => {
+                      const v = settings[f.key];
+                      if (!v) return false;
+                      const s = String(v).trim();
+                      if (!s) return false;
+                      if (f.key === "faq_list" || f.key === "never_say_list") {
+                        try { const a = JSON.parse(s); return Array.isArray(a) && a.length > 0; } catch { return false; }
+                      }
+                      return true;
+                    }).length;
+                    const pct = Math.round((filled / total) * 100);
+                    return (
+                      <span className={`text-[10px] font-semibold ml-1 px-2 py-0.5 rounded-full ${filled === total ? "bg-green-100 text-green-700" : "bg-primary/10 text-primary"}`}>
+                        {filled}/{total} fields {filled === total ? "✓ Complete" : "set"}
+                      </span>
+                    );
+                  })()}
                 </div>
                 <div className="flex gap-1.5">
                   <Button
@@ -1176,19 +1196,93 @@ const TestBotPanel = ({ activePage, settings, user, supabase }: any) => {
     setMessages(prev => [...prev, { role: "user", text: userMsg }]);
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("ai-training-chat", {
-        body: {
-          message: userMsg,
-          page_id: activePage.id,
-          history: messages.map(m => ({ role: m.role === "user" ? "user" : "model", parts: [{ text: m.text }] })),
-          mode: "test",
+      // Use the real bot system — build actual system prompt from settings
+      // This is the SAME logic the real bot uses, so test results are accurate
+      const category = activePage.page_category || "ecommerce";
+      const biz = settings.business_name || "our business";
+      const desc = settings.business_description || "";
+      const tone = settings.reply_tone || "friendly, helpful, brief";
+      const aiPersonality = settings.ai_personality || "";
+      const replyLang = settings.reply_language || "mix";
+      const addr = settings.business_address || "";
+      const hours = settings.operating_hours || "";
+      const payment = settings.payment_methods || "";
+      const custom = settings.custom_instructions || "";
+
+      let faqs = [];
+      let neverSay = [];
+      try { faqs = JSON.parse(settings.faq_list || "[]"); } catch {}
+      try { neverSay = JSON.parse(settings.never_say_list || "[]"); } catch {}
+
+      const langRule = replyLang === "bn"
+        ? "LANGUAGE RULE: ALWAYS reply in Bangla (বাংলা). No exceptions."
+        : replyLang === "ko" ? "LANGUAGE RULE: ALWAYS reply in Korean (한국어)."
+        : replyLang === "en" ? "LANGUAGE RULE: ALWAYS reply in English."
+        : "LANGUAGE RULE: Detect customer language and reply in the same language.";
+
+      const systemPrompt = [
+        aiPersonality || `You are the AI assistant for "${biz}" — a ${category} business. ${desc}`,
+        addr && `Address: ${addr}`,
+        hours && `Hours: ${hours}`,
+        payment && `Payment: ${payment}`,
+        faqs.length > 0 && `FAQ:\n${faqs.map((f: any) => `Q: ${f.q}\nA: ${f.a}`).join("\n")}`,
+        neverSay.length > 0 && `NEVER say: ${neverSay.join(", ")}`,
+        custom && `INSTRUCTIONS: ${custom}`,
+        `TONE: ${tone}. Keep replies SHORT — max 3-4 sentences.`,
+        langRule,
+        `\n[TEST MODE: This is a simulation. Reply exactly as you would to a real customer.]`,
+      ].filter(Boolean).join("\n\n");
+
+      const historyForApi = messages.map(m => ({
+        role: m.role === "user" ? "user" : "assistant",
+        content: m.text,
+      }));
+
+      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Deno?.env?.get?.("GEMINI_API_KEY") || ""}`,
         },
+        body: JSON.stringify({
+          model: "gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...historyForApi,
+            { role: "user", content: userMsg },
+          ],
+          temperature: 0.4,
+          max_tokens: 400,
+        }),
       });
-      if (error) throw error;
-      const reply = data?.reply || data?.message || "No reply";
+
+      // Fall back to ai-training-chat if direct call fails (e.g. no API key in browser)
+      if (!response.ok) throw new Error("direct_failed");
+
+      const data = await response.json();
+      const reply = data.choices?.[0]?.message?.content || "No reply";
       setMessages(prev => [...prev, { role: "bot", text: reply }]);
     } catch (e: any) {
-      setMessages(prev => [...prev, { role: "bot", text: `Error: ${e.message}` }]);
+      // Fallback: use Supabase function which has the API key
+      try {
+        const { data, error } = await supabase.functions.invoke("ai-training-chat", {
+          body: {
+            messages: messages.map(m => ({
+              role: m.role === "user" ? "user" : "assistant",
+              content: m.text,
+            })).concat([{ role: "user", content: input || "" }]),
+            settings,
+            category: activePage.page_category || "ecommerce",
+            language: settings.reply_language || "mix",
+            action: "test_bot",
+          },
+        });
+        if (error) throw error;
+        const reply = data?.reply || "No reply";
+        setMessages(prev => [...prev, { role: "bot", text: reply }]);
+      } catch (fallbackErr: any) {
+        setMessages(prev => [...prev, { role: "bot", text: `Could not get reply. Make sure your bot settings are saved first.` }]);
+      }
     } finally { setLoading(false); }
   };
 

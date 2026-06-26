@@ -44,6 +44,65 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") ?? Deno.env.get("GEMINI_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
+    // Action: test bot with real settings (used by Test Bot tab)
+    if (action === "test_bot") {
+      const category = cat;
+      const biz = settings?.business_name || "our business";
+      const aiPersonality = settings?.ai_personality || `You are the AI assistant for "${biz}".`;
+      const replyLang = settings?.reply_language || "mix";
+      const custom = settings?.custom_instructions || "";
+      const tone = settings?.reply_tone || "friendly, helpful, brief";
+
+      let faqs: any[] = [];
+      let neverSay: any[] = [];
+      try { faqs = JSON.parse(settings?.faq_list || "[]"); } catch {}
+      try { neverSay = JSON.parse(settings?.never_say_list || "[]"); } catch {}
+
+      const langRule = replyLang === "bn" ? "ALWAYS reply in Bangla (বাংলা). No exceptions."
+        : replyLang === "ko" ? "ALWAYS reply in Korean (한국어)."
+        : replyLang === "en" ? "ALWAYS reply in English."
+        : "Detect customer language and reply in the same language.";
+
+      const systemPrompt = [
+        aiPersonality,
+        settings?.business_description && `About: ${settings.business_description}`,
+        settings?.business_address && `Address: ${settings.business_address}`,
+        settings?.operating_hours && `Hours: ${settings.operating_hours}`,
+        settings?.payment_methods && `Payment: ${settings.payment_methods}`,
+        faqs.length > 0 && `FAQ:\n${faqs.map((f: any) => `Q: ${f.q}\nA: ${f.a}`).join("\n")}`,
+        neverSay.length > 0 && `NEVER say: ${neverSay.join(", ")}`,
+        custom && `SPECIAL INSTRUCTIONS: ${custom}`,
+        `TONE: ${tone}. Max 3-4 sentences per reply.`,
+        `LANGUAGE: ${langRule}`,
+        `[TEST MODE: Reply exactly as you would to a real customer.]`,
+      ].filter(Boolean).join("\n\n");
+
+      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...(messages || []),
+          ],
+          temperature: 0.4,
+          max_tokens: 400,
+        }),
+      });
+
+      if (!response.ok) throw new Error(`AI error: ${response.status}`);
+      const data = await response.json();
+      const reply = data.choices?.[0]?.message?.content || "No reply";
+      await logTrainingUsage(req, "google/gemini-2.5-flash");
+      return new Response(JSON.stringify({ reply }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Action: generate settings from training conversation
     if (action === "generate_settings") {
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
