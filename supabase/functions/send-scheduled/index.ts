@@ -95,7 +95,7 @@ serve(async (req) => {
       }
 
       try {
-        const fbRes = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, {
+        const fbRes = await fetch(`https://graph.facebook.com/v21.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

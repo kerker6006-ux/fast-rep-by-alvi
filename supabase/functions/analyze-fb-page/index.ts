@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     const page = pages[0];
 
     // Fetch up to 50 recent posts
-    const url = `https://graph.facebook.com/v19.0/${page.fb_page_id}/posts?fields=id,message,created_time,full_picture&limit=50&access_token=${page.page_access_token}`;
+    const url = `https://graph.facebook.com/v21.0/${page.fb_page_id}/posts?fields=id,message,created_time,full_picture&limit=50&access_token=${page.page_access_token}`;
     const fbRes = await fetch(url);
     if (!fbRes.ok) {
       const t = await fbRes.text();

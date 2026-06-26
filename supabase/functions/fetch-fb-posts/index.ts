@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
     const after = searchParams.get("after") || "";
 
     // Fetch posts from Facebook Graph API
-    let url = `https://graph.facebook.com/v19.0/${page.fb_page_id}/posts?fields=id,message,created_time,full_picture,attachments{media,type,url}&limit=20&access_token=${page.page_access_token}`;
+    let url = `https://graph.facebook.com/v21.0/${page.fb_page_id}/posts?fields=id,message,created_time,full_picture,attachments{media,type,url}&limit=20&access_token=${page.page_access_token}`;
     if (after) url += `&after=${after}`;
 
     const fbRes = await fetch(url);

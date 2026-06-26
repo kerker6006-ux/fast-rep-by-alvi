@@ -424,11 +424,11 @@ async function handlePagePostEvent(
   let aiData: any = {};
   if (lovableApiKey) {
     try {
-      const aiRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      const aiRes = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${lovableApiKey}` },
         body: JSON.stringify({
-          model: "gemini-2.5-flash-lite",
+          model: "gemini-2.5-flash",
           messages: [{
             role: "system",
             content: `You are a product analyzer. Given a Facebook page post with an image and caption, extract product details. Return ONLY valid JSON with these fields: name, name_bn (Bangla name), description, description_bn, category, color, price (number, 0 if unknown), material, keywords (array of strings). If caption is in Bangla, prioritize Bangla names. Be accurate.`
