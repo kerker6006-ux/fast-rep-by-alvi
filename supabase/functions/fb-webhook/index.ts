@@ -277,7 +277,7 @@ async function handleCommentEvent(
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${lovableApiKey}` },
         body: JSON.stringify({
-          model: "gemini-2.0-flash-lite",
+          model: "gemini-2.5-flash-lite",
           messages: [{
             role: "system",
             content: `You are a Facebook page comment reply bot. Reply in ${lang}. Be short (1 sentence max). If they ask about a product, mention the price. Always encourage them to inbox for details. Products: ${productList}. ${settings.manual_instructions || ""}`
@@ -1898,14 +1898,18 @@ CUSTOMER MODE
 
     // ── Fallback: call Gemini directly if DO backend unavailable ────────────
     console.log(`[model-fallback] calling Gemini directly: ${modelId}`);
-    const body = {
-      model: modelId,
-      messages: [{ role: "system", content: sys }, ...historyWithoutLast, currentUserMessage],
-    };
-    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+    const contents = [...historyWithoutLast, currentUserMessage].map((m: any) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: typeof m.content === "string" ? m.content : "..." }],
+    }));
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`, {
       method: "POST",
-      headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: sys }] },
+        contents,
+        generationConfig: { temperature: 0.4, maxOutputTokens: 450 },
+      }),
     });
     if (!r.ok) {
       const errText = await r.text();
@@ -1917,7 +1921,7 @@ CUSTOMER MODE
       throw new Error("AI error");
     }
     const j = await r.json();
-    return j.choices?.[0]?.message?.content || "";
+    return j.candidates?.[0]?.content?.parts?.[0]?.text || "";
   };
 
   let usedModel = useProModel ? PRO_MODEL : DEFAULT_MODEL;
@@ -2107,7 +2111,7 @@ RULES FOR "no_action":
     }
     const extractData = await extractResponse.json();
 
-    await logAiUsage(supabase, userId, "order_detection", "gemini-2.0-flash-lite", 0.0002);
+    await logAiUsage(supabase, userId, "order_detection", "gemini-2.5-flash-lite", 0.0002);
 
     const toolCall = extractData.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) {
@@ -2337,7 +2341,7 @@ async function detectAndCreateComplaint(
 
     if (!extractResponse.ok) return;
     const extractData = await extractResponse.json();
-    await logAiUsage(supabase, userId, "complaint_detection", "gemini-2.0-flash-lite", 0.0002);
+    await logAiUsage(supabase, userId, "complaint_detection", "gemini-2.5-flash-lite", 0.0002);
 
     const toolCall = extractData.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) return;

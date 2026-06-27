@@ -16,9 +16,9 @@
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
 
 const MODELS = {
-  LITE: "gemini-2.0-flash-lite",
+  LITE: "gemini-2.5-flash-lite",
   STANDARD: "gemini-2.5-flash",
-  FALLBACK: "gemini-2.0-flash-lite",
+  FALLBACK: "gemini-2.5-flash-lite",
 };
 
 // ─── 1. SENTIMENT DETECTOR ───────────────────────────────────
