@@ -1837,7 +1837,7 @@ CUSTOMER MODE
       ? currentUserMessage.content.filter((c: any) => c?.type === "text").map((c: any) => c.text).join(" ")
       : "";
   const pronounRef = /\b(it|that|this|those|them|same|still|the one|that one|previous)\b/i.test(lastUserText) || banglaPronouns.test(lastUserText);
-  // MODEL ROUTING: default gemini-2.5-flash; switch to gemini-3-flash for images,
+  // MODEL ROUTING: gemini-2.5-flash for all messages (smart + affordable)
   // document/screenshot analysis, or advanced reasoning / problem-solving.
   const analyzeIntent = /\b(analyz|analyse|review|improve|explain|debug|fix|why did|what went wrong|screenshot|document|pdf|file)\b/i.test(lastUserText);
   const needsAdvancedReasoning =
@@ -1849,7 +1849,7 @@ CUSTOMER MODE
     (products?.length || 0) > 40;
   const useProModel = hasImage || needsAdvancedReasoning;
 
-  const PRO_MODEL = "gemini-3-flash-preview";
+  const PRO_MODEL = "gemini-2.5-flash";
   const DEFAULT_MODEL = "gemini-2.5-flash";
 
   const callModel = async (modelId: string, extraSystem?: string) => {
