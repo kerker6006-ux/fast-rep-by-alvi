@@ -9,12 +9,12 @@ const AdminRecharges = () => {
   const { data: txns, isLoading } = useQuery({
     queryKey: ["admin-recent-recharges"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("credit_transactions")
-        .select("id, user_id, amount, type, description, created_at")
-        .order("created_at", { ascending: false })
-        .limit(100);
-      return data ?? [];
+      const [txRes, usersRes] = await Promise.all([
+        supabase.from("credit_transactions").select("id, user_id, amount, type, description, created_at").order("created_at", { ascending: false }).limit(100),
+        supabase.functions.invoke("admin-list-users"),
+      ]);
+      const emails: Record<string, string> = usersRes.data?.emails ?? {};
+      return (txRes.data ?? []).map((tx: any) => ({ ...tx, email: emails[tx.user_id] || tx.user_id.slice(0, 12) + "..." }));
     },
   });
 
@@ -44,7 +44,7 @@ const AdminRecharges = () => {
                 {(txns ?? []).map((tx: any) => (
                   <tr key={tx.id} className="border-t hover:bg-slate-50">
                     <td className="px-4 py-3 text-slate-500 text-xs">{new Date(tx.created_at).toLocaleString()}</td>
-                    <td className="px-4 py-3 font-mono text-xs truncate max-w-[160px]">{tx.user_id}</td>
+                    <td className="px-4 py-3 text-xs truncate max-w-[200px]">{(tx as any).email}</td>
                     <td className="px-4 py-3"><Badge variant="outline">{tx.type}</Badge></td>
                     <td className={`px-4 py-3 text-right font-semibold ${tx.amount >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                       {tx.amount >= 0 ? "+" : ""}${Number(tx.amount).toLocaleString()}

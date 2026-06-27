@@ -4,6 +4,7 @@ import CategoryOnboarding from "@/components/CategoryOnboarding";
 import NotificationBell from "@/components/NotificationBell";
 import PaywallCard from "@/components/PaywallCard";
 import PageSwitcher from "@/components/PageSwitcher";
+import AnnouncementBanner from "@/components/AnnouncementBanner";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { useActivePage } from "@/contexts/ActivePageContext";
 import { isTabAllowedForRole, MODERATOR_ALLOWED_TABS } from "@/lib/pageAccess";
@@ -118,6 +119,8 @@ const Index = () => {
           <NotificationBell />
         </div>
         <div className="max-w-6xl mx-auto px-6 lg:px-8 py-8">
+          {/* Admin announcements shown to all users */}
+          <AnnouncementBanner />
           {/* Bug #11 fix: onboarding banner for new users with no page connected */}
           {pages !== undefined && pages.length === 0 && activeTab !== "fb-pages" && (
             <div className="mb-6 rounded-xl border-2 border-primary/30 bg-primary/5 p-6 text-center space-y-3">
