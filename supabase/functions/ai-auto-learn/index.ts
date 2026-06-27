@@ -83,7 +83,7 @@ Limit to the 8 most valuable suggestions. Skip anything already present.`;
 
     const aiRes = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
-      headers: { Authorization: `Bearer ${GEMINI_API_KEY}`, "Content-Type": "application/json" },
+      headers: { "x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "gemini-2.5-flash",
         messages: [

@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
 
         const aiRes = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${GEMINI_API_KEY}` },
+          headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY },
           body: JSON.stringify({
             model: "gemini-2.5-flash-lite",
             messages: [{ role: "user", content }],

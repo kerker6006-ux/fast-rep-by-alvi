@@ -1904,7 +1904,7 @@ CUSTOMER MODE
     };
     const r = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
     if (!r.ok) {
@@ -2037,7 +2037,7 @@ async function detectAndProcessOrder(
 
     const extractResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "gemini-2.5-flash-lite",
         messages: [
@@ -2307,7 +2307,7 @@ async function detectAndCreateComplaint(
   try {
     const extractResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "gemini-2.5-flash-lite",
         messages: [
@@ -2433,7 +2433,7 @@ async function extractAndSaveLead(
 
     const res = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "gemini-2.5-flash-lite",
         messages: [
