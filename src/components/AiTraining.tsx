@@ -462,12 +462,16 @@ const AiTraining = () => {
               duration_text: s.duration_text || s.duration || "",
               category: s.category || "general",
               active: true,
+              faqs: [],
+              keywords: [],
             }));
             const { error: svcErr } = await supabase
               .from("services")
-              .upsert(toInsert, { onConflict: "user_id,fb_page_id,name" } as any);
+              .insert(toInsert);
             if (!svcErr) {
-              toast.success(`✅ ${servicesList.length} services added automatically!`);
+              toast.success(`✅ ${servicesList.length} services added! Check the Services tab.`);
+            } else {
+              console.error("services insert error", svcErr);
             }
           }
           delete generated.services_list;
@@ -484,18 +488,22 @@ const AiTraining = () => {
           if (Array.isArray(productsList) && productsList.length > 0) {
             const toInsert = productsList.map((p: any) => ({
               user_id: user!.id,
+              fb_page_id: activePage!.id,
               name: p.name || "Unnamed Product",
               description: p.description || "",
               price: parseFloat(p.price) || 0,
               category: p.category || "general",
-              keywords: p.keywords || "",
+              keywords: Array.isArray(p.keywords) ? p.keywords : (p.keywords ? [p.keywords] : []),
               is_active: true,
+              size_variants: [],
             }));
             const { error: prodErr } = await supabase
               .from("products")
-              .upsert(toInsert, { onConflict: "user_id,name" } as any);
+              .insert(toInsert);
             if (!prodErr) {
-              toast.success(`✅ ${productsList.length} products added automatically!`);
+              toast.success(`✅ ${productsList.length} products added! Check the Products tab.`);
+            } else {
+              console.error("products insert error", prodErr);
             }
           }
           delete generated.products_list;
@@ -994,12 +1002,12 @@ const AiTraining = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label className="text-xs font-medium">Bot Name</Label>
-                    <Input value={settings.bot_name || ""} onChange={e => update("bot_name", e.target.value)} placeholder="e.g. Scarlet Derma Bot" className="h-9" />
+                    <Input value={settings.bot_name || ""} onChange={e => update("bot_name", e.target.value)} placeholder="e.g. My Business Bot" className="h-9" />
                     <p className="text-[10px] text-muted-foreground">What customers see as the sender name</p>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs font-medium">Business Name</Label>
-                    <Input value={settings.business_name || ""} onChange={e => update("business_name", e.target.value)} placeholder="e.g. Scarlet Derma" className="h-9" />
+                    <Input value={settings.business_name || ""} onChange={e => update("business_name", e.target.value)} placeholder="e.g. My Business Name" className="h-9" />
                   </div>
                 </div>
                 <div className="space-y-1.5">
@@ -1027,7 +1035,7 @@ const AiTraining = () => {
                     <Label className="text-xs font-medium">AI Personality</Label>
                     <span className="text-[10px] text-muted-foreground bg-purple-50 dark:bg-purple-950/30 px-2 py-0.5 rounded-full">Most important field</span>
                   </div>
-                  <Textarea value={settings.ai_personality || ""} onChange={e => update("ai_personality", e.target.value)} placeholder='e.g. "You are a warm, professional skin care consultant for Scarlet Derma. When a customer shares a skin concern, empathize first, then suggest the most relevant treatment. Always guide toward booking an appointment..."' className="min-h-[100px] resize-none text-sm" />
+                  <Textarea value={settings.ai_personality || ""} onChange={e => update("ai_personality", e.target.value)} placeholder='e.g. "You are a friendly, helpful assistant for [Business Name]. When customers ask about products/services, provide accurate information and guide them toward making a purchase or booking..."' className="min-h-[100px] resize-none text-sm" />
                   <p className="text-[10px] text-muted-foreground">Direct instructions to the bot — write as "You are..." and "When a customer says X, you..."</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
