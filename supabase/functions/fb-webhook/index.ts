@@ -270,7 +270,7 @@ async function handleCommentEvent(
       if (userId) productQuery = productQuery.eq("user_id", userId);
       const { data: products } = await productQuery;
 
-      const productList = (products || []).map((p: any) => `${p.name}: $${p.price}`).join(", ");
+      const productList = (products || []).map((p: any) => `${p.name}${p.price ? `: ${settings?.currency === "USD" ? "$" : settings?.currency === "EUR" ? "€" : settings?.currency === "GBP" ? "£" : "৳"}${p.price}` : ""}`).join(", ");
       const lang = isBangla ? "Bangla" : "English";
 
       const aiRes = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
@@ -905,8 +905,8 @@ async function handleProductImageRequest(
   const variantsArr = (matchedProduct.variants || []) as {color: string; image_url: string}[];
   const hasMultipleColors = variantsArr.filter(v => v?.color).length > 1;
   const caption = hasMultipleColors
-    ? `${productName} — $${matchedProduct.price}। আর কোন রং দেখবেন?`
-    : `${productName} — $${matchedProduct.price}।`;
+    ? `${productName}${matchedProduct.price ? ` — ${formatPrice(matchedProduct.price)}` : ""}। আর কোন রং দেখবেন?`
+    : `${productName}${matchedProduct.price ? ` — ${formatPrice(matchedProduct.price)}` : ""}।`;
 
   await sendFbImage(pageAccessToken, senderId, matchedProduct.image_url);
   await sendFbMessage(pageAccessToken, senderId, caption);
@@ -1435,7 +1435,8 @@ ${businessInfoObj.faqs ? `\nFAQs: ${businessInfoObj.faqs}` : ""}
     "I am just an AI (never reveal you are an AI unless directly asked)",
     "I cannot help with that (always try to help or redirect)",
   ];
-  neverSaySection = `\n\nGLOBAL RULES — NEVER DO THESE (applies to all situations):\n${globalNeverSay.map(item => `- ❌ ${item}`).join("\n")}`;
+  neverSaySection = `\n\nCURRENCY: Always display prices using "${currencySymbol}" symbol (e.g. ${currencySymbol}1,500). Never use $ unless currency is set to USD. Never invent prices.
+GLOBAL RULES — NEVER DO THESE (applies to all situations):\n${globalNeverSay.map(item => `- ❌ ${item}`).join("\n")}`;
 
   // ── User-specific never say (from training) ──
   if (settings.never_say_list) {
@@ -1472,6 +1473,18 @@ ${businessInfoObj.faqs ? `\nFAQs: ${businessInfoObj.faqs}` : ""}
   // ====== LANGUAGE PREFERENCE (user-controlled in Bot Settings) ======
   // Supported: "bn" | "ko" | "en" | "es" | "mix" (default: mix)
   const replyLang = (settings.reply_language || "mix").toLowerCase();
+
+  // ── Currency helper ──────────────────────────────────────────
+  // Uses the currency set in Bot Settings, falls back to BDT for BD users
+  const currencyMap: Record<string, string> = {
+    BDT: "৳", USD: "$", INR: "₹", EUR: "€", GBP: "£",
+    KRW: "₩", SAR: "ر.س", AED: "د.إ", MYR: "RM", SGD: "S$",
+  };
+  const currencyCode = settings.currency || "BDT";
+  const currencySymbol = currencyCode === "CUSTOM"
+    ? (settings.custom_currency || "৳")
+    : (currencyMap[currencyCode] || currencyCode);
+  const formatPrice = (price: number | string) => `${currencySymbol}${Number(price).toLocaleString()}`;
   // Fix: use "incoming" (correct direction value) not "inbound"
   const inboundCount = (recentMessages || []).filter((m: any) => m.direction === "incoming").length;
   const isFirstInbound = inboundCount <= 1; // current message is included

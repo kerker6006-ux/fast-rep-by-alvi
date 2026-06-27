@@ -164,6 +164,62 @@ const BotSettings = () => {
           </CardContent>
         </Card>
 
+        {/* Currency Setting */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">💰 Currency</CardTitle>
+            <CardDescription>Choose your currency. The bot will use this symbol when mentioning prices to customers.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Select
+              value={settings.currency || "BDT"}
+              onValueChange={(v) => update("currency", v)}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="BDT">🇧🇩 BDT — Bangladeshi Taka (৳)</SelectItem>
+                <SelectItem value="USD">🇺🇸 USD — US Dollar ($)</SelectItem>
+                <SelectItem value="INR">🇮🇳 INR — Indian Rupee (₹)</SelectItem>
+                <SelectItem value="EUR">🇪🇺 EUR — Euro (€)</SelectItem>
+                <SelectItem value="GBP">🇬🇧 GBP — British Pound (£)</SelectItem>
+                <SelectItem value="KRW">🇰🇷 KRW — Korean Won (₩)</SelectItem>
+                <SelectItem value="SAR">🇸🇦 SAR — Saudi Riyal (ر.س)</SelectItem>
+                <SelectItem value="AED">🇦🇪 AED — UAE Dirham (د.إ)</SelectItem>
+                <SelectItem value="MYR">🇲🇾 MYR — Malaysian Ringgit (RM)</SelectItem>
+                <SelectItem value="SGD">🇸🇬 SGD — Singapore Dollar (S$)</SelectItem>
+                <SelectItem value="CUSTOM">✏️ Custom (type below)</SelectItem>
+              </SelectContent>
+            </Select>
+            {settings.currency === "CUSTOM" && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Custom currency symbol or code</Label>
+                <Input
+                  value={settings.custom_currency || ""}
+                  onChange={e => update("custom_currency", e.target.value)}
+                  placeholder="e.g. RM, ₦, Rp, Fr"
+                  className="h-9 max-w-[200px]"
+                />
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Current: The bot will say prices as <strong>{
+                settings.currency === "BDT" ? "৳1,500" :
+                settings.currency === "USD" ? "$15" :
+                settings.currency === "INR" ? "₹1,500" :
+                settings.currency === "EUR" ? "€15" :
+                settings.currency === "GBP" ? "£15" :
+                settings.currency === "KRW" ? "₩15,000" :
+                settings.currency === "SAR" ? "ر.س 15" :
+                settings.currency === "AED" ? "د.إ 15" :
+                settings.currency === "MYR" ? "RM 15" :
+                settings.currency === "SGD" ? "S$15" :
+                settings.currency === "CUSTOM" ? `${settings.custom_currency || "?"} 15` :
+                "৳1,500"
+              }</strong>
+            </p>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Globe className="h-5 w-5" /> {t("botSettings.businessInfo")}</CardTitle>
