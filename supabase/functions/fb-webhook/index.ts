@@ -1427,11 +1427,22 @@ ${businessInfoObj.faqs ? `\nFAQs: ${businessInfoObj.faqs}` : ""}
   }
 
   let neverSaySection = "";
+  // ── Global defaults (apply to ALL users regardless of training) ──
+  const globalNeverSay = [
+    "নমস্কার (use হ্যালো or আস্সালামু আলাইকুম instead)",
+    "Namaskar (use Hello instead)",
+    "I don't know (say 'our team will confirm' instead)",
+    "I am just an AI (never reveal you are an AI unless directly asked)",
+    "I cannot help with that (always try to help or redirect)",
+  ];
+  neverSaySection = `\n\nGLOBAL RULES — NEVER DO THESE (applies to all situations):\n${globalNeverSay.map(item => `- ❌ ${item}`).join("\n")}`;
+
+  // ── User-specific never say (from training) ──
   if (settings.never_say_list) {
     try {
       const items = JSON.parse(settings.never_say_list);
       if (items.length > 0) {
-        neverSaySection = "\n\nNEVER DO THESE:\n" + items.map((item: string) => `- ❌ ${item}`).join("\n");
+        neverSaySection += "\n\nADDITIONAL NEVER DO (set by page owner):\n" + items.map((item: string) => `- ❌ ${item}`).join("\n");
       }
     } catch {}
   }
@@ -1517,12 +1528,14 @@ ${businessInfoObj.faqs ? `\nFAQs: ${businessInfoObj.faqs}` : ""}
 - You handle: service descriptions, pricing IF it's in the knowledge base, hours, location, and booking appointments.
 - You NEVER invent prices, services, hours or policies. If you don't know, say "let me check with the team and get back to you."
 - You NEVER give expert/medical/legal/technical advice — that's for the specialist during the visit.
+- DEFAULT GREETING: Always start with "Hello!" or "হ্যালো!" — NEVER use "নমস্কার" or "Namaskar".
 - Goal of every chat: book the appointment.`,
     content_creator: `You are the support assistant for "${settings.business_name || "this creator"}" — an online educator who sells courses, coaching and digital products on Facebook.
 - Friendly, sharp, helpful. Sound like the creator's own team member, never a chatbot.
 - You handle: course descriptions, what's included, price, payment, refund policy, how to enroll, login/access issues, and answering the creator's expertise area at a high level (do not impersonate the creator).
 - You NEVER promise specific results, NEVER invent course content, NEVER discount unless the owner set a promo.
 - For existing students with access issues, collect their order email and tell them the team will check.
+- DEFAULT GREETING: Always start with "Hello!" — NEVER use "নমস্কার" or "Namaskar".
 - Goal of every chat: get the prospect enrolled, or capture the lead (name + phone/email + which course).`,
   };
 
@@ -1644,6 +1657,7 @@ ${settings.ai_personality || `You are "${settings.bot_name || settings.business_
 - You handle: product questions, price, stock, sizes/colors, delivery, payment, taking orders.
 - You proactively send a product image (via the tool) the FIRST time you mention any specific product, BEFORE the text reply.
 - You NEVER invent prices, stock, or products that are not in the catalog. If the customer wants something you don't sell, output SUGGEST_PRODUCT: <name>.
+- DEFAULT GREETING: Always start with "Hello!" or "হ্যালো!" — NEVER use "নমস্কার" or "Namaskar".
 - Goal of every chat: close the order with name, phone, full address, product, quantity — then confirm.`}
 ${settings.business_description ? `\nBusiness: ${settings.business_description}` : ""}
 ${settings.reply_tone ? `\nTone: ${settings.reply_tone}` : ""}
