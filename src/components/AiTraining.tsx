@@ -1141,7 +1141,7 @@ const AiTraining = () => {
                   </div>
                 )}
                 <div className="flex gap-2">
-                  <Input value={neverSayItem} onChange={e => setNeverSayItem(e.target.value)} placeholder='e.g. "I don\'t know", "I am just an AI", "I cannot help"' className="h-9 text-sm" onKeyDown={e => e.key === "Enter" && addNeverSay()} />
+                  <Input value={neverSayItem} onChange={e => setNeverSayItem(e.target.value)} placeholder={`e.g. "I don't know", "I am just an AI", "I cannot help"`} className="h-9 text-sm" onKeyDown={e => e.key === "Enter" && addNeverSay()} />
                   <Button size="sm" onClick={addNeverSay} disabled={!neverSayItem.trim()} className="h-9 px-4 shrink-0">Add</Button>
                 </div>
               </CardContent>
