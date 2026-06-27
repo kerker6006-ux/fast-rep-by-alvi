@@ -41,8 +41,8 @@ serve(async (req) => {
     const LANG_NAMES: Record<string, string> = { en: "English", bn: "Bangla (বাংলা)", es: "Spanish (Español)", ko: "Korean (한국어)" };
     const chatLang: string = (language && LANG_NAMES[language]) ? language : (settings?.training_chat_language && LANG_NAMES[settings.training_chat_language] ? settings.training_chat_language : "");
     const chatLangName = chatLang ? LANG_NAMES[chatLang] : "";
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") ?? Deno.env.get("GEMINI_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const LOVABLE_API_KEY = Deno.env.get("GEMINI_API_KEY") ?? Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("GEMINI_API_KEY not configured");
 
     // Action: test bot with real settings (used by Test Bot tab)
     if (action === "test_bot") {
@@ -84,7 +84,7 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "gemini-2.5-flash",
           messages: [
             { role: "system", content: systemPrompt },
             ...(messages || []),
@@ -97,7 +97,7 @@ serve(async (req) => {
       if (!response.ok) throw new Error(`AI error: ${response.status}`);
       const data = await response.json();
       const reply = data.choices?.[0]?.message?.content || "No reply";
-      await logTrainingUsage(req, "google/gemini-2.5-flash");
+      await logTrainingUsage(req, "gemini-2.5-flash");
       return new Response(JSON.stringify({ reply }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -105,14 +105,14 @@ serve(async (req) => {
 
     // Action: generate settings from training conversation
     if (action === "generate_settings") {
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "gemini-2.5-flash",
           messages: [
             {
               role: "system",
@@ -211,7 +211,7 @@ CRITICAL:
       }
 
       const generatedSettings = JSON.parse(toolCall.function.arguments);
-      await logTrainingUsage(req, "google/gemini-2.5-flash");
+      await logTrainingUsage(req, "gemini-2.5-flash");
       return new Response(JSON.stringify({ settings: generatedSettings }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -220,14 +220,14 @@ CRITICAL:
     // Action: generate FAQ suggestions from real customer messages
     if (action === "faq_suggestions") {
       const customerMsgs = messages?.[0]?.content || "";
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash-lite",
+          model: "gemini-2.0-flash-lite",
           messages: [
             {
               role: "system",
@@ -263,7 +263,7 @@ Rules:
         faqs = [];
       }
 
-      await logTrainingUsage(req, "google/gemini-2.5-flash-lite");
+      await logTrainingUsage(req, "gemini-2.0-flash-lite");
       return new Response(JSON.stringify({ faqs }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -409,14 +409,14 @@ WHEN ALL TOPICS ARE COVERED:
 
 
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           ...messages,
@@ -450,7 +450,7 @@ WHEN ALL TOPICS ARE COVERED:
     const setupComplete = /\[\[SETUP_COMPLETE\]\]/i.test(rawReply);
     const reply = rawReply.replace(/\[\[SETUP_COMPLETE\]\]/gi, "").trim();
 
-    await logTrainingUsage(req, "google/gemini-2.5-flash");
+    await logTrainingUsage(req, "gemini-2.5-flash");
     return new Response(JSON.stringify({ reply, setup_complete: setupComplete }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

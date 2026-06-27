@@ -225,7 +225,7 @@ Strict rules:
     // Log usage (best-effort)
     try {
       await supabase.from("ai_usage").insert({
-        user_id, call_type: "training", model: "google/gemini-2.5-flash", estimated_cost: 0.003,
+        user_id, call_type: "training", model: "gemini-2.5-flash", estimated_cost: 0.003,
       });
     } catch { /* ignore */ }
 
