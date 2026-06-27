@@ -41,7 +41,7 @@ serve(async (req) => {
     const LANG_NAMES: Record<string, string> = { en: "English", bn: "Bangla (বাংলা)", es: "Spanish (Español)", ko: "Korean (한국어)" };
     const chatLang: string = (language && LANG_NAMES[language]) ? language : (settings?.training_chat_language && LANG_NAMES[settings.training_chat_language] ? settings.training_chat_language : "");
     const chatLangName = chatLang ? LANG_NAMES[chatLang] : "";
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "AQ.Ab8RN6JPAkC-US2oy7vl28rRCTz9aes6EjHbOPN0hR-vsGAFSg";
     if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
 
     // Action: test bot with real settings (used by Test Bot tab)

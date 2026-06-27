@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "AQ.Ab8RN6JPAkC-US2oy7vl28rRCTz9aes6EjHbOPN0hR-vsGAFSg";
     let aiData: any = {};
 
     if (GEMINI_API_KEY) {

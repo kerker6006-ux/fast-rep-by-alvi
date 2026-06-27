@@ -55,7 +55,7 @@ serve(async (req) => {
     const LANG: Record<string, string> = { en: "English", bn: "Bangla", es: "Spanish", ko: "Korean" };
     const langName = LANG[language] || "English";
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "AQ.Ab8RN6JPAkC-US2oy7vl28rRCTz9aes6EjHbOPN0hR-vsGAFSg";
     if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
 
     const system = `You analyze a Facebook Messenger shopkeeper bot's recent conversations and propose improvements.

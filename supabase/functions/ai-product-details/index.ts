@@ -10,7 +10,7 @@ serve(async (req) => {
 
   try {
     const { name, category, color, size, material, language } = await req.json();
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "AQ.Ab8RN6JPAkC-US2oy7vl28rRCTz9aes6EjHbOPN0hR-vsGAFSg";
     if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
 
     const lang = language === "bn" ? "Bengali (বাংলা)" : "English";

@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
     const fbData = await fbRes.json();
     const allPosts = (fbData.data || []) as any[];
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "AQ.Ab8RN6JPAkC-US2oy7vl28rRCTz9aes6EjHbOPN0hR-vsGAFSg";
     if (!GEMINI_API_KEY) throw new Error("AI not configured");
 
     // Build compact post summary for context

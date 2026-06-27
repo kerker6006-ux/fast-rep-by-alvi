@@ -114,7 +114,7 @@ serve(async (req) => {
     const settings: Record<string, string> = {};
     for (const r of settingsRows ?? []) settings[r.setting_key] = r.setting_value;
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "AQ.Ab8RN6JPAkC-US2oy7vl28rRCTz9aes6EjHbOPN0hR-vsGAFSg";
     if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
 
     const langName = LANG[language] || "English";
