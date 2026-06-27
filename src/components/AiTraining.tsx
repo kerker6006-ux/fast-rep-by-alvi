@@ -444,16 +444,75 @@ const AiTraining = () => {
       if (data.error) throw new Error(data.error);
 
       const generated = (data.settings ?? {}) as Record<string, unknown>;
+
+      // ── Save services to DB (service pages) ──────────────────────
+      if (cat === "service" && generated.services_list) {
+        try {
+          const servicesList = typeof generated.services_list === "string"
+            ? JSON.parse(generated.services_list)
+            : generated.services_list;
+
+          if (Array.isArray(servicesList) && servicesList.length > 0) {
+            const toInsert = servicesList.map((s: any) => ({
+              user_id: user!.id,
+              fb_page_id: activePage!.id,
+              name: s.name || "Unnamed Service",
+              description: s.description || "",
+              price_text: s.price_text || s.price || "",
+              duration_text: s.duration_text || s.duration || "",
+              category: s.category || "general",
+              active: true,
+            }));
+            const { error: svcErr } = await supabase
+              .from("services")
+              .upsert(toInsert, { onConflict: "user_id,fb_page_id,name" } as any);
+            if (!svcErr) {
+              toast.success(`✅ ${servicesList.length} services added automatically!`);
+            }
+          }
+          delete generated.services_list;
+        } catch (e) { console.error("services save error", e); }
+      }
+
+      // ── Save products to DB (ecommerce pages) ────────────────────
+      if (cat === "ecommerce" && generated.products_list) {
+        try {
+          const productsList = typeof generated.products_list === "string"
+            ? JSON.parse(generated.products_list)
+            : generated.products_list;
+
+          if (Array.isArray(productsList) && productsList.length > 0) {
+            const toInsert = productsList.map((p: any) => ({
+              user_id: user!.id,
+              name: p.name || "Unnamed Product",
+              description: p.description || "",
+              price: parseFloat(p.price) || 0,
+              category: p.category || "general",
+              keywords: p.keywords || "",
+              is_active: true,
+            }));
+            const { error: prodErr } = await supabase
+              .from("products")
+              .upsert(toInsert, { onConflict: "user_id,name" } as any);
+            if (!prodErr) {
+              toast.success(`✅ ${productsList.length} products added automatically!`);
+            }
+          }
+          delete generated.products_list;
+        } catch (e) { console.error("products save error", e); }
+      }
+
+      // ── Save bot settings ─────────────────────────────────────────
       const newSettings = mergeGeneratedSettings(settings, generated);
 
       if (JSON.stringify(newSettings) === JSON.stringify(settings)) {
-        toast.info("No new changes found yet. Keep chatting and be a bit more specific.");
+        toast.info("No new changes found yet. Keep chatting and be more specific.");
         return;
       }
 
       setSettings(newSettings);
       setHasChanges(true);
-      await persistSettings(newSettings, "Wizard changes merged into Manual and saved.");
+      await persistSettings(newSettings, "✅ Bot settings saved! Services/products updated automatically.");
     } catch (e: any) {
       toast.error(e.message || "Failed to generate settings");
     } finally {
