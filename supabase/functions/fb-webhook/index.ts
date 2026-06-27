@@ -1827,6 +1827,50 @@ CUSTOMER MODE
 
   const callModel = async (modelId: string, extraSystem?: string) => {
     const sys = extraSystem ? `${systemPrompt}\n\n${extraSystem}` : systemPrompt;
+
+    // ── Try DO backend first (smart AI routing brain) ──────────────────────
+    const DO_BACKEND_URL = Deno.env.get("DO_BACKEND_URL") || "https://api.leadpilot.pro";
+    const INTERNAL_SECRET = Deno.env.get("INTERNAL_SECRET") || "LeadPilot2026SecretKey!";
+
+    try {
+      const doRes = await fetch(`${DO_BACKEND_URL}/api/reply`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-internal-secret": INTERNAL_SECRET,
+        },
+        body: JSON.stringify({
+          conversationId,
+          userId,
+          fbPageId: fbPageRowId,
+          messageText: messageText || "",
+          hasImage: !!imageUrl,
+          imageUrl: imageUrl || null,
+          conversationHistory: historyWithoutLast,
+          recentOutgoing: (recentMessages || [])
+            .filter((m: any) => m.direction === "outgoing")
+            .slice(-5)
+            .map((m: any) => m.content),
+          timezone: "Asia/Dhaka",
+        }),
+      });
+
+      if (doRes.ok) {
+        const doData = await doRes.json();
+        if (doData.reply && doData.reply.trim().length > 4) {
+          console.log(`[do-backend] reply from ${doData.modelUsed} (${doData.tier}) reason=${doData.reason} ms=${doData.durationMs}`);
+          return doData.reply;
+        }
+        console.warn("[do-backend] reply too short, falling back to direct Gemini");
+      } else {
+        console.error("[do-backend] failed:", doRes.status, await doRes.text().catch(() => ""));
+      }
+    } catch (doErr) {
+      console.error("[do-backend] connection error, falling back to direct Gemini:", doErr);
+    }
+
+    // ── Fallback: call Gemini directly if DO backend unavailable ────────────
+    console.log(`[model-fallback] calling Gemini directly: ${modelId}`);
     const body = {
       model: modelId,
       messages: [{ role: "system", content: sys }, ...historyWithoutLast, currentUserMessage],
@@ -1839,7 +1883,6 @@ CUSTOMER MODE
     if (!r.ok) {
       const errText = await r.text();
       console.error("AI Gateway error:", r.status, errText);
-      // If the pro model is unavailable, fall back to default
       if (modelId === PRO_MODEL && (r.status === 404 || r.status === 400)) {
         console.log("[model-fallback] pro model unavailable, falling back to default");
         return callModel(DEFAULT_MODEL, extraSystem);
