@@ -51,8 +51,8 @@ export function scoreIntent(text, history = []) {
 
   // Price intent
   const priceScore =
-    (/price|cost|how much|dam|দাম|কত|কতো|rate|charge|fee|টাকা|taka|budget|afford|سعر|가격|prix/i.test(t) ? 3 : 0) +
-    (/discount|offer|ছাড়|কম|সস্তা|cheap|sale|할인|خصم/i.test(t) ? 2 : 0);
+    (/price|cost|how much|dam|দাম|কত|কতো|rate|charge|fee|টাকা|taka|budget|afford|سعر|가격|prix|মূল্য|pricing/i.test(t) ? 3 : 0) +
+    (/discount|offer|ছাড়|কম|সস্তা|cheap|sale|할인|خصم|available|any offer|promo/i.test(t) ? 3 : 0);
 
   // Product/service inquiry
   const productScore =
