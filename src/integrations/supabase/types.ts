@@ -215,6 +215,66 @@ export type Database = {
           },
         ]
       }
+      broadcasts: {
+        Row: {
+          created_at: string
+          failed_count: number | null
+          fb_page_id: string
+          id: string
+          message: string
+          message_tag: string | null
+          sent_at: string | null
+          sent_count: number | null
+          status: string
+          total_recipients: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          failed_count?: number | null
+          fb_page_id: string
+          id?: string
+          message: string
+          message_tag?: string | null
+          sent_at?: string | null
+          sent_count?: number | null
+          status?: string
+          total_recipients?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          failed_count?: number | null
+          fb_page_id?: string
+          id?: string
+          message?: string
+          message_tag?: string | null
+          sent_at?: string | null
+          sent_count?: number | null
+          status?: string
+          total_recipients?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "broadcasts_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broadcasts_fb_page_id_fkey"
+            columns: ["fb_page_id"]
+            isOneToOne: false
+            referencedRelation: "fb_pages_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comment_trigger_logs: {
         Row: {
           comment_text: string | null
@@ -421,6 +481,7 @@ export type Database = {
           last_message: string | null
           last_message_at: string | null
           needs_human: boolean
+          opted_out: boolean | null
           sender_name: string | null
           updated_at: string
           user_id: string | null
@@ -436,6 +497,7 @@ export type Database = {
           last_message?: string | null
           last_message_at?: string | null
           needs_human?: boolean
+          opted_out?: boolean | null
           sender_name?: string | null
           updated_at?: string
           user_id?: string | null
@@ -451,6 +513,7 @@ export type Database = {
           last_message?: string | null
           last_message_at?: string | null
           needs_human?: boolean
+          opted_out?: boolean | null
           sender_name?: string | null
           updated_at?: string
           user_id?: string | null
