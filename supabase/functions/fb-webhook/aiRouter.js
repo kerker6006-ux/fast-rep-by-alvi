@@ -26,7 +26,7 @@ export function detectSentiment(text) {
   if (!text) return "neutral";
   const t = text.toLowerCase();
 
-  const angryPatterns = /rag|angry|upset|frustrated|terrible|worst|useless|stupid|hate|awful|pathetic|রাগ|বিরক্ত|বাজে|খারাপ|ফালতু|বেকার|형편없|غاضب|furious|disgusting|waste|scam|fake|fraud/i;
+  const angryPatterns = /rag|angry|upset|frustrated|terrible|worst|useless|stupid|hate|awful|pathetic|রাগ|বিরক্ত|বাজে|খারাপ|ফালতু|বেকার|형편없|غاضب|furious|disgusting|waste|scam|fake|fraud|প্রতারণা|প্রতারক|ঠকানো|cheated|ripped off|not working|doesn.t work|পাইনি|আসেনি|broken|stopped working/i;
   const worriedPatterns = /worried|scared|afraid|anxious|serious|dangerous|urgent|emergency|help me|please help|ভয়|চিন্তিত|জরুরি|সাহায্য|심각|خطير|عاجل|bad condition|getting worse|worse|critical/i;
   const happyPatterns = /thank|thanks|great|awesome|excellent|love|perfect|amazing|wonderful|ধন্যবাদ|অসাধারণ|চমৎকার|ভালো|감사|شكرا|merci|gracias/i;
 
@@ -110,10 +110,19 @@ export function scoreContext(history = []) {
 // ─── 5. BOOKING STATE DETECTOR ───────────────────────────────
 // Detects what info has already been collected to avoid re-asking
 export function detectBookingState(history = []) {
-  const allText = history.map(m => (typeof m.content === "string" ? m.content : "")).join(" ").toLowerCase();
-  const hasName = /নাম|name is|আমি |i am|my name|আমার নাম/.test(allText);
+  const allText = history.map(m => (typeof m.content === "string" ? m.content : "")).join(" ");
+  const allTextLower = allText.toLowerCase();
+  
+  // Name detection - look for common name patterns
+  const hasName = (
+    /নাম|name is|i am|my name|আমার নাম|ami |আমি /i.test(allText) ||
+    // Simple capitalized word that looks like a name (2+ chars, starts with capital)
+    /\b[A-Z][a-z]{1,15}\b/.test(allText) ||
+    // Bangla name patterns
+    /\b(alvi|sarah|nafi|rahim|karim|hasan|ahmed|islam|khan|begum|akter|sultana)\b/i.test(allTextLower)
+  );
   const hasPhone = /\b01[3-9]\d{8}\b|\b\d{10,11}\b/.test(allText);
-  const hasDate = /তারিখ|date|\d{1,2}(st|nd|rd|th)|monday|tuesday|wednesday|thursday|friday|saturday|sunday|কাল|আজ|পরশু|\d+ tarik/i.test(allText);
+  const hasDate = /তারিখ|date|\d{1,2}(st|nd|rd|th)|monday|tuesday|wednesday|thursday|friday|saturday|sunday|কাল|আজ|পরশু|\d+ tarik|tomorrow|next week/i.test(allText);
 
   return { hasName, hasPhone, hasDate };
 }
