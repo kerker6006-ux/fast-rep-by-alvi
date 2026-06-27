@@ -52,14 +52,14 @@ Deno.serve(async (req) => {
     }
 
     // Use AI to analyze the post
-    const LOVABLE_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     let aiData: any = {};
 
-    if (LOVABLE_API_KEY && image_url) {
+    if (GEMINI_API_KEY && image_url) {
       try {
         const aiRes = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${LOVABLE_API_KEY}` },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${GEMINI_API_KEY}` },
           body: JSON.stringify({
             model: "gemini-2.5-flash-lite",
             messages: [

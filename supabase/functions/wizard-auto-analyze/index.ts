@@ -114,8 +114,8 @@ serve(async (req) => {
     const settings: Record<string, string> = {};
     for (const r of settingsRows ?? []) settings[r.setting_key] = r.setting_value;
 
-    const LOVABLE_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("GEMINI_API_KEY not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
 
     const langName = LANG[language] || "English";
 
@@ -166,11 +166,11 @@ Strict rules:
 - Keep tone_summary, draft_settings text, FAQ answers SHORT — match the owner's actual reply length.
 - Output ONLY the JSON object, no commentary.`;
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiRes = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${GEMINI_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gemini-2.5-flash",
         messages: [
           { role: "system", content: system },
           { role: "user", content: transcript },
@@ -225,7 +225,7 @@ Strict rules:
     // Log usage (best-effort)
     try {
       await supabase.from("ai_usage").insert({
-        user_id, call_type: "training", model: "google/gemini-2.5-flash", estimated_cost: 0.003,
+        user_id, call_type: "training", model: "gemini-2.5-flash", estimated_cost: 0.003,
       });
     } catch { /* ignore */ }
 

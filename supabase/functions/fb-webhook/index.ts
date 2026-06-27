@@ -98,7 +98,7 @@ serve(async (req) => {
         return new Response("Not a page/instagram event", { status: 200, headers: corsHeaders });
       }
 
-      const LOVABLE_API_KEY = Deno.env.get("GEMINI_API_KEY");
+      const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 
       for (const entry of body.entry || []) {
         const entryId = entry.id;
@@ -131,7 +131,7 @@ serve(async (req) => {
           const fallbackSettings = fallbackUserId ? await loadSettings(supabase, fallbackUserId) : {};
           console.log("Using fallback token with user_id:", fallbackUserId);
           for (const event of entry.messaging || []) {
-            await handleMessagingEvent(supabase, event, entryId, fallbackToken, LOVABLE_API_KEY, fallbackSettings, fallbackUserId, "facebook");
+            await handleMessagingEvent(supabase, event, entryId, fallbackToken, GEMINI_API_KEY, fallbackSettings, fallbackUserId, "facebook");
           }
           continue;
         }
@@ -193,14 +193,14 @@ serve(async (req) => {
 
         // Handle messaging events (DMs) — same shape on FB and IG
         for (const event of entry.messaging || []) {
-          await handleMessagingEvent(supabase, event, selfId, PAGE_ACCESS_TOKEN, LOVABLE_API_KEY, settings, userId, platform, fbPage.id);
+          await handleMessagingEvent(supabase, event, selfId, PAGE_ACCESS_TOKEN, GEMINI_API_KEY, settings, userId, platform, fbPage.id);
         }
 
         // Handle changes (FB feed + IG comments)
         for (const change of entry.changes || []) {
           if (isInstagram) {
             if (change.field === "comments") {
-              await handleIgCommentEvent(supabase, change.value, PAGE_ACCESS_TOKEN, settings, userId, LOVABLE_API_KEY, selfId);
+              await handleIgCommentEvent(supabase, change.value, PAGE_ACCESS_TOKEN, settings, userId, GEMINI_API_KEY, selfId);
             }
             // Future: mentions, message_reactions
           } else if (change.field === "feed") {
@@ -208,9 +208,9 @@ serve(async (req) => {
               // 1) Run user-defined keyword triggers first (ManyChat-style)
               await handleCommentTriggers(supabase, change.value, PAGE_ACCESS_TOKEN, userId, entryId);
               // 2) Then fall through to AI/text comment auto-reply
-              await handleCommentEvent(supabase, change.value, PAGE_ACCESS_TOKEN, settings, userId, LOVABLE_API_KEY);
+              await handleCommentEvent(supabase, change.value, PAGE_ACCESS_TOKEN, settings, userId, GEMINI_API_KEY);
             } else if (change.value?.item === "photo" || change.value?.item === "status") {
-              await handlePagePostEvent(supabase, change.value, userId, LOVABLE_API_KEY, entryId, settings);
+              await handlePagePostEvent(supabase, change.value, userId, GEMINI_API_KEY, entryId, settings);
             }
           }
         }
@@ -2107,7 +2107,7 @@ RULES FOR "no_action":
     }
     const extractData = await extractResponse.json();
 
-    await logAiUsage(supabase, userId, "order_detection", "google/gemini-2.5-flash-lite", 0.0002);
+    await logAiUsage(supabase, userId, "order_detection", "gemini-2.0-flash-lite", 0.0002);
 
     const toolCall = extractData.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) {
@@ -2337,7 +2337,7 @@ async function detectAndCreateComplaint(
 
     if (!extractResponse.ok) return;
     const extractData = await extractResponse.json();
-    await logAiUsage(supabase, userId, "complaint_detection", "google/gemini-2.5-flash-lite", 0.0002);
+    await logAiUsage(supabase, userId, "complaint_detection", "gemini-2.0-flash-lite", 0.0002);
 
     const toolCall = extractData.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) return;

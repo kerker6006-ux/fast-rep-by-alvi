@@ -55,8 +55,8 @@ serve(async (req) => {
     const LANG: Record<string, string> = { en: "English", bn: "Bangla", es: "Spanish", ko: "Korean" };
     const langName = LANG[language] || "English";
 
-    const LOVABLE_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY not configured");
 
     const system = `You analyze a Facebook Messenger shopkeeper bot's recent conversations and propose improvements.
 Reply ONLY in ${langName}.
@@ -83,7 +83,7 @@ Limit to the 8 most valuable suggestions. Skip anything already present.`;
 
     const aiRes = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${GEMINI_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "gemini-2.5-flash",
         messages: [

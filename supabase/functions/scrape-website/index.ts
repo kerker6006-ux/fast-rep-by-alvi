@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
   try {
     const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
     if (!FIRECRAWL_API_KEY) throw new Error("FIRECRAWL_API_KEY not configured");
-    const LOVABLE_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 
     const authHeader = req.headers.get("authorization");
     if (!authHeader) throw new Error("No auth");
@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
     }
 
     // Step 4: Try to detect product pages using AI and import
-    if (importProducts && LOVABLE_API_KEY && pages.length > 0) {
+    if (importProducts && GEMINI_API_KEY && pages.length > 0) {
       // Build compact list
       const candidates = pages
         .map((p, i) => ({
@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
       try {
         const aiRes = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${LOVABLE_API_KEY}` },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${GEMINI_API_KEY}` },
           body: JSON.stringify({
             model: "gemini-2.5-flash-lite",
             messages: [{
@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
           const md = (p.markdown || "").slice(0, 4000);
           const aiRes = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
             method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${LOVABLE_API_KEY}` },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${GEMINI_API_KEY}` },
             body: JSON.stringify({
               model: "gemini-2.5-flash",
               messages: [{
