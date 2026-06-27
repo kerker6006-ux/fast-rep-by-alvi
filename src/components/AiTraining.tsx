@@ -1601,40 +1601,58 @@ const TrainingSpendCard = () => {
   const { data } = useQuery({
     queryKey: ["training-spend", user?.id],
     enabled: !!user?.id,
+    refetchInterval: 8000,
     queryFn: async () => {
-      const { data } = await supabase
+      // Get ALL AI usage for this user
+      const { data: allRows } = await supabase
         .from("ai_usage")
-        .select("estimated_cost, created_at")
+        .select("estimated_cost, created_at, model, call_type")
         .eq("user_id", user!.id)
-        .eq("call_type", "training");
-      const rows = data || [];
-      const total = rows.reduce((s: number, r: any) => s + (Number(r.estimated_cost) || 0), 0);
+        .order("created_at", { ascending: false })
+        .limit(500);
+      const rows = allRows || [];
       const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
-      const month = rows.filter((r: any) => new Date(r.created_at) >= monthStart)
+      const monthRows = rows.filter((r: any) => new Date(r.created_at) >= monthStart);
+      const total = rows.reduce((s: number, r: any) => s + (Number(r.estimated_cost) || 0), 0);
+      const month = monthRows.reduce((s: number, r: any) => s + (Number(r.estimated_cost) || 0), 0);
+      // Training-specific
+      const trainingRows = rows.filter((r: any) => (r.call_type || "").includes("training"));
+      const trainingMonth = trainingRows
+        .filter((r: any) => new Date(r.created_at) >= monthStart)
         .reduce((s: number, r: any) => s + (Number(r.estimated_cost) || 0), 0);
-      return { total, month, count: rows.length };
+      const lastCall = rows[0];
+      const lastCost = lastCall ? Number(lastCall.estimated_cost) || 0 : 0;
+      const lastModel = lastCall?.model?.replace("google/", "").replace("gemini-", "") || "";
+      const lastAction = lastCall?.call_type?.replace("training_", "").replace("_", " ") || "";
+      return { total, month, count: rows.length, trainingMonth, trainingCount: trainingRows.length, lastCost, lastModel, lastAction };
     },
   });
   const fmt = (n: number) => `$${(n || 0).toFixed(4)}`;
   const fmtWon = (n: number) => `₩${Math.round((n || 0) * 1350)}`;
   return (
     <Card className="border-l-4 border-l-amber-500">
-      <CardContent className="py-3 flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-            <Brain className="h-5 w-5 text-amber-600" />
+      <CardContent className="py-3">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
+              <Brain className="h-5 w-5 text-amber-600" />
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">AI Training spend this month</p>
+              <p className="text-xl font-bold">{fmt(data?.trainingMonth || 0)} <span className="text-sm font-normal text-muted-foreground">({fmtWon(data?.trainingMonth || 0)})</span></p>
+              <p className="text-[10px] text-muted-foreground">{data?.trainingCount || 0} training calls total</p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Total AI spend</p>
-            <p className="text-xl font-bold">{fmt(data?.total || 0)} <span className="text-sm text-muted-foreground">({fmtWon(data?.total || 0)})</span></p>
+          <div className="text-right text-xs text-muted-foreground space-y-0.5">
+            <p className="text-[10px] font-medium text-foreground">All AI (bot + training)</p>
+            <p>This month: <span className="font-semibold">{fmtWon(data?.month || 0)}</span></p>
+            <p>All time: <span className="font-semibold">{fmtWon(data?.total || 0)}</span></p>
+            {data?.lastCost ? (
+              <p className="text-[10px] text-emerald-600 mt-1">
+                Last: {fmtWon(data.lastCost)} · {data.lastModel} · {data.lastAction}
+              </p>
+            ) : null}
           </div>
-        </div>
-        <div className="text-right text-xs text-muted-foreground space-y-0.5">
-          <p>This month: <span className="font-semibold text-foreground">{fmt(data?.month || 0)} ({fmtWon(data?.month || 0)})</span></p>
-          <p>{data?.count || 0} total AI calls</p>
-          {data?.lastCost ? (
-            <p className="text-[10px] text-emerald-600">Last call: {fmt(data.lastCost)} ({fmtWon(data.lastCost)}) · {data.lastModel}</p>
-          ) : null}
         </div>
       </CardContent>
     </Card>

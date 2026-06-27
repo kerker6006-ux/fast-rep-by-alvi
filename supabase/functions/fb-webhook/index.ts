@@ -1928,14 +1928,15 @@ CUSTOMER MODE
   console.log(`[model-routing] using ${usedModel} (image=${hasImage} advanced=${needsAdvancedReasoning})`);
   let rawReply = await callModel(usedModel);
 
-  // Escalate to pro if default returned an empty / suspiciously thin / NEEDS_HUMAN reply
+  // Escalate to pro ONLY if reply is empty or contains NEEDS_HUMAN flag
+  // (removed thin reply escalation to save cost - flash handles most replies fine)
   const trimmed = (rawReply || "").trim();
   const looksWeak =
     !trimmed ||
     trimmed.length < 4 ||
     trimmed.toUpperCase().includes("NEEDS_HUMAN");
   if (usedModel === DEFAULT_MODEL && looksWeak) {
-    console.log("[model-escalation] default reply weak, retrying with pro");
+    console.log("[model-escalation] empty/NEEDS_HUMAN reply, retrying with pro");
     usedModel = PRO_MODEL;
     rawReply = await callModel(usedModel);
   }
