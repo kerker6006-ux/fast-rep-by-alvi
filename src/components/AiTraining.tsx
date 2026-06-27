@@ -1616,21 +1616,25 @@ const TrainingSpendCard = () => {
     },
   });
   const fmt = (n: number) => `$${(n || 0).toFixed(4)}`;
+  const fmtWon = (n: number) => `₩${Math.round((n || 0) * 1350)}`;
   return (
     <Card className="border-l-4 border-l-amber-500">
-      <CardContent className="py-4 flex items-center justify-between gap-4 flex-wrap">
+      <CardContent className="py-3 flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
             <Brain className="h-5 w-5 text-amber-600" />
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">AI Training spend</p>
-            <p className="text-xl font-bold">{fmt(data?.total || 0)}</p>
+            <p className="text-xs text-muted-foreground">Total AI spend</p>
+            <p className="text-xl font-bold">{fmt(data?.total || 0)} <span className="text-sm text-muted-foreground">({fmtWon(data?.total || 0)})</span></p>
           </div>
         </div>
-        <div className="text-right text-xs text-muted-foreground">
-          <p>This month: <span className="font-semibold text-foreground">{fmt(data?.month || 0)}</span></p>
-          <p>{data?.count || 0} training calls</p>
+        <div className="text-right text-xs text-muted-foreground space-y-0.5">
+          <p>This month: <span className="font-semibold text-foreground">{fmt(data?.month || 0)} ({fmtWon(data?.month || 0)})</span></p>
+          <p>{data?.count || 0} total AI calls</p>
+          {data?.lastCost ? (
+            <p className="text-[10px] text-emerald-600">Last call: {fmt(data.lastCost)} ({fmtWon(data.lastCost)}) · {data.lastModel}</p>
+          ) : null}
         </div>
       </CardContent>
     </Card>
