@@ -138,6 +138,7 @@ const AiTraining = () => {
   const quickAdd = QUICK_ADD_BY_CAT[cat];
   const [settings, setSettings] = useState<SettingsMap>({});
   const [hasChanges, setHasChanges] = useState(false);
+  const hydratedPageRef = useRef<string | null>(null);
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -178,10 +179,13 @@ const AiTraining = () => {
   });
 
   useEffect(() => {
-    if (!dbSettings || hasChanges) return;
+    if (!dbSettings || !activePage?.id) return;
+    const isFirstLoadForPage = hydratedPageRef.current !== activePage.id;
+    if (!isFirstLoadForPage && hasChanges) return;
     const map = buildSettingsMap(dbSettings);
     setSettings(map);
-    // Hydrate persisted chat history once per settings load
+    hydratedPageRef.current = activePage.id;
+    if (isFirstLoadForPage) setHasChanges(false);
     const raw = map.ai_training_chat_history;
     if (raw && chatMessages.length === 0) {
       try {
@@ -193,7 +197,7 @@ const AiTraining = () => {
       } catch { /* ignore */ }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dbSettings, hasChanges]);
+  }, [dbSettings, hasChanges, activePage?.id]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -444,13 +448,17 @@ const AiTraining = () => {
       if (data.error) throw new Error(data.error);
 
       const generated = (data.settings ?? {}) as Record<string, unknown>;
+      console.log("[ApplySettings] generated keys:", Object.keys(generated));
 
       // ── Save services to DB (service pages) ──────────────────────
-      if (cat === "service" && generated.services_list) {
+      const rawServices = generated.services_list || generated.services;
+      if (cat === "service" && rawServices) {
         try {
-          const servicesList = typeof generated.services_list === "string"
-            ? JSON.parse(generated.services_list)
-            : generated.services_list;
+          const servicesList = typeof rawServices === "string"
+            ? JSON.parse(rawServices)
+            : rawServices;
+
+          console.log("[ApplySettings] services found:", Array.isArray(servicesList) ? servicesList.length : "not array");
 
           if (Array.isArray(servicesList) && servicesList.length > 0) {
             const toInsert = servicesList.map((s: any) => ({
@@ -465,6 +473,7 @@ const AiTraining = () => {
               faqs: [],
               keywords: [],
             }));
+            console.log("[ApplySettings] inserting services:", toInsert.length, "sample:", toInsert[0]);
             const { error: svcErr } = await supabase
               .from("services")
               .insert(toInsert);
@@ -472,9 +481,11 @@ const AiTraining = () => {
               toast.success(`✅ ${servicesList.length} services added! Check the Services tab.`);
             } else {
               console.error("services insert error", svcErr);
+              toast.error(`Services save failed: ${svcErr.message}`);
             }
           }
           delete generated.services_list;
+          delete (generated as any).services;
         } catch (e) { console.error("services save error", e); }
       }
 
