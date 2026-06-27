@@ -166,11 +166,11 @@ Strict rules:
 - Keep tone_summary, draft_settings text, FAQ answers SHORT — match the owner's actual reply length.
 - Output ONLY the JSON object, no commentary.`;
 
-    const aiRes = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "gemini-2.5-flash",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: system },
           { role: "user", content: transcript },
@@ -225,7 +225,7 @@ Strict rules:
     // Log usage (best-effort)
     try {
       await supabase.from("ai_usage").insert({
-        user_id, call_type: "training", model: "gemini-2.5-flash", estimated_cost: 0.003,
+        user_id, call_type: "training", model: "google/gemini-2.5-flash", estimated_cost: 0.003,
       });
     } catch { /* ignore */ }
 
