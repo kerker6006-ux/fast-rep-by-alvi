@@ -202,7 +202,7 @@ export function classifyMessage({ messageText, hasImage, conversationHistory = [
   }
 
   // RULE 9: Multiple questions → Standard
-  if ((text.match(/\?/g) || []).length >= 2) {
+  if ((text.match(/\?/g) || []).length >= 1 && text.length > 20) {
     return { model: MODELS.STANDARD, reason: "multiple_questions", tier: "standard", sentiment, intent };
   }
 
@@ -260,33 +260,39 @@ export function buildBookingRecoveryPrefix(bookingState) {
 
 // ─── 10. GEMINI API CALLER ───────────────────────────────────
 export async function callGemini({ model, systemPrompt, messages, imageUrl, apiKey, isVision = false, temperature = 0.4 }) {
-  let userMessages = [...messages];
+  // Always use native Gemini API (works with AQ. OAuth keys)
+  const NATIVE_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
-  if (isVision && imageUrl) {
-    const last = userMessages[userMessages.length - 1];
-    const textContent = typeof last.content === "string" ? last.content : "Please analyze this image.";
-    userMessages[userMessages.length - 1] = {
-      role: "user",
-      content: [
-        { type: "text", text: textContent || "Please analyze this image." },
-        { type: "image_url", image_url: { url: imageUrl } },
-      ],
-    };
-  }
+  const buildContents = (msgs, imgUrl) => {
+    return msgs.map((m, idx) => {
+      const isLast = idx === msgs.length - 1;
+      const text = typeof m.content === "string" ? m.content : "Please analyze this image.";
+      if (isLast && isVision && imgUrl) {
+        return {
+          role: m.role === "assistant" ? "model" : "user",
+          parts: [
+            { text: text || "What is in this image?" },
+            { inline_data: null, file_data: { mime_type: "image/jpeg", file_uri: imgUrl } },
+          ],
+        };
+      }
+      return {
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text }],
+      };
+    });
+  };
 
   const attemptCall = async (modelToUse) => {
-    const res = await fetch(GEMINI_API_BASE, {
+    const body = {
+      system_instruction: { parts: [{ text: systemPrompt }] },
+      contents: buildContents(messages, imageUrl),
+      generationConfig: { temperature, maxOutputTokens: 450 },
+    };
+    const res = await fetch(`${NATIVE_BASE}/${modelToUse}:generateContent?key=${apiKey}`, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: modelToUse,
-        messages: [{ role: "system", content: systemPrompt }, ...userMessages],
-        temperature,
-        max_tokens: 450,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
     });
 
     if (!res.ok) {
@@ -300,7 +306,7 @@ export async function callGemini({ model, systemPrompt, messages, imageUrl, apiK
     }
 
     const json = await res.json();
-    return json.choices?.[0]?.message?.content || "";
+    return json.candidates?.[0]?.content?.parts?.[0]?.text || "";
   };
 
   return attemptCall(model);
