@@ -58,11 +58,11 @@ const CATEGORY_FIELDS: Record<Cat, CatField[]> = {
     { key: "return_policy", label: "Return Policy", placeholder: "7-day return on unused items in original packaging." },
   ],
   service: [
-    { key: "operating_hours", label: "Operating Hours", placeholder: "Mon–Sat 9am–7pm. Sun closed." },
-    { key: "business_address", label: "Address / Service Area", placeholder: "123 Main St, City — or 25-mile radius." },
-    { key: "pricing_policy", label: "Pricing / Estimate Policy", placeholder: "Free phone estimate. $79 on-site diagnostic, credited toward repair.", type: "textarea" },
-    { key: "cancellation_policy", label: "Cancellation / Booking Policy", placeholder: "Free reschedule with 24h notice. No-shows forfeit any deposit.", type: "textarea" },
-    { key: "emergency_policy", label: "Emergency / Same-Day Policy", placeholder: "Same-day slots for urgent cases — please call the front desk.", type: "textarea" },
+    { key: "operating_hours", label: "Operating Hours", placeholder: "e.g. Mon–Fri 9am–6pm, Sat 10am–4pm" },
+    { key: "business_address", label: "Address / Service Area", placeholder: "e.g. 123 Business Street, City, Country" },
+    { key: "pricing_policy", label: "Pricing / Estimate Policy", placeholder: "e.g. Free consultation. Pricing depends on treatment selected.", type: "textarea" },
+    { key: "cancellation_policy", label: "Cancellation / Booking Policy", placeholder: "e.g. Free reschedule with 24h notice.", type: "textarea" },
+    { key: "emergency_policy", label: "Emergency / Same-Day Policy", placeholder: "e.g. Contact us directly for urgent appointments.", type: "textarea" },
   ],
   content_creator: [
     { key: "course_lineup", label: "Course / Product Lineup", placeholder: "Beginner course — $49. Advanced cohort — $199 (live).", type: "textarea" },
@@ -80,8 +80,8 @@ const QUICK_ADD_BY_CAT: Record<Cat, { q: string; a: string }[]> = {
     { q: "Do you have it in stock?", a: "Let me check — share the product name or photo." },
   ],
   service: [
-    { q: "What are your hours?", a: "We're open Mon–Sat 9am–7pm. Sun closed." },
-    { q: "Where are you located?", a: "123 Main St, City. We also serve a 25-mile radius." },
+
+
     { q: "How much does it cost?", a: "Estimates are free over phone. A detailed quote is shared after a quick consultation." },
     { q: "How do I book an appointment?", a: "Share your name, phone and preferred date — I'll book you in." },
   ],
@@ -105,11 +105,11 @@ const PRESET_TEMPLATES: Record<Cat, SettingsMap> = {
     ai_personality: "You are a sharp shopkeeper. Pitch products, send images, capture name/phone/address/quantity, and confirm orders before saving. Never invent prices.",
   },
   service: {
-    operating_hours: "Mon–Sat 9:00am – 7:00pm. Sun closed.",
-    business_address: "123 Main St, City",
-    pricing_policy: "Free phone estimates. On-site diagnostic $79, credited toward any repair.",
-    cancellation_policy: "Free reschedule with 24h notice. Later cancellations may forfeit any deposit.",
-    emergency_policy: "Same-day slots available for urgent cases — please call the front desk.",
+    operating_hours: "",
+    business_address: "",
+    pricing_policy: "",
+    cancellation_policy: "",
+    emergency_policy: "",
     reply_tone: "Warm, calm, professional front-desk receptionist.",
     welcome_message: "Hi! Thanks for reaching out. How can we help you today?",
     ai_personality: "You are a professional front-desk receptionist. Qualify the request, capture name/phone/service-needed/preferred-date, and book the appointment. Never invent prices or policies — only answer from the knowledge base.",
@@ -1050,7 +1050,7 @@ const AiTraining = () => {
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium">Special Instructions</Label>
-                  <Textarea value={settings.custom_instructions || ""} onChange={e => update("custom_instructions", e.target.value)} placeholder="e.g. Always reply in Bangla. Never quote a price without a consultation. If customer is upset, apologize first..." className="min-h-[70px] resize-none text-sm" />
+                  <Textarea value={settings.custom_instructions || ""} onChange={e => update("custom_instructions", e.target.value)} placeholder="e.g. Always greet warmly. Never quote a price without consultation. If customer is upset, apologize first..." className="min-h-[70px] resize-none text-sm" />
                 </div>
               </CardContent>
             </Card>

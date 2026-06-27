@@ -24,7 +24,24 @@ const MERGEABLE_TEXT_KEYS = new Set([
   "angry_customer_handling",
 ]);
 
-const normalizeText = (value: unknown) => String(value ?? "").replace(/\r\n/g, "\n").trim();
+const normalizeText = (value: unknown): string => {
+  if (value === null || value === undefined) return "";
+  // If it's an object (Gemini returned nested JSON by mistake), stringify it cleanly
+  if (typeof value === "object") {
+    try {
+      const str = JSON.stringify(value, null, 2);
+      // If it looks like a settings object (has bot_name key), it's wrong - return empty
+      if (str.includes('"bot_name"') || str.includes('"business_name"')) return "";
+      return str;
+    } catch { return ""; }
+  }
+  const str = String(value ?? "").replace(/\r\n/g, "\n").trim();
+  // Clean up if the value accidentally contains JSON wrapper
+  if (str.startsWith("```json") || str.startsWith("```")) {
+    return str.replace(/```json\n?|```/g, "").trim();
+  }
+  return str;
+};
 
 const parseArray = <T>(value: unknown): T[] => {
   if (Array.isArray(value)) return value as T[];
